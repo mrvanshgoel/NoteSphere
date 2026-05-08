@@ -57,7 +57,13 @@ public class RegisterActivity extends AppCompatActivity {
                     User user = response.body();
                     SharedPrefManager pref = SharedPrefManager.getInstance(RegisterActivity.this);
                     pref.saveToken(user.getToken());
-                    pref.saveUserInfo(user.getName(), user.getEmail());
+                    
+                    String userName = user.getName();
+                    String userEmail = user.getEmail();
+                    String avatar = (user.getUser() != null && user.getUser().getUserMetadata() != null) 
+                            ? user.getUser().getUserMetadata().getAvatarUrl() : null;
+                    
+                    pref.saveUserInfo(userName, userEmail, avatar);
 
                     Intent intent = new Intent(RegisterActivity.this, MainActivity.class);
                     intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);

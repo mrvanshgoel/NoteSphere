@@ -53,7 +53,13 @@ public class LoginActivity extends AppCompatActivity {
                     User user = response.body();
                     SharedPrefManager pref = SharedPrefManager.getInstance(LoginActivity.this);
                     pref.saveToken(user.getToken());
-                    pref.saveUserInfo(user.getName(), user.getEmail());
+                    
+                    String name = user.getName();
+                    String email = user.getEmail();
+                    String avatar = (user.getUser() != null && user.getUser().getUserMetadata() != null) 
+                            ? user.getUser().getUserMetadata().getAvatarUrl() : null;
+                    
+                    pref.saveUserInfo(name, email, avatar);
 
                     startActivity(new Intent(LoginActivity.this, MainActivity.class));
                     finish();

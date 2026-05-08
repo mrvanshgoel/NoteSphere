@@ -39,10 +39,15 @@ public class SubjectsFragment extends Fragment {
     }
 
     private void fetchSubjects() {
-        String token = "Bearer " + SharedPrefManager.getInstance(getContext()).getToken();
-        ApiClient.getInstance().getSubjects(token).enqueue(new Callback<List<Subject>>() {
+        if (!isAdded()) return;
+        String token = SharedPrefManager.getInstance(requireContext()).getToken();
+        if (token == null) return;
+        
+        String authHeader = "Bearer " + token;
+        ApiClient.getInstance().getSubjects(authHeader).enqueue(new Callback<List<Subject>>() {
             @Override
             public void onResponse(Call<List<Subject>> call, Response<List<Subject>> response) {
+                if (!isAdded() || binding == null) return;
                 if (response.isSuccessful() && response.body() != null) {
                     List<Subject> subjects = response.body();
                     if (subjects.isEmpty()) {
@@ -52,48 +57,64 @@ public class SubjectsFragment extends Fragment {
                         adapter = new SubjectAdapter(subjects, subject -> {
                             // Open Materials Activity logic
                         }, subject -> {
-                            // Delete subject logic
                             deleteSubject(subject.getId());
                         });
                         binding.rvSubjects.setAdapter(adapter);
                     }
+                } else {
+                    Toast.makeText(getContext(), "Error fetching subjects", Toast.LENGTH_SHORT).show();
                 }
             }
 
             @Override
             public void onFailure(Call<List<Subject>> call, Throwable t) {
-                Toast.makeText(getContext(), "Failed to fetch subjects", Toast.LENGTH_SHORT).show();
+                if (isAdded()) Toast.makeText(getContext(), "Network Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
     }
 
     private void showAddSubjectDialog() {
         EditText et = new EditText(getContext());
-        et.setHint("Subject Name");
-        new AlertDialog.Builder(getContext())
-                .setTitle("Add Subject")
+        et.setHint("Subject Name (e.g. Mathematics)");
+        et.setPadding(50, 50, 50, 50);
+        
+        new AlertDialog.Builder(requireContext())
+                .setTitle("New Subject")
+                .setMessage("Enter the name of the subject you want to track.")
                 .setView(et)
-                .setPositiveButton("Add", (dialog, which) -> {
+                .setPositiveButton("Create", (dialog, which) -> {
                     String name = et.getText().toString().trim();
                     if (!name.isEmpty()) createSubject(name);
+                    else Toast.makeText(getContext(), "Name cannot be empty", Toast.LENGTH_SHORT).show();
                 })
                 .setNegativeButton("Cancel", null)
                 .show();
     }
 
     private void createSubject(String name) {
-        String token = "Bearer " + SharedPrefManager.getInstance(getContext()).getToken();
-        Subject subject = new Subject(null, name, "book", "#6C63FF", null, 0);
-        ApiClient.getInstance().createSubject(token, subject).enqueue(new Callback<Subject>() {
+        String token = SharedPrefManager.getInstance(requireContext()).getToken();
+        String authHeader = "Bearer " + token;
+        
+        // Random nice color and icon for premium feel
+        String[] colors = {"#6C63FF", "#FF6584", "#4CAF50", "#2196F3", "#FF9800"};
+        String color = colors[(int)(Math.random() * colors.length)];
+        
+        Subject subject = new Subject(null, name, "book", color, null, 0);
+        ApiClient.getInstance().createSubject(authHeader, subject).enqueue(new Callback<Subject>() {
             @Override
             public void onResponse(Call<Subject> call, Response<Subject> response) {
                 if (response.isSuccessful()) {
+                    Toast.makeText(getContext(), "Subject added!", Toast.LENGTH_SHORT).show();
                     fetchSubjects();
+                } else {
+                    Toast.makeText(getContext(), "Failed to add subject: " + response.code(), Toast.LENGTH_SHORT).show();
                 }
             }
 
             @Override
-            public void onFailure(Call<Subject> call, Throwable t) {}
+            public void onFailure(Call<Subject> call, Throwable t) {
+                Toast.makeText(getContext(), "Network Error", Toast.LENGTH_SHORT).show();
+            }
         });
     }
 

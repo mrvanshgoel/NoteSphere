@@ -50,24 +50,33 @@ public class ChatFragment extends Fragment {
         binding.rvChat.scrollToPosition(messages.size() - 1);
         binding.etMessage.setText("");
 
-        String token = "Bearer " + SharedPrefManager.getInstance(getContext()).getToken();
+        String token = SharedPrefManager.getInstance(requireContext()).getToken();
+        if (token == null) {
+            Toast.makeText(getContext(), "Please login again", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        
+        String authHeader = "Bearer " + token;
         ChatRequest request = new ChatRequest(text);
 
-        ApiClient.getInstance().chat(token, request).enqueue(new Callback<AiResponse>() {
+        ApiClient.getInstance().chat(authHeader, request).enqueue(new Callback<AiResponse>() {
             @Override
             public void onResponse(Call<AiResponse> call, Response<AiResponse> response) {
+                if (!isAdded()) return;
                 if (response.isSuccessful() && response.body() != null) {
                     messages.add(new ChatMessage(response.body().getContent(), false));
                     adapter.notifyItemInserted(messages.size() - 1);
                     binding.rvChat.scrollToPosition(messages.size() - 1);
                 } else {
-                    Toast.makeText(getContext(), "AI Chat failed", Toast.LENGTH_SHORT).show();
+                    String errorMsg = "AI Chat failed";
+                    if (response.code() == 401) errorMsg = "Session expired. Please login again.";
+                    Toast.makeText(getContext(), errorMsg, Toast.LENGTH_SHORT).show();
                 }
             }
 
             @Override
             public void onFailure(Call<AiResponse> call, Throwable t) {
-                Toast.makeText(getContext(), "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                if (isAdded()) Toast.makeText(getContext(), "Connection Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
     }

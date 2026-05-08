@@ -31,12 +31,18 @@ public class SharedPrefManager {
         return sharedPreferences.getString(Constants.TOKEN_KEY, null);
     }
 
-    public void saveUserInfo(String name, String email) {
+    public void saveUserInfo(String name, String email, String avatarUrl) {
         SharedPreferences sharedPreferences = context.getSharedPreferences(SHARED_PREF_NAME, Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = sharedPreferences.edit();
         editor.putString(Constants.USER_NAME_KEY, name);
         editor.putString(Constants.USER_EMAIL_KEY, email);
+        editor.putString(Constants.USER_AVATAR_KEY, avatarUrl);
         editor.apply();
+    }
+
+    public String getUserAvatar() {
+        SharedPreferences sharedPreferences = context.getSharedPreferences(SHARED_PREF_NAME, Context.MODE_PRIVATE);
+        return sharedPreferences.getString(Constants.USER_AVATAR_KEY, null);
     }
 
     public String getUserName() {

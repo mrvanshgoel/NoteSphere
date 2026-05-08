@@ -14,6 +14,9 @@ public class SplashActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_splash);
 
+        // Make status bar transparent for premium look
+        getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
+
         new Handler().postDelayed(() -> {
             if (SharedPrefManager.getInstance(this).isLoggedIn()) {
                 startActivity(new Intent(this, MainActivity.class));
@@ -21,6 +24,7 @@ public class SplashActivity extends AppCompatActivity {
                 startActivity(new Intent(this, LoginActivity.class));
             }
             finish();
-        }, 2000);
+            overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
+        }, 2500);
     }
 }

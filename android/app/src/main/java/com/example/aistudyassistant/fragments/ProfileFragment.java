@@ -26,20 +26,17 @@ public class ProfileFragment extends Fragment {
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         binding = FragmentProfileBinding.inflate(inflater, container, false);
 
-        SharedPrefManager pref = SharedPrefManager.getInstance(getContext());
-        String name = pref.getUserName();
-        binding.tvName.setText(name);
-        binding.tvEmail.setText(pref.getUserEmail());
-        
-        if (name != null && name.length() >= 2) {
-            binding.tvInitials.setText(name.substring(0, 2).toUpperCase());
-        }
+        loadUserData();
 
         binding.btnLogout.setOnClickListener(v -> {
-            pref.logout();
+            SharedPrefManager.getInstance(requireContext()).logout();
             Intent intent = new Intent(getContext(), LoginActivity.class);
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
             startActivity(intent);
+        });
+
+        binding.btnEditProfile.setOnClickListener(v -> {
+            Toast.makeText(getContext(), "Account Settings coming soon!", Toast.LENGTH_SHORT).show();
         });
 
         fetchStats();
@@ -47,11 +44,31 @@ public class ProfileFragment extends Fragment {
         return binding.getRoot();
     }
 
+    private void loadUserData() {
+        SharedPrefManager pref = SharedPrefManager.getInstance(requireContext());
+        binding.tvName.setText(pref.getUserName());
+        binding.tvEmail.setText(pref.getUserEmail());
+
+        String avatarUrl = pref.getUserAvatar();
+        if (avatarUrl != null && !avatarUrl.isEmpty()) {
+            Glide.with(this)
+                    .load(avatarUrl)
+                    .placeholder(R.drawable.ic_launcher_temp)
+                    .circleCrop()
+                    .into(binding.ivProfile);
+        }
+    }
+
     private void fetchStats() {
-        String token = "Bearer " + SharedPrefManager.getInstance(getContext()).getToken();
-        ApiClient.getInstance().getSubjects(token).enqueue(new Callback<List<Subject>>() {
+        if (!isAdded()) return;
+        String token = SharedPrefManager.getInstance(requireContext()).getToken();
+        if (token == null) return;
+        
+        String authHeader = "Bearer " + token;
+        ApiClient.getInstance().getSubjects(authHeader).enqueue(new Callback<List<Subject>>() {
             @Override
             public void onResponse(Call<List<Subject>> call, Response<List<Subject>> response) {
+                if (!isAdded() || binding == null) return;
                 if (response.isSuccessful() && response.body() != null) {
                     List<Subject> subjects = response.body();
                     binding.tvSubjectCount.setText(String.valueOf(subjects.size()));
