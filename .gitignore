@@ -4,3 +4,14 @@ node_modules
 dist
 .DS_Store
 *.log
+
+# IDE and Gradle
+.idea/
+.gradle/
+local.properties
+captures/
+.externalNativeBuild/
+.cxx/
+*.apk
+*.aar
+*.jar
