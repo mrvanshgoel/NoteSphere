@@ -3,15 +3,17 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { createClient } from '@supabase/supabase-js';
 import Groq from 'groq-sdk';
+import multer from 'multer';
 
 dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 5000;
+const upload = multer({ storage: multer.memoryStorage() });
 
-// Optimized CORS for Mobile App and Web
+// Optimized CORS
 app.use(cors({
-  origin: '*', // Allows all for testing; you can restrict this to your Vercel URL later
+  origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
@@ -19,12 +21,12 @@ app.use(cors({
 app.use(express.json());
 
 const supabase = createClient(
-  process.env.SUPABASE_URL || 'http://localhost:54321',
-  process.env.SUPABASE_ANON_KEY || 'anon-key'
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_ANON_KEY
 );
 
 const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY || 'dummy-key',
+  apiKey: process.env.GROQ_API_KEY,
 });
 
 // Middleware to verify Supabase Auth token
@@ -32,96 +34,173 @@ const authenticateUser = async (req, res, next) => {
   const token = req.headers.authorization?.split(' ')[1];
   
   if (!token) {
-    return res.status(401).json({ error: 'Unauthorized' });
+    return res.status(401).json({ error: 'Unauthorized: No token provided' });
   }
 
   const { data: { user }, error } = await supabase.auth.getUser(token);
   
   if (error || !user) {
-    return res.status(401).json({ error: 'Unauthorized' });
+    return res.status(401).json({ error: 'Unauthorized: Invalid token' });
   }
 
   req.user = user;
   next();
 };
 
-// Health check route
-app.get('/health', (req, res) => {
-  res.json({ status: "ok", message: "Server is running" });
+// --- AUTH ROUTES ---
+app.post('/api/auth/register', async (req, res) => {
+  const { email, password } = req.body;
+  const { data, error } = await supabase.auth.signUp({ email, password });
+  if (error) return res.status(400).json({ error: error.message });
+  res.json(data);
 });
 
-// Endpoint to process document via Groq (Summary/Notes)
-app.post('/api/ai/process-document', authenticateUser, async (req, res) => {
-  const { documentText, type } = req.body;
-  
-  if (!documentText || !type) {
-    return res.status(400).json({ error: 'Missing document text or processing type' });
+app.post('/api/auth/login', async (req, res) => {
+  const { email, password } = req.body;
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) return res.status(400).json({ error: error.message });
+  res.json(data);
+});
+
+// --- SUBJECT ROUTES ---
+app.get('/api/subjects', authenticateUser, async (req, res) => {
+  const { data, error } = await supabase
+    .from('subjects')
+    .select('*')
+    .eq('user_id', req.user.id);
+  if (error) return res.status(400).json({ error: error.message });
+  res.json(data);
+});
+
+app.post('/api/subjects', authenticateUser, async (req, res) => {
+  const { name, color } = req.body;
+  const { data, error } = await supabase
+    .from('subjects')
+    .insert([{ name, color, user_id: req.user.id }])
+    .select();
+  if (error) return res.status(400).json({ error: error.message });
+  res.json(data[0]);
+});
+
+app.delete('/api/subjects/:id', authenticateUser, async (req, res) => {
+  const { error } = await supabase
+    .from('subjects')
+    .delete()
+    .eq('id', req.params.id)
+    .eq('user_id', req.user.id);
+  if (error) return res.status(400).json({ error: error.message });
+  res.json({ message: 'Subject deleted' });
+});
+
+// --- MATERIAL ROUTES ---
+app.get('/api/materials/:subjectId', authenticateUser, async (req, res) => {
+  const { data, error } = await supabase
+    .from('materials')
+    .select('*')
+    .eq('subject_id', req.params.subjectId)
+    .eq('user_id', req.user.id);
+  if (error) return res.status(400).json({ error: error.message });
+  res.json(data);
+});
+
+app.post('/api/materials/upload', authenticateUser, upload.single('file'), async (req, res) => {
+  const { subjectId, name, type } = req.body;
+  const file = req.file;
+
+  if (!file) return res.status(400).json({ error: 'No file uploaded' });
+
+  const fileName = `${req.user.id}/${Date.now()}_${file.originalname}`;
+  const { data: uploadData, error: uploadError } = await supabase.storage
+    .from('study_materials')
+    .upload(fileName, file.buffer, { contentType: file.mimetype });
+
+  if (uploadError) return res.status(400).json({ error: uploadError.message });
+
+  const { data: { publicUrl } } = supabase.storage
+    .from('study_materials')
+    .getPublicUrl(fileName);
+
+  const { data, error } = await supabase
+    .from('materials')
+    .insert([{
+      name,
+      type,
+      subject_id: subjectId,
+      user_id: req.user.id,
+      file_url: publicUrl,
+      storage_path: fileName
+    }])
+    .select();
+
+  if (error) return res.status(400).json({ error: error.message });
+  res.json(data[0]);
+});
+
+app.delete('/api/materials/:id', authenticateUser, async (req, res) => {
+  // First get the material to find the storage path
+  const { data: material } = await supabase
+    .from('materials')
+    .select('storage_path')
+    .eq('id', req.params.id)
+    .single();
+
+  if (material) {
+    await supabase.storage.from('study_materials').remove([material.storage_path]);
   }
 
-  try {
-    let systemPrompt = '';
-    
-    if (type === 'summary') {
-      systemPrompt = 'You are an AI study assistant. Your task is to provide a concise and comprehensive summary of the provided text.';
-    } else if (type === 'notes') {
-      systemPrompt = 'You are an AI study assistant. Extract key points, definitions, and important formulas from the provided text and format them as detailed study notes using Markdown.';
-    } else if (type === 'questions') {
-      systemPrompt = 'You are an AI study assistant. Generate 5 practice questions based on the provided text, along with their answers at the end.';
-    } else {
-      return res.status(400).json({ error: 'Invalid processing type' });
-    }
+  const { error } = await supabase
+    .from('materials')
+    .delete()
+    .eq('id', req.params.id)
+    .eq('user_id', req.user.id);
 
+  if (error) return res.status(400).json({ error: error.message });
+  res.json({ message: 'Material deleted' });
+});
+
+// --- AI ROUTES ---
+const processAIRequest = async (documentText, type, res) => {
+  let systemPrompt = '';
+  if (type === 'summary') systemPrompt = 'Provide a concise summary.';
+  else if (type === 'notes') systemPrompt = 'Extract detailed study notes in Markdown.';
+  else if (type === 'questions') systemPrompt = 'Generate 5 practice questions and answers.';
+
+  try {
     const completion = await groq.chat.completions.create({
       messages: [
         { role: 'system', content: systemPrompt },
-        { role: 'user', content: `Here is the study material:\n\n${documentText}` }
+        { role: 'user', content: `Text: ${documentText}` }
       ],
       model: 'llama3-70b-8192',
     });
-
     res.json({ result: completion.choices[0].message.content });
   } catch (error) {
-    console.error('AI Error:', error);
-    res.status(500).json({ error: 'Failed to process document' });
+    res.status(500).json({ error: 'AI processing failed' });
   }
-});
+};
 
-// Endpoint for chat/Q&A on a document
+app.post('/api/ai/summary', authenticateUser, (req, res) => processAIRequest(req.body.documentText, 'summary', res));
+app.post('/api/ai/notes', authenticateUser, (req, res) => processAIRequest(req.body.documentText, 'notes', res));
+app.post('/api/ai/questions', authenticateUser, (req, res) => processAIRequest(req.body.documentText, 'questions', res));
+
 app.post('/api/ai/chat', authenticateUser, async (req, res) => {
   const { documentText, question, history } = req.body;
-  
-  if (!documentText || !question) {
-    return res.status(400).json({ error: 'Missing document text or question' });
-  }
-
   try {
-    const messages = [
-      { 
-        role: 'system', 
-        content: "You are an AI study assistant. Answer the user's question based ONLY on the provided context document. If the answer is not in the document, say so politely." 
-      },
-      ... (history ? history.map(h => ({
-        role: h.role,
-        content: h.content
-      })) : []),
-      {
-        role: 'user',
-        content: `Context document:\n${documentText}\n\nQuestion: ${question}`
-      }
-    ];
-
     const completion = await groq.chat.completions.create({
-      messages,
+      messages: [
+        { role: 'system', content: "Answer based on context." },
+        ...(history || []),
+        { role: 'user', content: `Context: ${documentText}\nQuestion: ${question}` }
+      ],
       model: 'llama3-70b-8192',
     });
-
     res.json({ result: completion.choices[0].message.content });
   } catch (error) {
-    console.error('AI Chat Error:', error);
-    res.status(500).json({ error: 'Failed to answer question' });
+    res.status(500).json({ error: 'AI chat failed' });
   }
 });
 
-app.listen(port, () => {
-  console.log(`Backend running on port ${port}`);
-});
+// Health check
+app.get('/health', (req, res) => res.json({ status: "ok" }));
+
+app.listen(port, () => console.log(`Server running on port ${port}`));

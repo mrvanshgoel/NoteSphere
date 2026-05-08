@@ -37,7 +37,8 @@ const DocumentScreen = () => {
       // Here we simulate document text to demonstrate the integration
       const documentText = "This is a placeholder for the actual extracted document text. Imagine it contains the contents of the uploaded file.";
       
-      const response = await fetch('http://localhost:5000/api/ai/process-document', {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${apiUrl}/api/ai/process-document`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -72,7 +73,8 @@ const DocumentScreen = () => {
     try {
       const documentText = "This is a placeholder for the actual extracted document text.";
       
-      const response = await fetch('http://localhost:5000/api/ai/chat', {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${apiUrl}/api/ai/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
