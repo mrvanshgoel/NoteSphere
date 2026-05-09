@@ -16,21 +16,26 @@ let availableModels = [];
 let activeModelName = null;
 
 /**
- * Discover available Gemini models on startup
+ * Discover available Gemini models on startup via REST API
  */
 async function discoverModels() {
   console.log('\n================================');
   console.log('AVAILABLE GEMINI MODELS');
   console.log('=======================');
   
+  const API_KEY = process.env.GEMINI_API_KEY;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models?key=${API_KEY}`;
+
   try {
-    const result = await genAI.listModels();
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
+    const data = await response.json();
     
-    // Filter for models that support generateContent and are not embedding/vision-only/deprecated
-    availableModels = result.models
+    // Filter for models that support generateContent
+    availableModels = (data.models || [])
       .filter(m => m.supportedGenerationMethods.includes('generateContent'))
       .filter(m => !m.name.toLowerCase().includes('embedding'))
-      .filter(m => !m.name.toLowerCase().includes('aqa')) // Ignore specialized models
+      .filter(m => !m.name.toLowerCase().includes('aqa'))
       .map(m => ({
         name: m.name.replace('models/', ''),
         displayName: m.displayName
