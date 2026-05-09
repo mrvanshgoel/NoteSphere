@@ -4,6 +4,7 @@ const { createClient } = require('@supabase/supabase-js');
 const Groq = require('groq-sdk');
 const jwt = require('jsonwebtoken');
 const multer = require('multer');
+const { search } = require('duck-duck-scrape');
 const dotenv = require('dotenv');
 
 dotenv.config();
@@ -385,25 +386,40 @@ app.post('/api/ai/questions', verifyToken, async (req, res) => {
 app.post('/api/ai/chat', verifyToken, async (req, res) => {
   try {
     const { messages, systemPrompt } = req.body;
-    console.log('AI Chat request for user:', req.user.id, 'Messages:', messages?.length);
+    const lastUserMessage = messages[messages.length - 1]?.content || "";
+    
+    console.log('AI Chat request with search check:', lastUserMessage);
 
-    if (!process.env.GROQ_API_KEY) {
-      console.error('GROQ_API_KEY is missing from environment!');
-      return res.status(500).json({ error: 'AI Service Key missing (GROQ_API_KEY)' });
+    // 1. Determine if we need a web search
+    let searchResults = "";
+    const searchDecision = await groq.chat.completions.create({
+      messages: [
+        { role: 'system', content: 'Output "SEARCH" if this query needs real-time info/search, else "NO". Query: ' + lastUserMessage }
+      ],
+      model: "llama-3.1-8b-instant",
+    });
+
+    if (searchDecision.choices[0].message.content.includes("SEARCH")) {
+      console.log('Performing web search for:', lastUserMessage);
+      try {
+        const searchResponse = await search(lastUserMessage, { safeSearch: true });
+        searchResults = searchResponse.results.slice(0, 3).map(r => `Source: ${r.url}\nTitle: ${r.title}\nContent: ${r.description}`).join('\n\n');
+      } catch (searchErr) {
+        console.error('Search failed:', searchErr);
+      }
     }
 
+    // 2. Generate final response
     const completion = await groq.chat.completions.create({
       messages: [
         { 
           role: 'system', 
-          content: systemPrompt || "You are an expert AI study assistant. Help students understand their study material, answer questions clearly, explain concepts, and make learning engaging." 
+          content: (systemPrompt || "You are an expert AI study assistant.") + 
+                   (searchResults ? "\n\nUSE THESE REAL-TIME SEARCH RESULTS TO ANSWER:\n" + searchResults : "") 
         },
         ...messages
       ],
       model: "llama-3.1-8b-instant",
-    }).catch(err => {
-      console.error('GROQ API ERROR:', err.message);
-      throw err;
     });
 
     res.json({ 
