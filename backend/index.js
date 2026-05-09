@@ -219,16 +219,28 @@ app.get('/api/subjects', verifyToken, async (req, res) => {
 app.post('/api/subjects', verifyToken, async (req, res) => {
   try {
     const { name, color, icon } = req.body;
+    console.log('Attempting to create subject:', { name, color, icon, user_id: req.user.id });
+    
     const { data, error } = await supabase
       .from('subjects')
-      .insert({ name, color, icon, user_id: req.user.id })
+      .insert({ 
+        name: name || 'New Subject', 
+        color: color || '#6C63FF', 
+        icon: icon || 'book', 
+        user_id: req.user.id 
+      })
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('SUPABASE INSERT ERROR:', error);
+      return res.status(400).json({ error: error.message });
+    }
+    
     res.json(data);
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    console.error('SERVER EXCEPTION:', err);
+    res.status(500).json({ error: err.message });
   }
 });
 
