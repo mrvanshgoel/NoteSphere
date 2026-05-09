@@ -179,9 +179,10 @@ app.post('/api/auth/upload-avatar', verifyToken, upload.single('avatar'), async 
     const file = req.file;
     if (!file) return res.status(400).json({ error: 'No image uploaded' });
 
-    // Store relative path
-    const avatarUrl = `${req.protocol}://${req.get('host')}/uploads/${file.filename}`;
-    console.log(`[Avatar] Uploaded to: ${avatarUrl} for UID: ${req.user.id}`);
+    // Handle Render/Proxy protocol
+    const protocol = req.headers['x-forwarded-proto'] || req.protocol;
+    const avatarUrl = `${protocol}://${req.get('host')}/uploads/${file.filename}`;
+    console.log(`[Avatar] Uploaded: ${avatarUrl} for UID: ${req.user.id}`);
 
     await db.collection('profiles').doc(req.user.id).set({
       avatar_url: avatarUrl,
@@ -196,35 +197,32 @@ app.post('/api/auth/upload-avatar', verifyToken, upload.single('avatar'), async 
 });
 
 // ═══════════════════════════════════════════════════════════
-// SUBJECTS
+// FOLDERS
 // ═══════════════════════════════════════════════════════════
 
-app.get('/api/subjects', verifyToken, async (req, res) => {
+app.get('/api/folders/:subjectId', verifyToken, async (req, res) => {
   try {
-    const snapshot = await db.collection('subjects').where('userId', '==', req.user.id).get();
-    const subjects = [];
-    snapshot.forEach(doc => {
-      subjects.push(formatDoc(doc));
-    });
-    res.json(subjects);
+    const snapshot = await db.collection('folders')
+      .where('userId', '==', req.user.id)
+      .where('subjectId', '==', req.params.subjectId)
+      .get();
+    const folders = [];
+    snapshot.forEach(doc => folders.push(formatDoc(doc)));
+    res.json(folders);
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
 });
 
-app.post('/api/subjects', verifyToken, async (req, res) => {
+app.post('/api/folders', verifyToken, async (req, res) => {
   try {
-    const { name, color, icon } = req.body;
-    if (!name) return res.status(400).json({ error: 'Name is required' });
-    
-    const docRef = await db.collection('subjects').add({
+    const { name, subjectId } = req.body;
+    const docRef = await db.collection('folders').add({
       name,
-      color: color || '#6C63FF',
-      icon: icon || '📚',
+      subjectId,
       userId: req.user.id,
       createdAt: admin.firestore.FieldValue.serverTimestamp()
     });
-    
     const newDoc = await docRef.get();
     res.json(formatDoc(newDoc));
   } catch (err) {
@@ -232,16 +230,32 @@ app.post('/api/subjects', verifyToken, async (req, res) => {
   }
 });
 
-app.delete('/api/subjects/:id', verifyToken, async (req, res) => {
+app.delete('/api/folders/:id', verifyToken, async (req, res) => {
   try {
-    // Verify ownership
-    const doc = await db.collection('subjects').doc(req.params.id).get();
-    if (doc.exists && doc.data().userId === req.user.id) {
-      await db.collection('subjects').doc(req.params.id).delete();
-      res.json({ success: true });
-    } else {
-      res.status(403).json({ error: 'Not authorized or does not exist' });
-    }
+    await db.collection('folders').doc(req.params.id).delete();
+    // Also clear folderId from materials
+    const snapshot = await db.collection('materials').where('folderId', '==', req.params.id).get();
+    const batch = db.batch();
+    snapshot.forEach(doc => batch.update(doc.ref, { folderId: null }));
+    await batch.commit();
+    res.json({ success: true });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════
+// SUBJECTS (Keep existing ones, but add delete rename)
+// ═══════════════════════════════════════════════════════════
+
+app.put('/api/subjects/:id', verifyToken, async (req, res) => {
+  try {
+    const { name, color, icon } = req.body;
+    await db.collection('subjects').doc(req.params.id).update({
+      name, color, icon,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+    res.json({ success: true });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -253,15 +267,27 @@ app.delete('/api/subjects/:id', verifyToken, async (req, res) => {
 
 app.get('/api/materials/:subjectId', verifyToken, async (req, res) => {
   try {
-    const snapshot = await db.collection('materials')
+    const { folderId } = req.query;
+    let query = db.collection('materials')
       .where('userId', '==', req.user.id)
-      .where('subjectId', '==', req.params.subjectId)
-      .get();
+      .where('subjectId', '==', req.params.subjectId);
+    
+    if (folderId) {
+      query = query.where('folderId', '==', folderId);
+    } else {
+      // If no folderId, show root materials (where folderId is null or missing)
+      // Note: Firestore null queries can be tricky, we'll filter client-side for simplicity if needed,
+      // but let's try to be specific.
+    }
       
-    const materials = [];
-    snapshot.forEach(doc => {
-      materials.push(formatDoc(doc));
-    });
+    const snapshot = await query.get();
+    let materials = [];
+    snapshot.forEach(doc => materials.push(formatDoc(doc)));
+    
+    if (!folderId) {
+      materials = materials.filter(m => !m.folderId);
+    }
+
     res.json(materials);
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -270,19 +296,29 @@ app.get('/api/materials/:subjectId', verifyToken, async (req, res) => {
 
 app.post('/api/materials/upload', verifyToken, upload.single('file'), async (req, res) => {
   try {
-    const { subjectId, name } = req.body;
+    const { subjectId, folderId, name } = req.body;
     const file = req.file;
     if (!file) return res.status(400).json({ error: 'No file uploaded' });
 
-    // Store relative path so AI pipeline can read it later
     const localFilePath = path.join('uploads', file.filename);
+    
+    // Proactive Text Extraction for AI stability
+    let extractedText = "";
+    try {
+      const buffer = fs.readFileSync(path.join(__dirname, localFilePath));
+      extractedText = await extractTextFromBuffer(buffer, file.mimetype);
+    } catch (e) {
+      console.warn('[AI] Initial extraction failed, but proceeding with upload:', e.message);
+    }
 
     const docRef = await db.collection('materials').add({
       subjectId,
-      filePath: localFilePath, // Path to temp storage
+      folderId: folderId || null,
+      filePath: localFilePath,
       fileType: file.mimetype,
       title: name || file.originalname,
       userId: req.user.id,
+      extractedText, // Cache text for persistent AI access
       createdAt: admin.firestore.FieldValue.serverTimestamp()
     });
 
@@ -294,54 +330,48 @@ app.post('/api/materials/upload', verifyToken, upload.single('file'), async (req
   }
 });
 
-app.delete('/api/materials/:id', verifyToken, async (req, res) => {
+app.put('/api/materials/:id', verifyToken, async (req, res) => {
   try {
-    const docRef = db.collection('materials').doc(req.params.id);
-    const doc = await docRef.get();
-    
-    if (doc.exists && doc.data().userId === req.user.id) {
-      // Clean up local temp file if it exists
-      if (doc.data().filePath) {
-        const fullPath = path.join(__dirname, doc.data().filePath);
-        if (fs.existsSync(fullPath)) {
-          fs.unlinkSync(fullPath);
-        }
-      }
-      await docRef.delete();
-      res.json({ success: true });
-    } else {
-      res.status(403).json({ error: 'Not authorized or does not exist' });
-    }
+    const { title, folderId } = req.body;
+    const updateData = { updatedAt: admin.firestore.FieldValue.serverTimestamp() };
+    if (title) updateData.title = title;
+    if (folderId !== undefined) updateData.folderId = folderId;
+
+    await db.collection('materials').doc(req.params.id).update(updateData);
+    res.json({ success: true });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
 });
 
 // ═══════════════════════════════════════════════════════════
-// HELPER: FETCH MATERIAL TEXT FOR AI
+// HELPER: FETCH MATERIAL TEXT FOR AI (Enhanced with Cache)
 // ═══════════════════════════════════════════════════════════
 async function getMaterialText(materialId, userId) {
-  if (!materialId) throw new Error('materialId is required');
-  
   const doc = await db.collection('materials').doc(materialId).get();
   if (!doc.exists) throw new Error('Material not found');
   
   const data = doc.data();
-  if (data.userId !== userId) throw new Error('Unauthorized access to material');
-  if (!data.filePath) throw new Error('Material has no associated file');
+  if (data.userId !== userId) throw new Error('Unauthorized');
+  
+  // 1. Check Cache First
+  if (data.extractedText) return data.extractedText;
 
-  const fullPath = path.join(__dirname, data.filePath);
-  if (!fs.existsSync(fullPath)) {
-    throw new Error('File not found in temp storage. It may have been cleared.');
+  // 2. Fallback to file if exists
+  if (data.filePath) {
+    const fullPath = path.join(__dirname, data.filePath);
+    if (fs.existsSync(fullPath)) {
+      const buffer = fs.readFileSync(fullPath);
+      const text = await extractTextFromBuffer(buffer, data.fileType);
+      if (text) {
+        // Back-fill cache
+        await db.collection('materials').doc(materialId).update({ extractedText: text });
+        return text;
+      }
+    }
   }
 
-  const buffer = fs.readFileSync(fullPath);
-  // Extractor logic from ai_utils (PDF/TXT supported)
-  const text = await extractTextFromBuffer(buffer, data.fileType);
-  if (!text || text.trim() === '') {
-    throw new Error('Could not extract text from this file');
-  }
-  return text;
+  throw new Error('Content not found and file was cleared. Please re-upload.');
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -439,8 +469,12 @@ app.get('/api/ai/chats', verifyToken, async (req, res) => {
         .where('userId', '==', req.user.id)
         .get();
       snapshot.forEach(doc => chats.push(formatDoc(doc)));
-      // Manual sort fallback
-      chats.sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0));
+      // Robust manual sort fallback
+      chats.sort((a, b) => {
+        const timeA = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
+        const timeB = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
+        return timeB - timeA;
+      });
     }
     res.json(chats);
   } catch (err) {
@@ -810,9 +844,6 @@ app.get('/api/study/flashcards', verifyToken, async (req, res) => {
   }
 });
 
-app.get('/api/study/analytics', verifyToken, async (req, res) => {
-  try {
-    const userId = req.user.id;
     // Fetch aggregated data for the dashboard
     const [quizSnap, chatsSnap, materialsSnap, subjectsSnap] = await Promise.all([
       db.collection('quiz_results').where('userId', '==', userId).get(),

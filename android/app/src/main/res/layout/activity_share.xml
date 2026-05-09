@@ -1,128 +1,129 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#000000"
-    android:orientation="vertical"
-    android:padding="24dp">
+    android:background="#0F0F10">
 
-    <!-- Header -->
-    <RelativeLayout
+    <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="32dp">
-        
-        <ImageButton
-            android:id="@+id/btnBack"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:src="@android:drawable/ic_menu_revert"
-            app:tint="#FFFFFF" />
+        android:background="@android:color/transparent">
+        <androidx.appcompat.widget.Toolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            app:navigationIcon="@android:drawable/ic_menu_revert"
+            app:title="Share Material"
+            app:titleTextColor="#FFFFFF" />
+    </com.google.android.material.appbar.AppBarLayout>
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_centerInParent="true"
-            android:text="NoteSphere Share"
-            android:textColor="#FFFFFF"
-            android:textSize="20sp"
-            android:textStyle="bold" />
-    </RelativeLayout>
-
-    <!-- QR Code Section (P2P) -->
-    <com.google.android.material.card.MaterialCardView
+    <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="24dp"
-        app:cardBackgroundColor="#0D0D0D"
-        app:cardCornerRadius="24dp"
-        app:cardElevation="0dp"
-        app:strokeColor="#1A6C63FF"
-        app:strokeWidth="1dp">
+        android:layout_height="match_parent"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:gravity="center"
+            android:gravity="center_horizontal"
             android:orientation="vertical"
-            android:padding="32dp">
+            android:padding="24dp">
 
             <TextView
+                android:id="@+id/tvTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="P2P TRANSFER"
-                android:textColor="#22D3EE"
-                android:textSize="12sp"
-                android:textStyle="bold"
-                android:textAllCaps="true"
-                android:layout_marginBottom="16dp"/>
-
-            <ImageView
-                android:id="@+id/ivQrCode"
-                android:layout_width="200dp"
-                android:layout_height="200dp"
-                android:background="#FFFFFF"
-                android:padding="12dp"
-                android:src="@drawable/ic_launcher_temp" />
-
-            <TextView
-                android:id="@+id/tvShareCode"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="24dp"
-                android:text="CODE: 882 192"
+                android:fontFamily="sans-serif-medium"
+                android:text="Material Title"
                 android:textColor="#FFFFFF"
-                android:textSize="24sp"
-                android:textStyle="bold"
-                android:letterSpacing="0.2" />
+                android:textSize="22sp" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:text="Scan QR or enter code on receiving device"
-                android:textColor="#64748B"
-                android:textSize="12sp" />
+                android:text="Scan to receive instantly"
+                android:textColor="#94A3B8" />
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="250dp"
+                android:layout_height="250dp"
+                android:layout_marginTop="32dp"
+                app:cardBackgroundColor="#FFFFFF"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="8dp">
+
+                <ImageView
+                    android:id="@+id/ivQRCode"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:padding="20dp"
+                    android:src="@android:drawable/ic_dialog_info"
+                    app:tint="#0F0F10" />
+            </com.google.android.material.card.MaterialCardView>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="40dp"
+                android:fontFamily="sans-serif-medium"
+                android:text="Choose sharing method"
+                android:textColor="#FFFFFF"
+                android:textSize="18sp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnShareApps"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="match_parent"
+                android:layout_height="60dp"
+                android:layout_marginTop="20dp"
+                android:text="Share via Other Apps"
+                app:cornerRadius="16dp"
+                app:icon="@android:drawable/ic_menu_share" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnP2P"
+                android:layout_width="match_parent"
+                android:layout_height="60dp"
+                android:layout_marginTop="12dp"
+                android:text="Direct P2P Transfer"
+                app:backgroundTint="#8B5CF6"
+                app:cornerRadius="16dp"
+                app:icon="@android:drawable/ic_menu_directions" />
+
+            <LinearLayout
+                android:id="@+id/layoutP2PStatus"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="32dp"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/tvP2PStatus"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Searching..."
+                    android:textColor="#22D3EE" />
+
+                <ProgressBar
+                    android:id="@+id/progressBarP2P"
+                    style="?android:attr/progressBarStyleHorizontal"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:progressTint="#22D3EE" />
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="60dp"
+                android:text="Developed by Vansh Goel"
+                android:textColor="#334155"
+                android:textSize="10sp" />
+
         </LinearLayout>
-    </com.google.android.material.card.MaterialCardView>
-
-    <!-- Social Share Section -->
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="12dp"
-        android:text="OR SHARE VIA APPS"
-        android:textColor="#64748B"
-        android:textSize="10sp"
-        android:textStyle="bold" />
-
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btnSocialShare"
-        android:layout_width="match_parent"
-        android:layout_height="64dp"
-        android:text="Send to WhatsApp / Others"
-        android:textAllCaps="false"
-        android:textSize="16sp"
-        android:backgroundTint="#1A1A1C"
-        app:cornerRadius="16dp"
-        app:icon="@android:drawable/ic_menu_share"
-        app:iconPadding="12dp"
-        app:strokeColor="#33FFFFFF"
-        app:strokeWidth="1dp" />
-
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1" />
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:text="Developed by Vansh Goel"
-        android:textColor="#334155"
-        android:textSize="10sp" />
-
-</LinearLayout>
+    </ScrollView>
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

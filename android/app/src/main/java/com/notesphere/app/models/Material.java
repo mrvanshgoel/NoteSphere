@@ -26,4 +26,5 @@ public class Material {
     public String getCreatedAt() { return createdAt; }
     public String getLocalPath() { return localPath; }
     public void setLocalPath(String localPath) { this.localPath = localPath; }
+    public void setTitle(String title) { this.title = title; }
 }

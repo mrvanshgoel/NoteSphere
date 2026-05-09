@@ -63,9 +63,25 @@ public interface ApiService {
     @DELETE("api/subjects/{id}")
     Call<Void> deleteSubject(@Path("id") String id);
 
-    // ─── Materials ───────────────────────────────────────────────────────
-    @GET("api/materials/{subjectId}")
-    Call<List<Material>> getMaterials(@Path("subjectId") String subjectId);
+    // ─── Folders ────────────────────────────────────────────────────────
+    @GET("api/folders/{subjectId}")
+    Call<List<com.notesphere.app.models.Folder>> getFolders(@Path("subjectId") String subjectId);
+
+    @POST("api/folders")
+    Call<com.notesphere.app.models.Folder> createFolder(@Body com.notesphere.app.models.Folder folder);
+
+    @DELETE("api/folders/{id}")
+    Call<Void> deleteFolder(@Path("id") String id);
+
+    // ─── Materials (Extended) ──────────────────────────────────────────
+    @Multipart
+    @POST("api/materials/upload")
+    Call<Material> uploadMaterialWithFolder(
+            @Part("subjectId") RequestBody subjectId,
+            @Part("folderId") RequestBody folderId,
+            @Part("name") RequestBody name,
+            @Part MultipartBody.Part file
+    );
 
     @Multipart
     @POST("api/materials/upload")
@@ -75,8 +91,21 @@ public interface ApiService {
             @Part MultipartBody.Part file
     );
 
+    @GET("api/materials/{subjectId}")
+    Call<List<Material>> getMaterials(
+            @Path("subjectId") String subjectId,
+            @retrofit2.http.Query("folderId") String folderId
+    );
+
+    @PUT("api/materials/{id}")
+    Call<Void> updateMaterial(@Path("id") String id, @Body Material material);
+
     @DELETE("api/materials/{id}")
     Call<Void> deleteMaterial(@Path("id") String id);
+
+    // ─── Subjects (Extended) ───────────────────────────────────────────
+    @PUT("api/subjects/{id}")
+    Call<Void> updateSubject(@Path("id") String id, @Body Subject subject);
 
     // ─── AI: Chat ────────────────────────────────────────────────────────
     @POST("api/ai/chat")
@@ -88,8 +117,8 @@ public interface ApiService {
     @POST("api/ai/chats")
     Call<ChatSession> createChatSession(@Body ChatSession body);
 
-    @GET("api/ai/chats/{chatId}")
-    Call<ChatSession> getChatSession(@Path("chatId") String chatId);
+    @PUT("api/ai/chats/{id}")
+    Call<Void> updateChatSession(@Path("id") String id, @Body ChatSession body);
 
     @DELETE("api/ai/chats/{chatId}")
     Call<Void> deleteChatSession(@Path("chatId") String chatId);

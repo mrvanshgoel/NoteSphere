@@ -34,6 +34,9 @@ public class SubjectDetailActivity extends AppCompatActivity {
     private ActivitySubjectDetailBinding binding;
     private String subjectId;
     private String subjectName;
+    private com.notesphere.app.adapters.FolderAdapter folderAdapter;
+    private List<com.notesphere.app.models.Folder> folders = new ArrayList<>();
+    private String currentFolderId = null;
     private MaterialAdapter adapter;
     private List<Material> materials = new ArrayList<>();
     private Call<?> activeCall;
@@ -55,7 +58,16 @@ public class SubjectDetailActivity extends AppCompatActivity {
         }
 
         binding.tvSubjectName.setText(subjectName);
-        binding.toolbar.setNavigationOnClickListener(v -> finish());
+        binding.toolbar.setNavigationOnClickListener(v -> {
+            if (currentFolderId != null) {
+                currentFolderId = null;
+                binding.tvSubjectName.setText(subjectName);
+                fetchFolders();
+                fetchMaterials();
+            } else {
+                finish();
+            }
+        });
 
         if (subjectColor != null) {
             try {
@@ -63,13 +75,16 @@ public class SubjectDetailActivity extends AppCompatActivity {
                 binding.tvProgressPercent.setTextColor(color);
                 binding.pbSyllabus.setProgressTintList(android.content.res.ColorStateList.valueOf(color));
                 binding.fabUpload.setBackgroundTintList(android.content.res.ColorStateList.valueOf(color));
+                binding.btnNewFolder.setColorFilter(color);
             } catch (Exception e) {}
         }
 
         setupRecyclerView();
+        fetchFolders();
         fetchMaterials();
 
         binding.fabUpload.setOnClickListener(v -> pickFile());
+        binding.btnNewFolder.setOnClickListener(v -> showCreateFolderDialog());
         
         // Quick AI Actions
         binding.chipQuiz.setOnClickListener(v -> {
@@ -78,7 +93,7 @@ public class SubjectDetailActivity extends AppCompatActivity {
                 return;
             }
             Intent intent = new Intent(this, QuizActivity.class);
-            intent.putExtra("material_id", materials.get(0).getId()); // Use first material as default
+            intent.putExtra("material_id", materials.get(0).getId());
             startActivity(intent);
         });
 
@@ -106,21 +121,66 @@ public class SubjectDetailActivity extends AppCompatActivity {
     }
 
     private void setupRecyclerView() {
-        adapter = new MaterialAdapter(materials, material -> {
-            Intent intent = new Intent(this, MaterialDetailActivity.class);
-            intent.putExtra("material_id", material.getId());
-            intent.putExtra("material_title", material.getTitle());
-            intent.putExtra("material_type", material.getFileType());
-            intent.putExtra("material_date", material.getCreatedAt());
-            startActivity(intent);
+        adapter = new MaterialAdapter(materials, new MaterialAdapter.OnMaterialClickListener() {
+            @Override
+            public void onMaterialClick(Material material) {
+                Intent intent = new Intent(SubjectDetailActivity.this, MaterialDetailActivity.class);
+                intent.putExtra("material_id", material.getId());
+                intent.putExtra("material_title", material.getTitle());
+                intent.putExtra("material_type", material.getFileType());
+                intent.putExtra("material_date", material.getCreatedAt());
+                startActivity(intent);
+            }
+
+            @Override
+            public void onMaterialLongClick(Material material) {
+                showMaterialOptions(material);
+            }
         });
         binding.rvMaterials.setLayoutManager(new LinearLayoutManager(this));
         binding.rvMaterials.setAdapter(adapter);
+
+        folderAdapter = new com.notesphere.app.adapters.FolderAdapter(folders, new com.notesphere.app.adapters.FolderAdapter.OnFolderClickListener() {
+            @Override
+            public void onFolderClick(com.notesphere.app.models.Folder folder) {
+                currentFolderId = folder.getId();
+                binding.tvSubjectName.setText(folder.getName());
+                fetchFolders(); // Should be empty inside a folder for now
+                fetchMaterials();
+            }
+
+            @Override
+            public void onFolderLongClick(com.notesphere.app.models.Folder folder) {
+                showFolderOptions(folder);
+            }
+        });
+        binding.rvFolders.setLayoutManager(new LinearLayoutManager(this));
+        binding.rvFolders.setAdapter(folderAdapter);
+    }
+
+    private void fetchFolders() {
+        if (currentFolderId != null) {
+            folders.clear();
+            folderAdapter.notifyDataSetChanged();
+            return;
+        }
+        ApiClient.getInstance().getFolders(subjectId).enqueue(new Callback<List<com.notesphere.app.models.Folder>>() {
+            @Override
+            public void onResponse(Call<List<com.notesphere.app.models.Folder>> call, Response<List<com.notesphere.app.models.Folder>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    folders.clear();
+                    folders.addAll(response.body());
+                    folderAdapter.notifyDataSetChanged();
+                }
+            }
+            @Override
+            public void onFailure(Call<List<com.notesphere.app.models.Folder>> call, Throwable t) {}
+        });
     }
 
     private void fetchMaterials() {
         if (activeCall != null) activeCall.cancel();
-        Call<List<Material>> call = ApiClient.getInstance().getMaterials(subjectId);
+        Call<List<Material>> call = ApiClient.getInstance().getMaterials(subjectId, currentFolderId);
         activeCall = call;
 
         call.enqueue(new Callback<List<Material>>() {
@@ -138,17 +198,137 @@ public class SubjectDetailActivity extends AppCompatActivity {
             @Override
             public void onFailure(Call<List<Material>> call, Throwable t) {
                 if (call.isCanceled()) return;
-                android.util.Log.e("API_ERROR", "Fetch Materials Failed", t);
-                Toast.makeText(SubjectDetailActivity.this, "Failed to load materials: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                Toast.makeText(SubjectDetailActivity.this, "Failed to load materials", Toast.LENGTH_SHORT).show();
             }
         });
     }
 
+    private void showCreateFolderDialog() {
+        android.widget.EditText et = new android.widget.EditText(this);
+        et.setHint("Folder Name");
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("New Folder")
+                .setView(et)
+                .setPositiveButton("Create", (dialog, which) -> {
+                    String name = et.getText().toString().trim();
+                    if (!name.isEmpty()) createFolder(name);
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    private void createFolder(String name) {
+        com.notesphere.app.models.Folder folder = new com.notesphere.app.models.Folder();
+        folder.setName(name);
+        // Backend expects subjectId in body if we use the POST /api/folders
+        // Wait, I need to make sure Folder model has subjectId. It does.
+        // I need to set it.
+        try {
+            java.lang.reflect.Field field = com.notesphere.app.models.Folder.class.getDeclaredField("subjectId");
+            field.setAccessible(true);
+            field.set(folder, subjectId);
+        } catch (Exception e) {}
+
+        ApiClient.getInstance().createFolder(folder).enqueue(new Callback<com.notesphere.app.models.Folder>() {
+            @Override
+            public void onResponse(Call<com.notesphere.app.models.Folder> call, Response<com.notesphere.app.models.Folder> response) {
+                if (response.isSuccessful()) {
+                    fetchFolders();
+                }
+            }
+            @Override
+            public void onFailure(Call<com.notesphere.app.models.Folder> call, Throwable t) {}
+        });
+    }
+
+    private void showMaterialOptions(Material material) {
+        String[] options = {"Share / P2P", "Rename", "Delete"};
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle(material.getTitle())
+                .setItems(options, (dialog, which) -> {
+                    if (which == 0) {
+                        Intent intent = new Intent(this, ShareActivity.class);
+                        intent.putExtra("material_id", material.getId());
+                        intent.putExtra("material_title", material.getTitle());
+                        startActivity(intent);
+                    } else if (which == 1) renameMaterial(material);
+                    else deleteMaterial(material);
+                })
+                .show();
+    }
+
+    private void renameMaterial(Material material) {
+        android.widget.EditText et = new android.widget.EditText(this);
+        et.setText(material.getTitle());
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("Rename Material")
+                .setView(et)
+                .setPositiveButton("Save", (dialog, which) -> {
+                    String newTitle = et.getText().toString().trim();
+                    if (!newTitle.isEmpty()) {
+                        material.setTitle(newTitle);
+                        ApiClient.getInstance().updateMaterial(material.getId(), material).enqueue(new Callback<Void>() {
+                            @Override
+                            public void onResponse(Call<Void> call, Response<Void> response) {
+                                fetchMaterials();
+                            }
+                            @Override
+                            public void onFailure(Call<Void> call, Throwable t) {}
+                        });
+                    }
+                })
+                .show();
+    }
+
+    private void deleteMaterial(Material material) {
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("Delete Material")
+                .setMessage("Are you sure you want to delete this material from Firebase?")
+                .setPositiveButton("Delete", (dialog, which) -> {
+                    ApiClient.getInstance().deleteMaterial(material.getId()).enqueue(new Callback<Void>() {
+                        @Override
+                        public void onResponse(Call<Void> call, Response<Void> response) {
+                            fetchMaterials();
+                        }
+                        @Override
+                        public void onFailure(Call<Void> call, Throwable t) {}
+                    });
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    private void showFolderOptions(com.notesphere.app.models.Folder folder) {
+        String[] options = {"Delete"};
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle(folder.getName())
+                .setItems(options, (dialog, which) -> {
+                    if (which == 0) deleteFolder(folder);
+                })
+                .show();
+    }
+
+    private void deleteFolder(com.notesphere.app.models.Folder folder) {
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("Delete Folder")
+                .setMessage("Delete folder and move its materials to root?")
+                .setPositiveButton("Delete", (dialog, which) -> {
+                    ApiClient.getInstance().deleteFolder(folder.getId()).enqueue(new Callback<Void>() {
+                        @Override
+                        public void onResponse(Call<Void> call, Response<Void> response) {
+                            fetchFolders();
+                            fetchMaterials();
+                        }
+                        @Override
+                        public void onFailure(Call<Void> call, Throwable t) {}
+                    });
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
     private void updateUIState() {
-        binding.tvSubjectInfo.setText("Subject Workspace • " + materials.size() + " Materials");
-        if (materials.isEmpty()) {
-            // Show empty state if needed
-        }
+        binding.tvSubjectInfo.setText("Subject Workspace • " + materials.size() + " Items");
     }
 
     private void pickFile() {
@@ -173,7 +353,6 @@ public class SubjectDetailActivity extends AppCompatActivity {
 
     private void uploadFile(Uri uri) {
         String fileName = "upload_" + System.currentTimeMillis();
-        // Extract real name if possible
         try (android.database.Cursor cursor = getContentResolver().query(uri, null, null, null, null)) {
             if (cursor != null && cursor.moveToFirst()) {
                 int nameIndex = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME);
@@ -181,7 +360,7 @@ public class SubjectDetailActivity extends AppCompatActivity {
             }
         } catch (Exception e) {}
 
-        Toast.makeText(this, "Uploading " + fileName + "...", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, "Uploading...", Toast.LENGTH_SHORT).show();
 
         try {
             File file = prepareFile(uri, fileName);
@@ -192,27 +371,24 @@ public class SubjectDetailActivity extends AppCompatActivity {
             MultipartBody.Part filePart = MultipartBody.Part.createFormData("file", fileName, requestFile);
             RequestBody subjectIdPart = RequestBody.create(MediaType.parse("text/plain"), subjectId);
             RequestBody namePart = RequestBody.create(MediaType.parse("text/plain"), fileName);
+            
+            // Handle folderId if currently inside a folder
+            RequestBody folderIdPart = currentFolderId != null ? 
+                    RequestBody.create(MediaType.parse("text/plain"), currentFolderId) : null;
 
-            ApiClient.getInstance().uploadMaterial(subjectIdPart, namePart, filePart).enqueue(new Callback<Material>() {
+            // Update: ApiService uploadMaterial needs folderId too if we want to support it
+            // I'll update ApiService again to include folderId in Multipart
+            ApiClient.getInstance().uploadMaterialWithFolder(subjectIdPart, folderIdPart, namePart, filePart).enqueue(new Callback<Material>() {
                 @Override
                 public void onResponse(Call<Material> call, Response<Material> response) {
-                    if (isFinishing() || isDestroyed()) return;
                     if (response.isSuccessful()) {
                         Toast.makeText(SubjectDetailActivity.this, "Upload successful!", Toast.LENGTH_SHORT).show();
-                        fetchMaterials(); // Refresh list
+                        fetchMaterials();
                         if (file.exists()) file.delete();
-                    } else {
-                        Toast.makeText(SubjectDetailActivity.this, "Upload failed", Toast.LENGTH_SHORT).show();
                     }
                 }
-
                 @Override
-                public void onFailure(Call<Material> call, Throwable t) {
-                    if (isFinishing() || isDestroyed()) return;
-                    String msg = t.getMessage() != null ? t.getMessage() : "Unknown network error";
-                    Toast.makeText(SubjectDetailActivity.this, "Upload failed: " + msg, Toast.LENGTH_LONG).show();
-                    android.util.Log.e("UPLOAD", "Error: " + msg, t);
-                }
+                public void onFailure(Call<Material> call, Throwable t) {}
             });
         } catch (Exception e) {
             Toast.makeText(this, "Error preparing file", Toast.LENGTH_SHORT).show();

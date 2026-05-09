@@ -14,6 +14,7 @@ public class MaterialAdapter extends RecyclerView.Adapter<MaterialAdapter.ViewHo
 
     public interface OnMaterialClickListener {
         void onMaterialClick(Material material);
+        void onMaterialLongClick(Material material);
     }
 
     public MaterialAdapter(List<Material> materials, OnMaterialClickListener listener) {
@@ -32,7 +33,7 @@ public class MaterialAdapter extends RecyclerView.Adapter<MaterialAdapter.ViewHo
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Material material = materials.get(position);
         holder.binding.tvTitle.setText(material.getTitle());
-        holder.binding.tvDate.setText("Uploaded on " + material.getCreatedAt());
+        holder.binding.tvDate.setText("Uploaded: " + material.getCreatedAt());
         
         String type = material.getFileType();
         if (type != null) {
@@ -42,6 +43,10 @@ public class MaterialAdapter extends RecyclerView.Adapter<MaterialAdapter.ViewHo
         }
 
         holder.itemView.setOnClickListener(v -> listener.onMaterialClick(material));
+        holder.itemView.setOnLongClickListener(v -> {
+            listener.onMaterialLongClick(material);
+            return true;
+        });
     }
 
     @Override
