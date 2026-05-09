@@ -63,6 +63,9 @@ const upload = multer({ storage: multer.memoryStorage() });
 const verifyToken = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
+    console.log('=== VERIFY TOKEN ===');
+    console.log('Auth header:', authHeader ? 'Present' : 'MISSING');
+    
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return res.status(401).json({ error: 'No token provided' });
     }
@@ -285,38 +288,47 @@ app.get('/api/subjects', verifyToken, async (req, res) => {
 
 app.post('/api/subjects', verifyToken, async (req, res) => {
   try {
+    console.log('=== CREATE SUBJECT ===');
+    console.log('Body:', req.body);
+    console.log('User:', req.user);
+    console.log('User ID:', req.user?.id);
+    
     const { name, color, icon } = req.body;
-    const userId = req.user.id;
-    console.log('Creating subject:', { name, color, icon, userId });
+    const userId = req.user?.id;
+    
+    if (!userId) {
+      console.log('ERROR: No user ID found!');
+      return res.status(401).json({ error: 'No user ID' });
+    }
+    
+    if (!name) {
+      console.log('ERROR: No name provided!');
+      return res.status(400).json({ error: 'Name is required' });
+    }
+    
+    const insertData = { 
+      name: name, 
+      color: color || '#6C63FF', 
+      icon: icon || '📚',
+      user_id: userId 
+    };
+    console.log('Inserting:', insertData);
     
     const { data, error } = await supabaseAdmin
       .from('subjects')
-      .insert([{ 
-        name: name || 'New Subject', 
-        color: color || '#6C63FF', 
-        icon: icon || 'book',
-        user_id: userId 
-      }])
-      .select()
-      .single();
+      .insert([insertData])
+      .select();
     
     if (error) {
-      console.error("SUPABASE DB ERROR (Subjects):", error.message);
-      throw error;
+      console.log('INSERT ERROR:', JSON.stringify(error));
+      return res.status(400).json({ error: error.message });
     }
-
-    console.log('Subject created SUCCESS:', data);
-    const mapped = {
-        id: data.id,
-        name: data.name,
-        icon: data.icon,
-        color: data.color,
-        userId: data.user_id,
-        materialCount: 0
-    };
-    res.json(mapped);
+    
+    console.log('INSERT SUCCESS:', data);
+    res.json(data[0]);
+    
   } catch (err) {
-    console.log('Subject route CRASH:', err.message);
+    console.log('CRASH:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
