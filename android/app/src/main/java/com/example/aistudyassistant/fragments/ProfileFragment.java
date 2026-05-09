@@ -238,6 +238,11 @@ public class ProfileFragment extends Fragment {
                 }
             }
 
+            @Override
+            public void onFailure(Call<List<Subject>> call, Throwable t) {}
+        });
+    }
+
     @Override
     public void onResume() {
         super.onResume();
