@@ -14,7 +14,7 @@ const port = process.env.PORT || 5000;
 
 // Initialize Gemini
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const gemini = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
+const gemini = genAI.getGenerativeModel({ model: "gemini-pro" });
 
 // Initialize Supabase
 const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
