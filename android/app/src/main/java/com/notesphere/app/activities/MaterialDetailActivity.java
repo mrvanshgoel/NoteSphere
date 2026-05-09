@@ -31,6 +31,7 @@ public class MaterialDetailActivity extends AppCompatActivity {
     private String materialId;
     private String materialTitle;
     private Markwon markwon;
+    private Call<?> activeCall;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,23 +45,24 @@ public class MaterialDetailActivity extends AppCompatActivity {
         String date = getIntent().getStringExtra("material_date");
 
         binding.tvTitle.setText(materialTitle);
-        binding.tvInfo.setText(type + " | " + date);
+        binding.tvInfo.setText(type + " • " + date);
 
         binding.btnSummary.setOnClickListener(v -> callAiApi("summary"));
         binding.btnNotes.setOnClickListener(v -> callAiApi("notes"));
+        binding.btnConcepts.setOnClickListener(v -> callAiApi("concepts"));
         binding.btnQuestions.setOnClickListener(v -> callAiApi("questions"));
+        binding.btnDoubt.setOnClickListener(v -> callAiApi("doubt"));
 
         binding.btnP2PShare.setOnClickListener(v -> generateP2PShare());
 
         binding.btnCopy.setOnClickListener(v -> copyToClipboard());
-        binding.btnShare.setOnClickListener(v -> shareResult());
         binding.btnSavePdf.setOnClickListener(v -> saveAsPdf());
 
         markwon = Markwon.create(this);
     }
 
     private void generateP2PShare() {
-        binding.progressBar.setVisibility(View.VISIBLE);
+        binding.layoutLoading.setVisibility(View.VISIBLE);
         String token = "Bearer " + SharedPrefManager.getInstance(this).getToken();
         com.notesphere.app.models.ShareRequest request = new com.notesphere.app.models.ShareRequest(materialId);
 
@@ -68,7 +70,7 @@ public class MaterialDetailActivity extends AppCompatActivity {
             @Override
             public void onResponse(Call<com.notesphere.app.models.ShareResponse> call, Response<com.notesphere.app.models.ShareResponse> response) {
                 if (isFinishing() || isDestroyed() || binding == null) return;
-                binding.progressBar.setVisibility(View.GONE);
+                binding.layoutLoading.setVisibility(View.GONE);
                 if (response.isSuccessful() && response.body() != null) {
                     Intent intent = new Intent(MaterialDetailActivity.this, ShareActivity.class);
                     intent.putExtra("share_url", response.body().getShareUrl());
@@ -83,32 +85,37 @@ public class MaterialDetailActivity extends AppCompatActivity {
             @Override
             public void onFailure(Call<com.notesphere.app.models.ShareResponse> call, Throwable t) {
                 if (isFinishing() || isDestroyed() || binding == null) return;
-                binding.progressBar.setVisibility(View.GONE);
                 Toast.makeText(MaterialDetailActivity.this, "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
     }
 
     private void callAiApi(String action) {
-        binding.progressBar.setVisibility(View.VISIBLE);
-        binding.cardResult.setVisibility(View.GONE);
+        binding.layoutLoading.setVisibility(View.VISIBLE);
+        binding.layoutResultActions.setVisibility(View.GONE);
+        binding.tvContent.setText(""); // clear previous
 
         String token = "Bearer " + SharedPrefManager.getInstance(this).getToken();
         AiRequest request = new AiRequest(materialId);
+        
+        if (activeCall != null) activeCall.cancel();
         Call<AiResponse> call;
 
         if (action.equals("summary")) {
-            call = ApiClient.getInstance().getSummary(token, request);
+            call = ApiClient.getInstance().summarize(token, request);
             binding.tvResultTitle.setText("AI Summary");
         } else if (action.equals("notes")) {
-            call = ApiClient.getInstance().getQuiz(token, request); // Standard summary-style quiz if needed
+            call = ApiClient.getInstance().summarize(token, new AiRequest(materialId, "notes"));
             binding.tvResultTitle.setText("AI Study Notes");
+        } else if (action.equals("concepts")) {
+            call = ApiClient.getInstance().summarize(token, new AiRequest(materialId, "concepts"));
+            binding.tvResultTitle.setText("Key Concepts");
         } else if (action.equals("questions")) {
             // Launch the dedicated Quiz UI
             Intent intent = new Intent(this, QuizActivity.class);
             intent.putExtra("material_id", materialId);
             startActivity(intent);
-            binding.progressBar.setVisibility(View.GONE);
+            binding.layoutLoading.setVisibility(View.GONE);
             return;
         } else {
             // Launch the dedicated Doubt Solver UI
@@ -116,28 +123,32 @@ public class MaterialDetailActivity extends AppCompatActivity {
             intent.putExtra("material_id", materialId);
             intent.putExtra("material_title", materialTitle);
             startActivity(intent);
-            binding.progressBar.setVisibility(View.GONE);
+            binding.layoutLoading.setVisibility(View.GONE);
             return;
         }
 
+        activeCall = call;
         call.enqueue(new Callback<AiResponse>() {
             @Override
             public void onResponse(Call<AiResponse> call, Response<AiResponse> response) {
                 if (isFinishing() || isDestroyed() || binding == null) return;
-                binding.progressBar.setVisibility(View.GONE);
+                binding.layoutLoading.setVisibility(View.GONE);
                 if (response.isSuccessful() && response.body() != null) {
                     binding.cardResult.setVisibility(View.VISIBLE);
+                    binding.layoutResultActions.setVisibility(View.VISIBLE);
                     markwon.setMarkdown(binding.tvContent, response.body().getContent());
                 } else {
                     Toast.makeText(MaterialDetailActivity.this, "AI Action failed", Toast.LENGTH_SHORT).show();
+                    binding.tvContent.setText("Failed to generate response. Try again.");
                 }
             }
 
             @Override
             public void onFailure(Call<AiResponse> call, Throwable t) {
                 if (isFinishing() || isDestroyed() || binding == null) return;
-                binding.progressBar.setVisibility(View.GONE);
+                binding.layoutLoading.setVisibility(View.GONE);
                 Toast.makeText(MaterialDetailActivity.this, "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                binding.tvContent.setText("Network error occurred.");
             }
         });
     }
@@ -148,14 +159,6 @@ public class MaterialDetailActivity extends AppCompatActivity {
         ClipData clip = ClipData.newPlainText("AI Result", text);
         clipboard.setPrimaryClip(clip);
         Toast.makeText(this, "Copied to clipboard", Toast.LENGTH_SHORT).show();
-    }
-
-    private void shareResult() {
-        String text = binding.tvContent.getText().toString();
-        Intent intent = new Intent(Intent.ACTION_SEND);
-        intent.setType("text/plain");
-        intent.putExtra(Intent.EXTRA_TEXT, text);
-        startActivity(Intent.createChooser(intent, "Share AI Result"));
     }
 
     private void saveAsPdf() {
@@ -238,5 +241,15 @@ public class MaterialDetailActivity extends AppCompatActivity {
             Toast.makeText(this, "Error saving PDF: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
         document.close();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (activeCall != null) {
+            activeCall.cancel();
+            activeCall = null;
+        }
+        binding = null;
     }
 }

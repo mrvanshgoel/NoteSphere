@@ -24,6 +24,7 @@ public class DoubtSolverActivity extends AppCompatActivity {
     private List<ChatMessage> messages = new ArrayList<>();
     private String materialId;
     private String materialTitle;
+    private Call<?> activeCall;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -63,7 +64,11 @@ public class DoubtSolverActivity extends AppCompatActivity {
 
         binding.loadingAnimation.setVisibility(View.VISIBLE);
 
-        ApiClient.getInstance().solveDoubt(token, request).enqueue(new Callback<AiResponse>() {
+        if (activeCall != null) activeCall.cancel();
+        Call<AiResponse> call = ApiClient.getInstance().solveDoubt(token, request);
+        activeCall = call;
+
+        call.enqueue(new Callback<AiResponse>() {
             @Override
             public void onResponse(Call<AiResponse> call, Response<AiResponse> response) {
                 if (isFinishing() || isDestroyed()) return;
@@ -86,5 +91,15 @@ public class DoubtSolverActivity extends AppCompatActivity {
                 Toast.makeText(DoubtSolverActivity.this, "Connection Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (activeCall != null) {
+            activeCall.cancel();
+            activeCall = null;
+        }
+        binding = null;
     }
 }

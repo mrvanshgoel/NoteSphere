@@ -5,6 +5,7 @@ import com.notesphere.app.models.AiResponse;
 import com.notesphere.app.models.ChatRequest;
 import com.notesphere.app.models.LoginRequest;
 import com.notesphere.app.models.Material;
+import com.notesphere.app.models.QuizResponse;
 import com.notesphere.app.models.RegisterRequest;
 import com.notesphere.app.models.Subject;
 import com.notesphere.app.models.User;
@@ -27,10 +28,11 @@ import retrofit2.http.POST;
 import retrofit2.http.PUT;
 import retrofit2.http.Part;
 import retrofit2.http.Path;
+import retrofit2.http.Query;
 
 public interface ApiService {
 
-    // Auth
+    // ─── Auth ────────────────────────────────────────────────────────────
     @POST("api/auth/login")
     Call<User> login(@Body LoginRequest body);
 
@@ -53,7 +55,7 @@ public interface ApiService {
     @DELETE("api/auth/avatar")
     Call<Void> deleteAvatar(@Header("Authorization") String token);
 
-    // Subjects
+    // ─── Subjects ────────────────────────────────────────────────────────
     @GET("api/subjects")
     Call<List<Subject>> getSubjects(@Header("Authorization") String token);
 
@@ -63,7 +65,7 @@ public interface ApiService {
     @DELETE("api/subjects/{id}")
     Call<Void> deleteSubject(@Header("Authorization") String token, @Path("id") String id);
 
-    // Materials
+    // ─── Materials ───────────────────────────────────────────────────────
     @GET("api/materials/{subjectId}")
     Call<List<Material>> getMaterials(@Header("Authorization") String token, @Path("subjectId") String subjectId);
 
@@ -79,29 +81,37 @@ public interface ApiService {
     @DELETE("api/materials/{id}")
     Call<Void> deleteMaterial(@Header("Authorization") String token, @Path("id") String id);
 
-    // AI Features
-    @POST("api/ai/summarize")
-    Call<AiResponse> getSummary(@Header("Authorization") String token, @Body AiRequest body);
-
-    @POST("api/ai/quiz")
-    Call<AiResponse> getQuiz(@Header("Authorization") String token, @Body AiRequest body);
-
-    @POST("api/ai/doubt")
-    Call<AiResponse> solveDoubt(@Header("Authorization") String token, @Body DoubtRequest body);
-
+    // ─── AI: Chat ────────────────────────────────────────────────────────
     @POST("api/ai/chat")
     Call<AiResponse> chat(@Header("Authorization") String token, @Body ChatRequest body);
 
-    // Syllabus
-    @POST("api/syllabus/parse")
-    Call<AiResponse> parseSyllabus(@Header("Authorization") String token, @Body AiRequest body);
+    // ─── AI: Summarize (multi-mode: summary/notes/concepts/viva) ─────────
+    @POST("api/ai/summarize")
+    Call<AiResponse> summarize(@Header("Authorization") String token, @Body AiRequest body);
 
+    // ─── AI: Quiz Generation ─────────────────────────────────────────────
+    @POST("api/ai/quiz")
+    Call<QuizResponse> generateQuiz(@Header("Authorization") String token, @Body AiRequest body);
+
+    // ─── AI: Doubt Solver ────────────────────────────────────────────────
+    @POST("api/ai/doubt")
+    Call<AiResponse> solveDoubt(@Header("Authorization") String token, @Body DoubtRequest body);
+
+    // ─── AI: Syllabus Extraction ─────────────────────────────────────────
+    @POST("api/ai/syllabus")
+    Call<Syllabus> extractSyllabus(@Header("Authorization") String token, @Body AiRequest body);
+
+    // ─── Syllabus Tracker ────────────────────────────────────────────────
     @GET("api/syllabus/{userId}")
     Call<List<Syllabus>> getSyllabuses(@Header("Authorization") String token, @Path("userId") String userId);
+
+    @POST("api/syllabus")
+    Call<Syllabus> createSyllabus(@Header("Authorization") String token, @Body Syllabus syllabus);
 
     @PUT("api/syllabus/{syllabusId}")
     Call<Syllabus> updateSyllabus(@Header("Authorization") String token, @Path("syllabusId") String syllabusId, @Body Syllabus syllabus);
 
+    // ─── Share ───────────────────────────────────────────────────────────
     @POST("api/share/generate")
     Call<ShareResponse> generateShareLink(@Header("Authorization") String token, @Body ShareRequest body);
 }

@@ -4,30 +4,30 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:gravity="end"
-    android:orientation="horizontal"
-    android:padding="12dp">
+    android:orientation="vertical"
+    android:padding="8dp">
 
     <com.google.android.material.card.MaterialCardView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="60dp"
-        app:cardCornerRadius="20dp"
+        android:layout_marginStart="48dp"
+        app:cardCornerRadius="16dp"
         app:cardElevation="0dp"
-        app:cardBackgroundColor="@color/ns_surface_variant">
+        app:strokeWidth="0dp"
+        app:cardBackgroundColor="#6C63FF">
 
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:paddingHorizontal="16dp"
-            android:paddingVertical="12dp">
+            android:padding="12dp">
 
             <TextView
                 android:id="@+id/tvMessage"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:lineSpacingExtra="4dp"
-                android:textColor="@color/ns_text_primary"
+                android:textColor="#FFFFFF"
                 android:textSize="15sp" />
 
             <TextView
@@ -35,10 +35,10 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="end"
-                android:layout_marginTop="6dp"
-                android:text="10:00"
-                android:textColor="@color/ns_text_dim"
-                android:textSize="11sp" />
+                android:layout_marginTop="4dp"
+                android:text="10:00 AM"
+                android:textColor="#E0E0E0"
+                android:textSize="10sp" />
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 </LinearLayout>

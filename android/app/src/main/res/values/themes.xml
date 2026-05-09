@@ -1,46 +1,141 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <style name="Theme.NoteSphere" parent="Theme.MaterialComponents.DayNight.NoActionBar">
-        <!-- Primary brand colors -->
+<resources xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- ═══════════════════════════════════════════════════════════
+         NOTESPHERE THEME — Primary (NoActionBar)
+         ═══════════════════════════════════════════════════════════ -->
+    <style name="Theme.Notesphere" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+
+        <!-- Brand Colors -->
         <item name="colorPrimary">@color/ns_cyan</item>
-        <item name="colorPrimaryVariant">@color/ns_deep_blue</item>
-        <item name="colorOnPrimary">@color/ns_bg_dark</item>
-        
-        <!-- Secondary brand colors -->
+        <item name="colorPrimaryVariant">@color/ns_purple</item>
+        <item name="colorOnPrimary">@color/ns_deep_blue</item>
+
         <item name="colorSecondary">@color/ns_purple</item>
-        <item name="colorSecondaryVariant">@color/ns_electric_blue</item>
+        <item name="colorSecondaryVariant">@color/ns_teal</item>
         <item name="colorOnSecondary">@color/white</item>
-        
-        <!-- Background and surface -->
-        <item name="android:windowBackground">@color/ns_bg_dark</item>
-        <item name="colorSurface">@color/ns_surface</item>
-        <item name="colorOnSurface">@color/ns_text_primary</item>
-        <item name="colorError">@color/ns_error</item>
-        
-        <!-- Status bar and navigation bar -->
-        <item name="android:statusBarColor">@color/ns_bg_dark</item>
-        <item name="android:windowLightStatusBar">false</item>
-        <item name="android:navigationBarColor">@color/ns_bg_dark</item>
 
-        <!-- Custom attributes for styling -->
-        <item name="cardCornerRadius">24dp</item>
+        <!-- Background / Surface -->
+        <item name="android:windowBackground">@color/background</item>
+        <item name="colorSurface">@color/surface</item>
+        <item name="colorError">#FF5252</item>
+
+        <!-- Text -->
+        <item name="android:textColorPrimary">@color/text_primary</item>
+        <item name="android:textColorSecondary">@color/text_secondary</item>
+
+        <!-- System bars -->
+        <item name="android:statusBarColor">@color/background</item>
+        <item name="android:navigationBarColor">@color/background</item>
+
+        <!-- Window animation -->
+        <item name="android:windowActivityTransitions">true</item>
+        <item name="android:windowAnimationStyle">@style/Notesphere.WindowAnimation</item>
     </style>
 
-    <!-- Premium Card Style (Notion/Arc aesthetic) -->
-    <style name="NsCard" parent="Widget.MaterialComponents.CardView">
-        <item name="cardBackgroundColor">@color/ns_surface</item>
-        <item name="cardCornerRadius">24dp</item>
+    <style name="Theme.Notesphere.NoActionBar">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+    </style>
+
+    <!-- Legacy alias so any remaining references don't break -->
+    <style name="Theme.AIStudyAssistant" parent="Theme.Notesphere" />
+    <style name="Theme.AIStudyAssistant.NoActionBar" parent="Theme.Notesphere.NoActionBar" />
+
+    <!-- ═══════════════════════════════════════════════════════════
+         WINDOW ANIMATIONS
+         ═══════════════════════════════════════════════════════════ -->
+    <style name="Notesphere.WindowAnimation" parent="@android:style/Animation.Activity">
+        <item name="android:activityOpenEnterAnimation">@anim/fragment_slide_in</item>
+        <item name="android:activityOpenExitAnimation">@anim/fragment_slide_out</item>
+        <item name="android:activityCloseEnterAnimation">@anim/fragment_slide_in</item>
+        <item name="android:activityCloseExitAnimation">@anim/fragment_slide_out</item>
+    </style>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         CARD STYLES
+         ═══════════════════════════════════════════════════════════ -->
+    <style name="CustomCardStyle" parent="Widget.MaterialComponents.CardView">
+        <item name="cardBackgroundColor">@color/surface</item>
+        <item name="cardCornerRadius">16dp</item>
         <item name="cardElevation">0dp</item>
-        <item name="android:layout_marginBottom">16dp</item>
+        <item name="strokeColor">@color/ns_surface</item>
+        <item name="strokeWidth">1dp</item>
     </style>
 
-    <!-- Glassmorphism Surface Style -->
-    <style name="NsGlass" parent="">
-        <item name="android:background">@drawable/bg_glass_surface</item>
+    <style name="Notesphere.Card.AI" parent="Widget.MaterialComponents.CardView">
+        <item name="cardBackgroundColor">@color/ns_surface</item>
+        <item name="cardCornerRadius">20dp</item>
+        <item name="cardElevation">0dp</item>
     </style>
 
-    <style name="Theme.NoteSphere.Splash" parent="Theme.NoteSphere">
-        <item name="android:windowFullscreen">true</item>
-        <item name="android:windowContentOverlay">@null</item>
+    <!-- ═══════════════════════════════════════════════════════════
+         BUTTON STYLES
+         ═══════════════════════════════════════════════════════════ -->
+    <style name="CustomButtonStyle" parent="Widget.MaterialComponents.Button">
+        <item name="cornerRadius">16dp</item>
+        <item name="backgroundTint">@color/primary</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:padding">12dp</item>
     </style>
+
+    <style name="Notesphere.Button.Primary" parent="Widget.MaterialComponents.Button">
+        <item name="cornerRadius">14dp</item>
+        <item name="backgroundTint">@color/ns_cyan</item>
+        <item name="android:textColor">@color/ns_deep_blue</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:textSize">15sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:paddingStart">24dp</item>
+        <item name="android:paddingEnd">24dp</item>
+        <item name="android:paddingTop">14dp</item>
+        <item name="android:paddingBottom">14dp</item>
+    </style>
+
+    <style name="Notesphere.Button.Ghost" parent="Widget.MaterialComponents.Button.OutlinedButton">
+        <item name="cornerRadius">14dp</item>
+        <item name="strokeColor">@color/ns_cyan</item>
+        <item name="android:textColor">@color/ns_cyan</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:textSize">14sp</item>
+    </style>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         TEXT STYLES
+         ═══════════════════════════════════════════════════════════ -->
+    <style name="Notesphere.Text.Hero" parent="TextAppearance.MaterialComponents.Headline5">
+        <item name="android:textSize">28sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/ns_text_primary</item>
+    </style>
+
+    <style name="Notesphere.Text.Section" parent="TextAppearance.MaterialComponents.Subtitle1">
+        <item name="android:textSize">18sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/ns_text_primary</item>
+    </style>
+
+    <style name="Notesphere.Text.Body" parent="TextAppearance.MaterialComponents.Body1">
+        <item name="android:textSize">14sp</item>
+        <item name="android:textColor">@color/ns_text_secondary</item>
+        <item name="android:lineSpacingMultiplier">1.5</item>
+    </style>
+
+    <style name="Notesphere.Text.Caption" parent="TextAppearance.MaterialComponents.Caption">
+        <item name="android:textSize">12sp</item>
+        <item name="android:textColor">@color/ns_text_dim</item>
+    </style>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         BOTTOM NAVIGATION
+         ═══════════════════════════════════════════════════════════ -->
+
+    <!-- ═══════════════════════════════════════════════════════════
+         TOOLBAR
+         ═══════════════════════════════════════════════════════════ -->
+    <style name="Notesphere.Toolbar" parent="Widget.AppCompat.Toolbar">
+        <item name="android:background">@color/background</item>
+        <item name="titleTextColor">@color/ns_text_primary</item>
+        <item name="navigationIconTint">@color/ns_text_primary</item>
+    </style>
+
 </resources>

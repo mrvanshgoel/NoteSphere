@@ -87,6 +87,14 @@ public class SharedPrefManager {
         return prefs().getString(KEY_USER_EMAIL, null);
     }
 
+    public String getUserId() {
+        return prefs().getString("user_id", null);
+    }
+
+    public void saveUserId(String userId) {
+        prefs().edit().putString("user_id", userId).apply();
+    }
+
     // ─── Onboarding ──────────────────────────────────────────────────────────
 
     public boolean isOnboardingShown() {

@@ -1,5 +1,7 @@
 package com.notesphere.app.models;
 
+import java.util.List;
+
 public class Syllabus {
     private String id;
     private String userId;

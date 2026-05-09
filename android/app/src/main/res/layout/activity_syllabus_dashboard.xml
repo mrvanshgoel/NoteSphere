@@ -3,48 +3,52 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#0D0D12">
+    android:background="@color/background">
 
     <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/appBar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="#12121A">
+        android:background="@color/surface"
+        app:elevation="0dp">
 
         <com.google.android.material.appbar.MaterialToolbar
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
             app:navigationIcon="@android:drawable/ic_menu_revert"
-            app:title="Syllabus Dashboard"
-            app:titleTextColor="@color/white" />
+            app:title="Syllabus Tracker"
+            app:titleTextColor="@color/ns_text_primary"
+            app:navigationIconTint="@color/ns_text_primary" />
 
+        <!-- Progress Header -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="20dp">
+            android:padding="20dp"
+            android:paddingTop="4dp">
 
             <TextView
                 android:id="@+id/tvSubjectName"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Select a Subject"
-                android:textColor="@color/white"
-                android:textSize="22sp"
+                android:text="Loading syllabus..."
+                android:textColor="@color/ns_text_primary"
+                android:textSize="20sp"
                 android:textStyle="bold" />
 
             <RelativeLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp">
+                android:layout_marginTop="12dp">
 
                 <TextView
-                    android:id="@+id/tvProgressLabel"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Overall Completion"
-                    android:textColor="#9B9BB5"
-                    android:textSize="14sp" />
+                    android:textColor="@color/ns_text_secondary"
+                    android:textSize="13sp" />
 
                 <TextView
                     android:id="@+id/tvProgressPercent"
@@ -52,8 +56,9 @@
                     android:layout_height="wrap_content"
                     android:layout_alignParentEnd="true"
                     android:text="0%"
-                    android:textColor="#7C4DFF"
-                    android:textStyle="bold" />
+                    android:textColor="@color/ns_cyan"
+                    android:textStyle="bold"
+                    android:textSize="16sp" />
             </RelativeLayout>
 
             <com.google.android.material.progressindicator.LinearProgressIndicator
@@ -61,47 +66,149 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                app:indicatorColor="#7C4DFF"
-                app:trackColor="#2A2A35"
-                app:trackThickness="6dp"
+                app:indicatorColor="@color/ns_cyan"
+                app:trackColor="#1A00F2FF"
+                app:trackThickness="8dp"
                 app:cornerRadius="4dp" />
+
+            <TextView
+                android:id="@+id/tvSyllabusStatus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:text="0 of 0 topics completed"
+                android:textColor="@color/ns_text_dim"
+                android:textSize="12sp" />
         </LinearLayout>
     </com.google.android.material.appbar.AppBarLayout>
 
-    <androidx.core.widget.NestedScrollView
+    <!-- Content Area -->
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
+        <!-- Loading State -->
         <LinearLayout
+            android:id="@+id/progressLoading"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
+            android:gravity="center"
             android:orientation="vertical"
-            android:padding="16dp">
+            android:visibility="visible">
+            <com.google.android.material.progressindicator.CircularProgressIndicator
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                app:indicatorColor="@color/ns_cyan"
+                android:indeterminate="true" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="Loading your syllabus..."
+                android:textColor="@color/ns_text_secondary"
+                android:textSize="14sp" />
+        </LinearLayout>
 
-            <!-- Units List -->
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/rvUnits"
+        <!-- Units RecyclerView -->
+        <androidx.core.widget.NestedScrollView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:nestedScrollingEnabled="false" />
+                android:orientation="vertical"
+                android:padding="16dp">
 
-            <!-- Action Buttons -->
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnAiAnalyze"
-                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                android:layout_width="match_parent"
-                android:layout_height="60dp"
-                android:layout_marginTop="20dp"
-                android:text="AI Syllabus Analysis"
-                android:textAllCaps="false"
-                app:cornerRadius="12dp"
-                app:strokeColor="#7C4DFF"
-                app:icon="@android:drawable/ic_menu_help" />
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvUnits"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:nestedScrollingEnabled="false"
+                    android:visibility="gone" />
 
+                <!-- AI Analyze Button -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnAiAnalyze"
+                    style="@style/Notesphere.Button.Ghost"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:layout_marginTop="16dp"
+                    android:text="🤖  AI Study Plan Analysis"
+                    android:textAllCaps="false"
+                    android:visibility="gone" />
+            </LinearLayout>
+        </androidx.core.widget.NestedScrollView>
+
+        <!-- Empty State -->
+        <LinearLayout
+            android:id="@+id/layoutEmptySyllabus"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="40dp"
+            android:visibility="gone">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="📋"
+                android:textSize="64sp" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:gravity="center"
+                android:text="No Syllabus Found"
+                android:textColor="@color/ns_text_primary"
+                android:textSize="20sp"
+                android:textStyle="bold" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:gravity="center"
+                android:text="Upload a syllabus PDF to track\nyour course progress with AI"
+                android:textColor="@color/ns_text_secondary"
+                android:textSize="14sp"
+                android:lineSpacingMultiplier="1.5" />
         </LinearLayout>
-    </androidx.core.widget.NestedScrollView>
 
+        <!-- Error State -->
+        <LinearLayout
+            android:id="@+id/layoutErrorSyllabus"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="40dp"
+            android:visibility="gone">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="⚠️"
+                android:textSize="64sp" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="Connection Error"
+                android:textColor="@color/ns_text_primary"
+                android:textSize="20sp"
+                android:textStyle="bold" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="Check your internet connection and try again."
+                android:textColor="@color/ns_text_secondary"
+                android:textSize="14sp"
+                android:gravity="center" />
+        </LinearLayout>
+
+    </FrameLayout>
+
+    <!-- FAB -->
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fabUploadSyllabus"
         android:layout_width="wrap_content"
@@ -109,7 +216,7 @@
         android:layout_gravity="bottom|end"
         android:layout_margin="24dp"
         android:src="@android:drawable/ic_menu_upload"
-        app:backgroundTint="#7C4DFF"
-        app:tint="@color/white" />
+        app:backgroundTint="@color/ns_cyan"
+        app:tint="@color/ns_deep_blue" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

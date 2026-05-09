@@ -1,54 +1,93 @@
-# Note Sphere (formerly AI Study Assistant)
+# AI Study Assistant
 
-A powerful, native Android application designed for students to manage study materials and get AI-powered insights (summaries, notes, practice questions, and document Q&A).
+An Android-style, full-stack web application designed for students to manage study materials and get AI-powered insights (summaries, notes, practice questions, and document Q&A).
 
 ## Tech Stack
-- **Android Client**: Java, ViewBinding, Retrofit, Firebase SDK, Glide, Markwon
-- **Backend**: Node.js, Express, Firebase Admin SDK, Google Gemini API
-- **Infrastructure**: Firebase (Firestore, Cloud Storage, Authentication)
-- **AI Engine**: Google Gemini Pro (Text & Vision)
-
-## Key Features
-- **Firebase Ecosystem**: Unified authentication, real-time database, and scalable cloud storage.
-- **AI Study Tools**: 
-  - **AI Summaries**: Condense long documents into key points.
-  - **AI Quizzes**: Generate practice questions from your study materials.
-  - **AI Doubt Solver**: Ask questions about your PDFs/images and get instant answers.
-- **Syllabus Tracking**: Track your progress against your university syllabus.
-- **Offline-First**: Documents are saved locally for access without internet.
-- **Premium UI**: Modern Material Design with a custom "Note Sphere" aesthetic.
+- **Frontend**: React, Tailwind CSS, Framer Motion, Vite
+- **Backend**: Node.js, Express, Anthropic API (Claude 3.5 Sonnet)
+- **Database & Storage**: Supabase (PostgreSQL, Storage, Auth)
 
 ## Setup Instructions
 
-### 1. Firebase Setup
-1. Create a new project on [Firebase Console](https://console.firebase.google.com).
-2. Register an Android App with package name `com.notesphere.app`.
-3. Download `google-services.json` and place it in the `android/app/` directory.
-4. Enable **Email/Password** and **Google Sign-In** in the Authentication tab.
-5. Create a **Firestore** database in test mode.
-6. Create a **Cloud Storage** bucket.
+### 1. Supabase Setup
+1. Create a new project on [Supabase](https://supabase.com).
+2. Go to **Authentication** and enable **Email/Password** sign-in.
+3. Go to **SQL Editor** and run the following commands to create your database tables:
 
-### 2. Backend Setup
-1. Go to the `backend/` directory.
-2. Create a `.env` file with:
-   ```
-   PORT=5000
-   FIREBASE_PROJECT_ID=your_project_id
-   FIREBASE_CLIENT_EMAIL=your_service_account_email
-   FIREBASE_PRIVATE_KEY="your_private_key"
-   GEMINI_API_KEY=your_gemini_api_key
-   ```
-3. Run `npm install` and `npm run dev`.
+```sql
+-- Create subjects table
+CREATE TABLE subjects (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  color TEXT NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
 
-### 3. Android Setup
-1. Open the `android/` folder in Android Studio.
-2. Sync Project with Gradle Files.
-3. Run the app on an emulator or physical device.
+-- Create materials table
+CREATE TABLE materials (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  subject_id UUID REFERENCES subjects(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  type TEXT NOT NULL,
+  file_url TEXT NOT NULL,
+  storage_path TEXT NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
 
-## Progress
-- [x] Full Migration from Supabase to Firebase
-- [x] Professional Package Rebrand (`com.notesphere.app`)
-- [x] Integrated Google Gemini Pro for AI features
-- [x] Modern Dashboard & Material Management
-- [/] AI Quiz & Doubt Solver UI (Phase 2)
-- [ ] Syllabus Progress Tracking (Phase 2)
+-- Row Level Security (RLS)
+ALTER TABLE subjects ENABLE ROW LEVEL SECURITY;
+ALTER TABLE materials ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view own subjects" ON subjects FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can insert own subjects" ON subjects FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can update own subjects" ON subjects FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users can delete own subjects" ON subjects FOR DELETE USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can view own materials" ON materials FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can insert own materials" ON materials FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can delete own materials" ON materials FOR DELETE USING (auth.uid() = user_id);
+```
+
+4. Go to **Storage** and create a new bucket named `study_materials`.
+   - Set the bucket to **Public**.
+   - Under Configuration -> Policies, allow authenticated users to SELECT and INSERT.
+
+### 2. Environment Variables
+
+**Frontend (`frontend/.env.local`):**
+```
+VITE_SUPABASE_URL=your_supabase_project_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
+
+**Backend (`backend/.env`):**
+```
+PORT=5000
+SUPABASE_URL=your_supabase_project_url
+SUPABASE_ANON_KEY=your_supabase_anon_key
+ANTHROPIC_API_KEY=your_anthropic_api_key
+```
+
+### 3. Running the App Locally
+
+**Start the Backend:**
+```bash
+cd backend
+npm run dev
+```
+
+**Start the Frontend:**
+```bash
+cd frontend
+npm run dev
+```
+
+## Features Complete
+- [x] Multi-Student Login System via Supabase
+- [x] Subject-wise folder creation
+- [x] Uploading files directly to Supabase storage
+- [x] AI-powered Chat & Q&A
+- [x] Summary, Notes & Practice quiz generation
+- [x] Smooth, dark-theme UI with Android/mobile-first feel

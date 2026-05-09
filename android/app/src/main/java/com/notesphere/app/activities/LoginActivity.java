@@ -70,11 +70,11 @@ public class LoginActivity extends AppCompatActivity {
                 pref.saveToken(idToken);
 
                 // Fetch profile from backend to sync SharedPrefs
-                ApiClient.getInstance().getProfile().enqueue(new Callback<User>() {
+                ApiClient.getInstance().getProfile("Bearer " + idToken).enqueue(new Callback<User.UserInfo>() {
                     @Override
-                    public void onResponse(Call<User> call, Response<User> response) {
+                    public void onResponse(Call<User.UserInfo> call, Response<User.UserInfo> response) {
                         if (response.isSuccessful() && response.body() != null) {
-                            User u = response.body();
+                            User.UserInfo u = response.body();
                             pref.saveUserInfo(u.getName(), u.getEmail(), u.getAvatarUrl());
                         }
                         startActivity(new Intent(LoginActivity.this, MainActivity.class));
@@ -82,7 +82,7 @@ public class LoginActivity extends AppCompatActivity {
                     }
 
                     @Override
-                    public void onFailure(Call<User> call, Throwable t) {
+                    public void onFailure(Call<User.UserInfo> call, Throwable t) {
                         // Even if profile fetch fails, we have the token, so proceed
                         startActivity(new Intent(LoginActivity.this, MainActivity.class));
                         finish();

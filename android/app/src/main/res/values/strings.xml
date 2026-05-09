@@ -29,58 +29,13 @@
     <string name="home_quick_actions">Quick Actions</string>
     <string name="home_ai_insight">AI Insight</string>
     <string name="home_empty_materials">No materials yet.\nUpload your first file!</string>
-
-    <!-- Navigation -->
-    <string name="nav_home">Home</string>
-    <string name="nav_subjects">Subjects</string>
-    <string name="nav_upload">Upload</string>
-    <string name="nav_chat">AI Chat</string>
-    <string name="nav_profile">Profile</string>
-
-    <!-- Subjects -->
-    <string name="subjects_title">My Subjects</string>
-    <string name="subjects_empty">No subjects yet. Tap + to add one!</string>
-    <string name="subject_add">Add Subject</string>
-
-    <!-- Upload -->
-    <string name="upload_title">Upload Material</string>
-    <string name="upload_select_file">Select File</string>
-    <string name="upload_select_subject">Select Subject</string>
-    <string name="upload_btn">Upload to Note Sphere</string>
-    <string name="upload_success">File uploaded successfully!</string>
-    <string name="upload_no_file">Please select a file first</string>
-    <string name="upload_no_subject">Please select a subject first</string>
-
-    <!-- AI Chat -->
-    <string name="chat_title">AI Study Chat</string>
-    <string name="chat_hint">Ask me anything about your studies...</string>
-    <string name="chat_empty">Start a conversation with your AI tutor!</string>
-
-    <!-- AI Features -->
-    <string name="ai_summary">AI Summary</string>
-    <string name="ai_notes">Smart Notes</string>
-    <string name="ai_questions">Practice Questions</string>
-    <string name="ai_quiz">Generate Quiz</string>
-    <string name="ai_doubt">Ask a Doubt</string>
-    <string name="summary_quick">Quick Summary</string>
-    <string name="summary_detailed">Detailed Summary</string>
-    <string name="summary_exam">Exam Revision</string>
-
+    
     <!-- Profile -->
-    <string name="profile_title">My Profile</string>
-    <string name="profile_save">Save Changes</string>
+    <string name="profile_title">Account</string>
     <string name="profile_subjects_stat">Subjects</string>
     <string name="profile_materials_stat">Materials</string>
-    <string name="profile_streak_stat">Day Streak</string>
+    <string name="profile_save">Save Changes</string>
 
-    <!-- Common -->
-    <string name="loading">Loading…</string>
-    <string name="retry">Retry</string>
-    <string name="cancel">Cancel</string>
-    <string name="confirm">Confirm</string>
-    <string name="delete">Delete</string>
-    <string name="share">Share</string>
-    <string name="save">Save</string>
-    <string name="error_network">Network error. Please check your connection.</string>
-    <string name="error_generic">Something went wrong. Please try again.</string>
+    <!-- Chat -->
+    <string name="chat_hint">Ask anything about your notes...</string>
 </resources>

@@ -1,43 +1,43 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- === NOTE SPHERE PREMIUM PALETTE === -->
-    <!-- Primary: Deep Space Blue -->
+    <!-- Notesphere Premium Palette -->
     <color name="ns_deep_blue">#0A0A1F</color>
-    <color name="ns_bg_dark">#050510</color>
-    
-    <!-- Accents: Cyan & Teal -->
     <color name="ns_cyan">#00F2FF</color>
+    <color name="ns_electric_blue">#00F2FF</color>
     <color name="ns_teal">#00C9B1</color>
-    
-    <!-- Highlights: Soft Purple & Electric Blue -->
     <color name="ns_purple">#9D50FF</color>
-    <color name="ns_electric_blue">#2E5BFF</color>
+    <color name="ns_purple_light">#D0B0FF</color>
+    <color name="ns_blue">#00F2FF</color>
     
-    <!-- Surfaces -->
-    <color name="ns_surface">#121225</color>
-    <color name="ns_surface_elevated">#1A1A32</color>
-    <color name="ns_surface_variant">#242445</color>
+    <color name="ns_bg_dark">#080816</color>
+    <color name="ns_surface">#12122A</color>
+    <color name="ns_surface_elevated">#1A1A3A</color>
+    <color name="ns_surface_variant">#24244A</color>
     
-    <!-- Text -->
-    <color name="ns_text_primary">#F8F9FF</color>
+    <color name="ns_text_primary">#FFFFFF</color>
     <color name="ns_text_secondary">#A0A0C0</color>
     <color name="ns_text_dim">#606080</color>
+    <color name="ns_text_hint">#606080</color>
     
-    <!-- Functional -->
-    <color name="ns_success">#00E676</color>
-    <color name="ns_error">#FF4B66</color>
-    <color name="ns_warning">#FFB000</color>
-    
-    <!-- Gradients -->
-    <color name="grad_start">#9D50FF</color>
-    <color name="grad_mid">#2E5BFF</color>
-    <color name="grad_end">#00F2FF</color>
+    <color name="ns_error">#FF4D4D</color>
+    <color name="ns_success">#00FF88</color>
 
-    <!-- Semantic Aliases -->
-    <color name="primary">@color/ns_cyan</color>
-    <color name="secondary">@color/ns_purple</color>
-    <color name="background">@color/ns_bg_dark</color>
-    <color name="surface">@color/ns_surface</color>
-    <color name="white">#FFFFFF</color>
-    <color name="black">#000000</color>
+    <!-- Legacy / Compatibility Mapping -->
+    <color name="white">#FFFFFFFF</color>
+    <color name="black">#FF000000</color>
+    <color name="primary">#00F2FF</color>
+    <color name="primaryVariant">#00C9B1</color>
+    <color name="secondary">#9D50FF</color>
+    <color name="background">#0A0A1F</color>
+    <color name="surface">#12122A</color>
+    <color name="error">#FF4D4D</color>
+    <color name="text_primary">#FFFFFF</color>
+    <color name="text_secondary">#A0A0C0</color>
+    
+    <!-- Material 2 / Old Standard names -->
+    <color name="purple_200">#9D50FF</color>
+    <color name="purple_500">#9D50FF</color>
+    <color name="purple_700">#6C63FF</color>
+    <color name="teal_200">#00F2FF</color>
+    <color name="teal_700">#00C9B1</color>
 </resources>

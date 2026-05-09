@@ -18,7 +18,6 @@ import retrofit2.Response;
 
 public class SyllabusDashboardActivity extends AppCompatActivity {
     private ActivitySyllabusDashboardBinding binding;
-    private List<Syllabus> syllabusList = new ArrayList<>();
     private UnitAdapter adapter;
     private Syllabus currentSyllabus;
 
@@ -31,64 +30,85 @@ public class SyllabusDashboardActivity extends AppCompatActivity {
         setSupportActionBar(binding.toolbar);
         binding.toolbar.setNavigationOnClickListener(v -> finish());
 
-        setupRecyclerView();
+        binding.rvUnits.setLayoutManager(new LinearLayoutManager(this));
+        showState(State.LOADING);
         loadSyllabus();
 
-        binding.fabUploadSyllabus.setOnClickListener(v -> {
-            Toast.makeText(this, "Upload Syllabus PDF to extract units (Phase 2 feature)", Toast.LENGTH_SHORT).show();
-        });
-
-        binding.btnAiAnalyze.setOnClickListener(v -> {
-            Toast.makeText(this, "AI analyzing your progress and recommending study plans...", Toast.LENGTH_SHORT).show();
-        });
-    }
-
-    private void setupRecyclerView() {
-        binding.rvUnits.setLayoutManager(new LinearLayoutManager(this));
+        binding.fabUploadSyllabus.setOnClickListener(v ->
+            Toast.makeText(this, "Upload a Syllabus PDF to extract topics (coming soon)", Toast.LENGTH_SHORT).show()
+        );
+        binding.btnAiAnalyze.setOnClickListener(v ->
+            Toast.makeText(this, "AI is analyzing your study progress...", Toast.LENGTH_SHORT).show()
+        );
     }
 
     private void loadSyllabus() {
         String token = "Bearer " + SharedPrefManager.getInstance(this).getToken();
         String userId = SharedPrefManager.getInstance(this).getUserId();
 
+        if (userId == null) {
+            showState(State.EMPTY);
+            return;
+        }
+
         ApiClient.getInstance().getSyllabuses(token, userId).enqueue(new Callback<List<Syllabus>>() {
             @Override
             public void onResponse(Call<List<Syllabus>> call, Response<List<Syllabus>> response) {
                 if (isFinishing() || isDestroyed()) return;
                 if (response.isSuccessful() && response.body() != null && !response.body().isEmpty()) {
-                    currentSyllabus = response.body().get(0); // For demo, use first syllabus
+                    currentSyllabus = response.body().get(0);
                     displaySyllabus(currentSyllabus);
+                    showState(State.CONTENT);
                 } else {
-                    Toast.makeText(SyllabusDashboardActivity.this, "No syllabus found. Upload one to get started!", Toast.LENGTH_LONG).show();
+                    showState(State.EMPTY);
                 }
             }
 
             @Override
             public void onFailure(Call<List<Syllabus>> call, Throwable t) {
                 if (isFinishing() || isDestroyed()) return;
-                Toast.makeText(SyllabusDashboardActivity.this, "Error loading syllabus", Toast.LENGTH_SHORT).show();
+                showState(State.ERROR);
+                Toast.makeText(SyllabusDashboardActivity.this,
+                    "Network error. Check your connection.", Toast.LENGTH_SHORT).show();
             }
         });
     }
 
     private void displaySyllabus(Syllabus syllabus) {
-        binding.tvSubjectName.setText(syllabus.getTitle());
+        if (syllabus == null) { showState(State.EMPTY); return; }
+
+        binding.tvSubjectName.setText(syllabus.getTitle() != null ? syllabus.getTitle() : "Syllabus");
         updateProgressUI(syllabus);
 
-        adapter = new UnitAdapter(syllabus.getContentTree(), (topic, isChecked) -> {
-            updateSyllabusOnServer(syllabus);
+        // Null-safe content tree
+        List<Syllabus.Unit> units = syllabus.getContentTree();
+        if (units == null) units = new ArrayList<>();
+
+        adapter = new UnitAdapter(units, (topic, isChecked) -> {
+            topic.setCompleted(isChecked);
+            if (currentSyllabus != null) updateSyllabusOnServer(currentSyllabus);
         });
         binding.rvUnits.setAdapter(adapter);
     }
 
     private void updateProgressUI(Syllabus syllabus) {
+        if (syllabus == null) return;
+
+        List<Syllabus.Unit> units = syllabus.getContentTree();
+        if (units == null || units.isEmpty()) {
+            binding.tvProgressPercent.setText("0%");
+            binding.progressSyllabus.setProgress(0);
+            binding.tvSyllabusStatus.setText("No topics added yet");
+            return;
+        }
+
         int totalTopics = 0;
         int completedTopics = 0;
-        
-        for (Syllabus.Unit unit : syllabus.getContentTree()) {
+        for (Syllabus.Unit unit : units) {
+            if (unit.getTopics() == null) continue;
             totalTopics += unit.getTopics().size();
             for (Syllabus.Topic topic : unit.getTopics()) {
-                if (topic.isCompleted()) completedTopics++;
+                if (topic != null && topic.isCompleted()) completedTopics++;
             }
         }
 
@@ -101,17 +121,27 @@ public class SyllabusDashboardActivity extends AppCompatActivity {
     private void updateSyllabusOnServer(Syllabus syllabus) {
         updateProgressUI(syllabus);
         String token = "Bearer " + SharedPrefManager.getInstance(this).getToken();
-        
         ApiClient.getInstance().updateSyllabus(token, syllabus.getId(), syllabus).enqueue(new Callback<Syllabus>() {
             @Override
-            public void onResponse(Call<Syllabus> call, Response<Syllabus> response) {
-                // Silently updated
-            }
-
+            public void onResponse(Call<Syllabus> call, Response<Syllabus> response) {}
             @Override
             public void onFailure(Call<Syllabus> call, Throwable t) {
-                Toast.makeText(SyllabusDashboardActivity.this, "Failed to sync progress", Toast.LENGTH_SHORT).show();
+                if (!isFinishing()) Toast.makeText(SyllabusDashboardActivity.this, "Sync failed", Toast.LENGTH_SHORT).show();
             }
         });
+    }
+
+    private enum State { LOADING, CONTENT, EMPTY, ERROR }
+
+    private void showState(State state) {
+        // Null-safe view state management
+        if (binding == null) return;
+        binding.rvUnits.setVisibility(state == State.CONTENT ? View.VISIBLE : View.GONE);
+        if (binding.layoutEmptySyllabus != null)
+            binding.layoutEmptySyllabus.setVisibility(state == State.EMPTY ? View.VISIBLE : View.GONE);
+        if (binding.progressLoading != null)
+            binding.progressLoading.setVisibility(state == State.LOADING ? View.VISIBLE : View.GONE);
+        if (binding.layoutErrorSyllabus != null)
+            binding.layoutErrorSyllabus.setVisibility(state == State.ERROR ? View.VISIBLE : View.GONE);
     }
 }

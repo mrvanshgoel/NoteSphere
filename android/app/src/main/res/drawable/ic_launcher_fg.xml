@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Notesphere Neural Sphere - Valid Android Vector Drawable -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Sphere background -->
+    <path
+        android:fillColor="#0D1B4B"
+        android:pathData="M54,14 A40,40 0 1,1 53.99,14 Z"/>
+
+    <!-- Outer cyan ring -->
+    <path
+        android:fillColor="#1A00F2FF"
+        android:pathData="M54,10 A44,44 0 1,0 54.01,10 Z"/>
+    <path
+        android:fillColor="#0D1B4B"
+        android:pathData="M54,14 A40,40 0 1,0 54.01,14 Z"/>
+
+    <!-- Neural connections (spokes from center to nodes) -->
+    <path
+        android:strokeColor="#6000F2FF"
+        android:strokeWidth="1.5"
+        android:fillColor="#00000000"
+        android:pathData="M54,52 L54,28 M54,52 L71,41 M54,52 L71,63 M54,52 L54,76 M54,52 L37,63 M54,52 L37,41"/>
+
+    <!-- Outer ring connections -->
+    <path
+        android:strokeColor="#3000F2FF"
+        android:strokeWidth="1"
+        android:fillColor="#00000000"
+        android:pathData="M54,28 L71,41 M71,41 L71,63 M71,63 L54,76 M54,76 L37,63 M37,63 L37,41 M37,41 L54,28"/>
+
+    <!-- Cross connections -->
+    <path
+        android:strokeColor="#2000F2FF"
+        android:strokeWidth="0.8"
+        android:fillColor="#00000000"
+        android:pathData="M54,28 L71,63 M71,41 L37,63 M37,41 L54,76"/>
+
+    <!-- Outer nodes (circles drawn as paths) -->
+    <path android:fillColor="#00F2FF" android:pathData="M54,25 A3,3 0 1,0 54.01,25 Z"/>
+    <path android:fillColor="#00F2FF" android:pathData="M71,38 A2.5,2.5 0 1,0 71.01,38 Z"/>
+    <path android:fillColor="#00F2FF" android:pathData="M71,60 A2.5,2.5 0 1,0 71.01,60 Z"/>
+    <path android:fillColor="#00F2FF" android:pathData="M54,73 A3,3 0 1,0 54.01,73 Z"/>
+    <path android:fillColor="#00F2FF" android:pathData="M37,60 A2.5,2.5 0 1,0 37.01,60 Z"/>
+    <path android:fillColor="#00F2FF" android:pathData="M37,38 A2.5,2.5 0 1,0 37.01,38 Z"/>
+
+    <!-- Center node - outer glow -->
+    <path android:fillColor="#3000F2FF" android:pathData="M54,52 A7,7 0 1,0 54.01,52 Z"/>
+    <!-- Center node - core -->
+    <path android:fillColor="#00F2FF" android:pathData="M54,52 A4,4 0 1,0 54.01,52 Z"/>
+    <!-- Center node - highlight -->
+    <path android:fillColor="#FFFFFF" android:pathData="M54,52 A2,2 0 1,0 54.01,52 Z"/>
+
+</vector>

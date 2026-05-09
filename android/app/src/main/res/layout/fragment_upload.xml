@@ -3,92 +3,82 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/ns_bg"
+    android:background="@color/background"
     android:gravity="center_horizontal"
     android:orientation="vertical"
     android:padding="24dp">
 
     <TextView
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginBottom="40dp"
-        android:text="@string/upload_title"
-        android:textColor="@color/ns_text_primary"
+        android:text="Upload Material"
+        android:textColor="@color/text_primary"
         android:textSize="28sp"
         android:textStyle="bold" />
 
     <com.google.android.material.textfield.TextInputLayout
-        style="@style/NsInputLayout.ExposedDropdown"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="32dp"
-        android:hint="@string/upload_select_subject">
+        android:layout_marginBottom="24dp"
+        android:hint="Select Subject"
+        app:boxStrokeColor="@color/primary"
+        app:hintTextColor="@color/primary">
 
         <AutoCompleteTextView
             android:id="@+id/spinnerSubjects"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:inputType="none"
-            android:textColor="@color/ns_text_primary" />
+            android:textColor="@color/text_primary" />
     </com.google.android.material.textfield.TextInputLayout>
 
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/btnPickFile"
-        style="@style/NsCard"
+        style="@style/CustomCardStyle"
         android:layout_width="match_parent"
-        android:layout_height="220dp"
+        android:layout_height="180dp"
         android:layout_marginBottom="32dp"
-        app:strokeColor="@color/ns_purple"
+        app:strokeColor="@color/primary"
         app:strokeWidth="2dp">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:gravity="center"
-            android:orientation="vertical"
-            android:padding="16dp">
+            android:orientation="vertical">
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="📤"
-                android:textSize="56sp" />
+                android:text="📄"
+                android:textSize="48sp" />
 
             <TextView
                 android:id="@+id/tvFileName"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
-                android:text="@string/upload_tap_hint"
-                android:textColor="@color/ns_purple"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                android:gravity="center" />
-                
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="PDF, Images, or Text files"
-                android:textColor="@color/ns_text_secondary"
-                android:textSize="13sp" />
+                android:layout_marginTop="16dp"
+                android:text="Tap to select PDF, Image or Text"
+                android:textColor="@color/primary"
+                android:textStyle="bold" />
 
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnUpload"
-        style="@style/NsButton"
+        style="@style/CustomButtonStyle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/upload_button" />
+        android:text="Upload Now" />
 
     <ProgressBar
         android:id="@+id/progressBar"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="32dp"
-        android:visibility="gone"
-        android:indeterminateTint="@color/ns_blue" />
+        android:layout_marginTop="24dp"
+        android:visibility="gone" />
 
 </LinearLayout>
