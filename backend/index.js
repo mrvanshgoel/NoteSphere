@@ -366,7 +366,7 @@ app.get('/api/materials/:subjectId', verifyToken, async (req, res) => {
         }
         return {
             id: m.id,
-            title: m.title,
+            title: m.title || m.name || m.file_path || 'Untitled Material',
             fileUrl: url || '',
             fileType: m.file_type || 'application/octet-stream',
             subjectId: m.subject_id,
@@ -415,7 +415,6 @@ app.post('/api/materials/upload', verifyToken, upload.single('file'), async (req
         .from('materials')
         .insert([{
             subject_id: subjectId,
-            title: originalName,
             file_path: fileName,
             user_id: req.user.id
         }])
