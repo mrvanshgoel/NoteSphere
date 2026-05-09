@@ -12,9 +12,16 @@ const app = express();
 const port = process.env.PORT || 5000;
 
 // Initialize Supabase
+const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+
+if (!supabaseUrl) {
+  console.error("ERROR: SUPABASE_URL is missing from environment variables!");
+}
+
 const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_ANON_KEY
+  supabaseUrl,
+  supabaseKey
 );
 
 // Initialize Groq
