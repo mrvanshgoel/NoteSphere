@@ -349,7 +349,6 @@ app.post('/api/ai/chat', verifyToken, async (req, res) => {
     if (!message) return res.status(400).json({ error: 'Message required' });
 
     console.log(`[AI Chat] Request: ${message}`);
-    const model = getModel();
     const systemPrompt = "You are Notesphere AI, an advanced, concise, and helpful study assistant.";
     
     // Clean history to ensure it's valid for Gemini (alternating user/model)
