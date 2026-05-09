@@ -347,11 +347,8 @@ app.delete('/api/materials/:id', verifyToken, async (req, res) => {
 app.post('/api/ai/summary', verifyToken, async (req, res) => {
   try {
     const { text } = req.body;
-    const completion = await groq.chat.completions.create({
-      messages: [{ role: 'user', content: `Create a comprehensive summary of this study material: ${text}` }],
-      model: "llama-3.1-8b-instant",
-    });
-    res.json({ content: completion.choices[0].message.content });
+    const result = await gemini.generateContent(`Summarize this study material comprehensively: ${text}`);
+    res.json({ content: result.response.text() });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -360,16 +357,16 @@ app.post('/api/ai/summary', verifyToken, async (req, res) => {
 app.post('/api/ai/notes', verifyToken, async (req, res) => {
   try {
     const { text } = req.body;
-    const completion = await groq.chat.completions.create({
-      messages: [{ role: 'user', content: `Create detailed study notes with key points, definitions and important concepts from: ${text}` }],
-      model: "llama-3.1-8b-instant",
-    });
-    res.json({ content: completion.choices[0].message.content });
+    const result = await gemini.generateContent(`Create detailed study notes with key points, definitions and important concepts from: ${text}`);
+    res.json({ content: result.response.text() });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
 });
 
+app.post('/api/ai/questions', verifyToken, async (req, res) => {
+  try {
+    const { text } = req.body;
     const completion = await gemini.generateContent(`Generate 10 practice questions with answers from this study material: ${text}`);
     res.json({ content: completion.response.text() });
   } catch (err) {
