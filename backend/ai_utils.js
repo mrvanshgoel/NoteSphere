@@ -8,11 +8,22 @@ const { getModel, generateWithFallback } = require('./ai_model_manager');
 async function extractTextFromBuffer(buffer, mimeType) {
     if (mimeType === 'application/pdf') {
         try {
-            // Some environments require pdfParse.default or just pdfParse
-            const parse = typeof pdfParse === 'function' ? pdfParse : pdfParse.default;
-            if (typeof parse !== 'function') throw new Error("pdf-parse is not a function");
+            // Highly robust pdf-parse calling convention
+            let parseFunc;
+            if (typeof pdfParse === 'function') {
+                parseFunc = pdfParse;
+            } else if (pdfParse && typeof pdfParse.default === 'function') {
+                parseFunc = pdfParse.default;
+            } else if (pdfParse && typeof pdfParse.pdf === 'function') {
+                parseFunc = pdfParse.pdf;
+            } else {
+                // Last resort: try to find any function in the export
+                parseFunc = Object.values(pdfParse).find(v => typeof v === 'function');
+            }
+
+            if (!parseFunc) throw new Error("Could not find a valid pdf-parse function in module exports");
             
-            const data = await parse(buffer);
+            const data = await parseFunc(buffer);
             return data.text;
         } catch (error) {
             console.error("PDF Extraction Error:", error.message);

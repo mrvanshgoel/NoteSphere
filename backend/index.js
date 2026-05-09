@@ -136,6 +136,19 @@ app.get('/health', (req, res) => res.json({ status: 'ok', timestamp: new Date().
 app.get('/api/debug/models', (req, res) => res.json(getActiveModelInfo()));
 
 // ═══════════════════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════════════════
+const formatDoc = (doc) => {
+  if (!doc || !doc.exists) return null;
+  const data = doc.data();
+  // Convert timestamps to strings for Android compatibility
+  const formatted = { id: doc.id, ...data };
+  if (data.createdAt && data.createdAt.toDate) formatted.createdAt = data.createdAt.toDate().toISOString();
+  if (data.updatedAt && data.updatedAt.toDate) formatted.updatedAt = data.updatedAt.toDate().toISOString();
+  return formatted;
+};
+
+// ═══════════════════════════════════════════════════════════
 // AUTH/PROFILE ROUTES
 // ═══════════════════════════════════════════════════════════
 
@@ -731,8 +744,99 @@ app.post('/api/study/track-quiz', verifyToken, async (req, res) => {
 });
 
 // ═══════════════════════════════════════════════════════════
-// GLOBAL ERROR HANDLER
+// FLASHCARDS & REVISION (Phase 2 & 3)
 // ═══════════════════════════════════════════════════════════
+
+app.post('/api/ai/flashcards', verifyToken, async (req, res) => {
+  try {
+    const { materialId, text: providedText, count = 10 } = req.body;
+    
+    let text = providedText;
+    if (!text && materialId) {
+      text = await getMaterialText(materialId, req.user.id);
+    }
+    if (!text) return res.status(400).json({ error: 'No text provided' });
+
+    const prompt = `Generate exactly ${count} educational flashcards from the following material.
+Each flashcard must have a "question" (or term) and an "answer" (or definition).
+Format as JSON:
+{
+  "flashcards": [
+    {"question": "...", "answer": "..."}
+  ]
+}
+
+Material:
+${text}`;
+
+    const result = await generateWithFallback(prompt);
+    const rawText = result.text.trim();
+    const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('Invalid AI response format');
+
+    const parsed = JSON.parse(jsonMatch[0]);
+    res.json(parsed);
+  } catch (err) {
+    res.status(500).json({ error: 'Flashcard generation failed', detail: err.message });
+  }
+});
+
+app.post('/api/study/flashcards/save', verifyToken, async (req, res) => {
+  try {
+    const { subjectId, subjectName, flashcards } = req.body;
+    const docRef = await db.collection('flashcards').add({
+      userId: req.user.id,
+      subjectId,
+      subjectName,
+      flashcards,
+      createdAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+    res.json({ id: docRef.id });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.get('/api/study/flashcards', verifyToken, async (req, res) => {
+  try {
+    const snapshot = await db.collection('flashcards').where('userId', '==', req.user.id).get();
+    const decks = [];
+    snapshot.forEach(doc => decks.push(formatDoc(doc)));
+    res.json(decks);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.get('/api/study/analytics', verifyToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    // Fetch aggregated data for the dashboard
+    const [quizSnap, chatsSnap, materialsSnap, subjectsSnap] = await Promise.all([
+      db.collection('quiz_results').where('userId', '==', userId).get(),
+      db.collection('chats').where('userId', '==', userId).get(),
+      db.collection('materials').where('userId', '==', userId).get(),
+      db.collection('subjects').where('userId', '==', userId).get()
+    ]);
+
+    let totalScore = 0;
+    let totalQuestions = 0;
+    quizSnap.forEach(doc => {
+      totalScore += doc.data().score;
+      totalQuestions += doc.data().total;
+    });
+
+    res.json({
+      studyStreak: 1, // Placeholder for logic
+      materialsCount: materialsSnap.size,
+      aiSessions: chatsSnap.size,
+      quizAccuracy: totalQuestions > 0 ? (totalScore / totalQuestions) * 100 : 0,
+      subjectCount: subjectsSnap.size
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 app.use((err, req, res, next) => {
   console.error('[Global Error]', err);
   res.status(500).json({ 
