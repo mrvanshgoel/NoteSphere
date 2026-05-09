@@ -19,28 +19,31 @@ const currentDate = new Date().toISOString();
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const gemini = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
 
-// Initialize Supabase
-const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+// Initialize Supabase Clients
+// Client 1: For auth only (anon key)
+const supabase = createClient(
+  process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL,
+  process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY
+);
 
-if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-  console.warn('WARNING: SUPABASE_SERVICE_ROLE_KEY is missing. Database operations may fail due to RLS.');
-}
-
-const supabase = createClient(supabaseUrl, supabaseKey);
+// Client 2: For all database operations (bypasses RLS)
+const supabaseAdmin = createClient(
+  process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
 
 // Auto-create buckets (Robustness Fix)
 const initializeStorage = async () => {
   try {
     const buckets = ['materials', 'avatars'];
     for (const b of buckets) {
-      const { data, error } = await supabase.storage.getBucket(b);
+      const { data, error } = await supabaseAdmin.storage.getBucket(b);
       if (error && error.message.includes('not found')) {
         console.log(`Creating missing bucket: ${b}`);
-        await supabase.storage.createBucket(b, { public: true });
+        await supabaseAdmin.storage.createBucket(b, { public: true });
       } else {
         // Ensure it is public even if it exists
-        await supabase.storage.updateBucket(b, { public: true });
+        await supabaseAdmin.storage.updateBucket(b, { public: true });
       }
     }
   } catch (err) {
@@ -97,7 +100,7 @@ app.post('/api/auth/register', async (req, res) => {
 
     const user = data.user;
     // Use upsert to be safe
-    const { error: profileError } = await supabase
+    const { error: profileError } = await supabaseAdmin
       .from('profiles')
       .upsert({ id: user.id, name, email, avatar_url: null });
 
@@ -119,7 +122,7 @@ app.post('/api/auth/login', async (req, res) => {
 
     if (error) throw error;
 
-    let { data: profile, error: profileError } = await supabase
+    let { data: profile, error: profileError } = await supabaseAdmin
       .from('profiles')
       .select('*')
       .eq('id', data.user.id)
@@ -129,7 +132,7 @@ app.post('/api/auth/login', async (req, res) => {
     if (profileError || !profile) {
       console.log('Profile missing for user, creating now...');
       const name = data.user.user_metadata?.name || email.split('@')[0];
-      const { data: newProfile, error: createError } = await supabase
+      const { data: newProfile, error: createError } = await supabaseAdmin
         .from('profiles')
         .upsert({ id: data.user.id, name, email, avatar_url: null })
         .select()
@@ -156,7 +159,7 @@ app.post('/api/auth/login', async (req, res) => {
 
 app.get('/api/auth/profile', verifyToken, async (req, res) => {
   try {
-    const { data: profile, error } = await supabase
+    const { data: profile, error } = await supabaseAdmin
       .from('profiles')
       .select('*')
       .eq('id', req.user.id)
@@ -182,7 +185,7 @@ app.get('/api/auth/profile', verifyToken, async (req, res) => {
 app.put('/api/auth/profile', verifyToken, async (req, res) => {
   try {
     const { name, avatar_url } = req.body;
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('profiles')
       .update({ name, avatar_url, updated_at: new Date() })
       .eq('id', req.user.id)
@@ -211,7 +214,7 @@ app.post('/api/auth/upload-avatar', verifyToken, upload.single('avatar'), async 
     const filePath = fileName; // Simplified path
 
     console.log(`STEP 1: Starting Supabase Storage upload for ${filePath}...`);
-    const { error: uploadError } = await supabase.storage
+    const { error: uploadError } = await supabaseAdmin.storage
       .from('avatars')
       .upload(filePath, file.buffer, { contentType: file.mimetype });
 
@@ -222,13 +225,13 @@ app.post('/api/auth/upload-avatar', verifyToken, upload.single('avatar'), async 
     console.log("STEP 1 SUCCESS: File uploaded to storage.");
 
     console.log("STEP 2: Generating Public URL...");
-    const { data: { publicUrl } } = supabase.storage
+    const { data: { publicUrl } } = supabaseAdmin.storage
       .from('avatars')
       .getPublicUrl(filePath);
     console.log(`STEP 2 SUCCESS: Generated URL: ${publicUrl}`);
 
     console.log("STEP 3: Updating profiles table in database...");
-    const { data: profile, error: updateError } = await supabase
+    const { data: profile, error: updateError } = await supabaseAdmin
       .from('profiles')
       .update({ avatar_url: publicUrl })
       .eq('id', req.user.id)
@@ -251,7 +254,7 @@ app.post('/api/auth/upload-avatar', verifyToken, upload.single('avatar'), async 
 // 4. SUBJECTS ROUTES
 app.get('/api/subjects', verifyToken, async (req, res) => {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('subjects')
       .select('*')
       .eq('user_id', req.user.id);
@@ -281,16 +284,17 @@ app.get('/api/subjects', verifyToken, async (req, res) => {
 app.post('/api/subjects', verifyToken, async (req, res) => {
   try {
     const { name, color, icon } = req.body;
-    console.log(`Creating subject: ${name} for user: ${req.user.id}`);
+    const userId = req.user.id;
+    console.log('Creating subject:', { name, color, icon, userId });
     
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('subjects')
-      .insert({ 
+      .insert([{ 
         name: name || 'New Subject', 
         color: color || '#6C63FF', 
-        icon: icon || 'book', 
-        user_id: req.user.id 
-      })
+        icon: icon || 'book',
+        user_id: userId 
+      }])
       .select()
       .single();
     
@@ -331,7 +335,7 @@ app.post('/api/subjects', verifyToken, async (req, res) => {
 // 5. MATERIALS ROUTES
 app.get('/api/materials/:subjectId', verifyToken, async (req, res) => {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('materials')
       .select('*')
       .eq('subject_id', req.params.subjectId)
@@ -343,7 +347,7 @@ app.get('/api/materials/:subjectId', verifyToken, async (req, res) => {
     const mapped = data.map(m => ({
         id: m.id,
         title: m.title,
-        fileUrl: m.file_url || (m.file_path ? supabase.storage.from('materials').getPublicUrl(m.file_path).data.publicUrl : ''),
+        fileUrl: m.file_url || (m.file_path ? supabaseAdmin.storage.from('materials').getPublicUrl(m.file_path).data.publicUrl : ''),
         fileType: m.file_type,
         subjectId: m.subject_id,
         createdAt: m.created_at
@@ -370,7 +374,7 @@ app.post('/api/materials/upload', verifyToken, upload.single('file'), async (req
     
     console.log(`Uploading file: ${originalName} to storage...`);
 
-    const { data: storageData, error: storageError } = await supabase.storage
+    const { data: storageData, error: storageError } = await supabaseAdmin.storage
         .from('materials')
         .upload(fileName, file.buffer, {
             contentType: mimeType,
@@ -382,11 +386,11 @@ app.post('/api/materials/upload', verifyToken, upload.single('file'), async (req
         return res.status(500).json({ error: "Storage upload failed: " + storageError.message });
     }
 
-    const { data: { publicUrl } } = supabase.storage.from('materials').getPublicUrl(fileName);
+    const { data: { publicUrl } } = supabaseAdmin.storage.from('materials').getPublicUrl(fileName);
 
     console.log("File uploaded. Inserting into database...");
 
-    const { data: materialData, error: materialError } = await supabase
+    const { data: materialData, error: materialError } = await supabaseAdmin
         .from('materials')
         .insert([{
             subject_id: subjectId,
@@ -424,7 +428,7 @@ app.post('/api/materials/upload', verifyToken, upload.single('file'), async (req
 
 app.delete('/api/materials/:id', verifyToken, async (req, res) => {
   try {
-    const { error } = await supabase
+    const { error } = await supabaseAdmin
       .from('materials')
       .delete()
       .eq('id', req.params.id)
@@ -505,11 +509,11 @@ const activeShares = new Map();
 app.post('/api/share/generate', verifyToken, async (req, res) => {
   try {
     const { materialId } = req.body;
-    const { data: material } = await supabase.from('materials').select('*').eq('id', materialId).single();
+    const { data: material } = await supabaseAdmin.from('materials').select('*').eq('id', materialId).single();
     if (!material) throw new Error('Material not found');
 
     const path = material.file_path || material.file_url.split('/').pop();
-    const { data: signedUrl } = await supabase.storage.from('materials').createSignedUrl(path, 3600 * 24);
+    const { data: signedUrl } = await supabaseAdmin.storage.from('materials').createSignedUrl(path, 3600 * 24);
 
     const shareCode = crypto.randomBytes(3).toString('hex').toUpperCase();
     activeShares.set(shareCode, { name: material.title, url: signedUrl.signedUrl, expiresAt: Date.now() + 86400000 });
