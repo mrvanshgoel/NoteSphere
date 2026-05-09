@@ -348,7 +348,7 @@ app.post('/api/ai/summary', verifyToken, async (req, res) => {
     const { text } = req.body;
     const completion = await groq.chat.completions.create({
       messages: [{ role: 'user', content: `Create a comprehensive summary of this study material: ${text}` }],
-      model: "llama3-70b-8192",
+      model: "llama-3.1-8b-instant",
     });
     res.json({ content: completion.choices[0].message.content });
   } catch (err) {
@@ -361,7 +361,7 @@ app.post('/api/ai/notes', verifyToken, async (req, res) => {
     const { text } = req.body;
     const completion = await groq.chat.completions.create({
       messages: [{ role: 'user', content: `Create detailed study notes with key points, definitions and important concepts from: ${text}` }],
-      model: "llama3-70b-8192",
+      model: "llama-3.1-8b-instant",
     });
     res.json({ content: completion.choices[0].message.content });
   } catch (err) {
@@ -374,7 +374,7 @@ app.post('/api/ai/questions', verifyToken, async (req, res) => {
     const { text } = req.body;
     const completion = await groq.chat.completions.create({
       messages: [{ role: 'user', content: `Generate 10 practice questions with answers from this study material: ${text}` }],
-      model: "llama3-70b-8192",
+      model: "llama-3.1-8b-instant",
     });
     res.json({ content: completion.choices[0].message.content });
   } catch (err) {
@@ -400,7 +400,7 @@ app.post('/api/ai/chat', verifyToken, async (req, res) => {
         },
         ...messages
       ],
-      model: "mixtral-8x7b-32768",
+      model: "llama-3.1-8b-instant",
     }).catch(err => {
       console.error('GROQ API ERROR:', err.message);
       throw err;
