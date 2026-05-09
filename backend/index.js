@@ -444,24 +444,34 @@ app.delete('/api/materials/:id', verifyToken, async (req, res) => {
 // 6. AI ROUTES
 app.post('/api/ai/chat', verifyToken, async (req, res) => {
   try {
-    const { messages, systemPrompt } = req.body;
+    const { messages } = req.body;
     const lastUserMessage = messages[messages.length - 1]?.content || "";
+    const isExplainMode = lastUserMessage.toLowerCase().includes('explain');
+
+    const activeSystemPrompt = isExplainMode ? 
+        `You are an expert professor and study assistant. 
+        When asked to explain something, provide:
+        - Complete detailed explanation with NO topics skipped
+        - Clear headings and subheadings
+        - Examples for every concept
+        - Key points and definitions
+        - Step by step breakdowns where needed
+        - Minimum 500 words, be thorough and exhaustive` : 
+        `You are a helpful AI assistant like Gemini. 
+        Be conversational, concise and friendly.
+        Answer naturally without over-explaining.`;
+
+    const maxTokens = isExplainMode ? 4096 : 1024;
+
     const chat = gemini.startChat({
       history: messages.slice(0, -1).map(m => ({
         role: m.role === 'assistant' ? 'model' : 'user',
         parts: [{ text: m.content }],
       })),
-      generationConfig: { maxOutputTokens: 2048, temperature: 0.7 },
+      generationConfig: { maxOutputTokens: maxTokens, temperature: 0.7 },
     });
 
-    let professorInstructions = "You are an expert academic professor. Provide extremely detailed, exhaustive, and structured study material. Do NOT skip any details. Use headings, bullet points, and deep explanations for every concept.";
-    
-    // Check for "Explain" keyword
-    if (lastUserMessage.toLowerCase().startsWith('explain')) {
-      professorInstructions = "You are a Technical Logic Specialist. The user has used the keyword 'Explain'. Your task is to ONLY explain the technical logic, backend logs, and under-the-hood functionality related to their query. Be precise, technical, and focus on how the system works.";
-    }
-
-    const prompt = `System Instructions: ${professorInstructions}
+    const prompt = `System Instructions: ${activeSystemPrompt}
     Current Time: ${currentDate}.
     User Question: ${lastUserMessage}`;
 
@@ -488,9 +498,21 @@ app.post('/api/ai/summary', verifyToken, async (req, res) => {
 app.post('/api/ai/notes', verifyToken, async (req, res) => {
   try {
     const { text } = req.body;
-    const result = await gemini.generateContent(`System: You are an Expert Academic Professor.
-    Task: Create detailed, exhaustive study notes from this text. Use headings, bullet points, and deep explanations.
-    Material: ${text}`);
+    const result = await gemini.generateContent({
+      contents: [{ role: 'user', parts: [{ text: `You are an expert academic note-taker. Create COMPLETE, 
+DETAILED study notes from the following material.
+Requirements:
+- Cover EVERY topic mentioned, skip NOTHING
+- Use clear headings (##) for each section
+- Bold (**) important terms and definitions  
+- Include bullet points for key facts
+- Add examples where helpful
+- Minimum 800 words
+- Structure: Overview → Main Topics → Key Definitions → Summary
+
+Material: ${text}` }]} ,
+      generationConfig: { maxOutputTokens: 4096 }
+    });
     res.json({ content: result.response.text() });
   } catch (err) {
     console.error("AI Notes Error:", err.message);

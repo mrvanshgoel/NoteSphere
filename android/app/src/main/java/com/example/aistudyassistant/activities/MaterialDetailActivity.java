@@ -183,22 +183,35 @@ public class MaterialDetailActivity extends AppCompatActivity {
             }
 
             String processedLine = line.trim();
+            if (processedLine.isEmpty()) {
+                y += 10;
+                continue;
+            }
+
             Paint activePaint = contentPaint;
 
-            // Simple Markdown Parsing for PDF
-            if (processedLine.startsWith("###")) {
-                processedLine = processedLine.replace("###", "").trim();
-                activePaint = headerPaint;
+            // PDF Markdown Conversion Fix
+            if (processedLine.startsWith("# ")) {
+                processedLine = processedLine.replace("#", "").trim().toUpperCase();
+                activePaint = titlePaint;
                 y += 10;
-            } else if (processedLine.startsWith("**") && processedLine.endsWith("**")) {
-                processedLine = processedLine.replace("**", "").trim();
+            } else if (processedLine.startsWith("##")) {
+                processedLine = "\n" + processedLine.replace("##", "").trim().toUpperCase();
                 activePaint = headerPaint;
-            } else {
-                processedLine = processedLine.replace("**", "").replace("*", "").replace("`", "");
+                y += 15;
+            } else if (processedLine.startsWith("- ")) {
+                processedLine = "• " + processedLine.substring(2).trim();
+                activePaint = contentPaint;
+            }
+
+            // Remove bold asterisks but keep text
+            if (processedLine.contains("**")) {
+                processedLine = processedLine.replace("**", "");
+                activePaint = headerPaint; // Treat bold lines as headers for emphasis
             }
 
             canvas.drawText(processedLine, x, y, activePaint);
-            y += 15;
+            y += 20;
         }
 
         document.finishPage(page);
