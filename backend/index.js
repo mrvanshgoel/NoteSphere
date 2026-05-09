@@ -426,15 +426,25 @@ Always prioritize providing context-aware answers based on the student's study m
 
 app.get('/api/ai/chats', verifyToken, async (req, res) => {
   try {
-    const snapshot = await db.collection('chats')
-      .where('userId', '==', req.user.id)
-      .orderBy('updatedAt', 'desc')
-      .get();
-    
-    const chats = [];
-    snapshot.forEach(doc => chats.push(formatDoc(doc)));
+    let chats = [];
+    try {
+      const snapshot = await db.collection('chats')
+        .where('userId', '==', req.user.id)
+        .orderBy('updatedAt', 'desc')
+        .get();
+      snapshot.forEach(doc => chats.push(formatDoc(doc)));
+    } catch (indexError) {
+      console.warn('[Firestore] Chat history index might be missing, falling back to client-side sort:', indexError.message);
+      const snapshot = await db.collection('chats')
+        .where('userId', '==', req.user.id)
+        .get();
+      snapshot.forEach(doc => chats.push(formatDoc(doc)));
+      // Manual sort fallback
+      chats.sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0));
+    }
     res.json(chats);
   } catch (err) {
+    console.error('[Chat History Error]', err);
     res.status(400).json({ error: err.message });
   }
 });

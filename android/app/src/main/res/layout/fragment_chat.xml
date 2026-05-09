@@ -77,12 +77,25 @@
 
         </LinearLayout>
 
+        <!-- Subtle Attribution -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="85dp"
+            android:alpha="0.4"
+            android:text="Developed by Vansh Goel"
+            android:textColor="@color/ns_text_secondary"
+            android:textSize="10sp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent" />
+
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rvChat"
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:clipToPadding="false"
-            android:paddingBottom="100dp"
+            android:paddingBottom="120dp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
@@ -97,7 +110,7 @@
             app:indicatorColor="#6C63FF"
             app:layout_constraintTop_toBottomOf="@id/chatToolbar" />
 
-        <!-- Input Area -->
+        <!-- Input Area with Glow Stroke -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/layoutInput"
             android:layout_width="0dp"
@@ -105,12 +118,13 @@
             android:layout_marginHorizontal="16dp"
             android:layout_marginBottom="112dp"
             app:cardBackgroundColor="#2C2C2E"
-            app:cardCornerRadius="24dp"
-            app:cardElevation="4dp"
+            app:cardCornerRadius="28dp"
+            app:cardElevation="8dp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:strokeWidth="0dp">
+            app:strokeColor="#4D6C63FF"
+            app:strokeWidth="1dp">
 
             <LinearLayout
                 android:layout_width="match_parent"

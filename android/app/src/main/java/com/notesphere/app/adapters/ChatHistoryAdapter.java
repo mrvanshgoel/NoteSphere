@@ -40,10 +40,38 @@ public class ChatHistoryAdapter extends RecyclerView.Adapter<ChatHistoryAdapter.
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         ChatSession session = sessions.get(position);
         holder.tvTitle.setText(session.getTitle());
-        holder.tvDate.setText(session.getUpdatedAt() != null ? session.getUpdatedAt() : "Recently");
+        
+        String dateStr = session.getUpdatedAt();
+        if (dateStr != null) {
+            holder.tvDate.setText(formatDate(dateStr));
+        } else {
+            holder.tvDate.setText("Recently");
+        }
         
         holder.itemView.setOnClickListener(v -> listener.onSessionClick(session));
         holder.btnDelete.setOnClickListener(v -> deleteListener.onSessionDelete(session));
+    }
+
+    private String formatDate(String isoDate) {
+        try {
+            // Simplified relative date logic
+            java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", java.util.Locale.US);
+            sdf.setTimeZone(java.util.TimeZone.getTimeZone("UTC"));
+            java.util.Date date = sdf.parse(isoDate);
+            
+            long diff = System.currentTimeMillis() - date.getTime();
+            long minutes = diff / (60 * 1000);
+            long hours = minutes / 60;
+            long days = hours / 24;
+
+            if (minutes < 60) return minutes + "m ago";
+            if (hours < 24) return hours + "h ago";
+            if (days < 7) return days + "d ago";
+            
+            return new java.text.SimpleDateFormat("MMM dd", java.util.Locale.getDefault()).format(date);
+        } catch (Exception e) {
+            return "Recently";
+        }
     }
 
     @Override
