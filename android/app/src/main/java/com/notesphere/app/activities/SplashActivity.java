@@ -3,40 +3,41 @@ package com.notesphere.app.activities;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.Looper;
-import android.view.animation.AccelerateDecelerateInterpolator;
+import android.view.animation.AlphaAnimation;
+import android.view.animation.Animation;
 import androidx.appcompat.app.AppCompatActivity;
 import com.notesphere.app.databinding.ActivitySplashBinding;
 import com.notesphere.app.utils.SharedPrefManager;
 
 public class SplashActivity extends AppCompatActivity {
+    private ActivitySplashBinding binding;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        ActivitySplashBinding binding = ActivitySplashBinding.inflate(getLayoutInflater());
+        binding = ActivitySplashBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-        // Smooth fade-in and scale animation
-        binding.ivLogo.animate()
-                .alpha(1f)
-                .scaleX(1.1f)
-                .scaleY(1.1f)
-                .setDuration(1200)
-                .setInterpolator(new AccelerateDecelerateInterpolator())
-                .start();
+        // Pulsing animation for logo
+        AlphaAnimation pulse = new AlphaAnimation(0.4f, 1.0f);
+        pulse.setDuration(1500);
+        pulse.setRepeatMode(Animation.REVERSE);
+        pulse.setRepeatCount(Animation.INFINITE);
+        binding.ivLogo.startAnimation(pulse);
 
-        new Handler(Looper.getMainLooper()).postDelayed(() -> {
-            boolean isLoggedIn = SharedPrefManager.getInstance(this).isLoggedIn();
-            Intent intent;
-            if (isLoggedIn) {
-                intent = new Intent(SplashActivity.this, MainActivity.class);
+        // Subtle fade-in for developer branding
+        AlphaAnimation fadeIn = new AlphaAnimation(0f, 1.0f);
+        fadeIn.setDuration(1000);
+        fadeIn.setStartOffset(500);
+        binding.tvDeveloper.startAnimation(fadeIn);
+
+        new Handler().postDelayed(() -> {
+            if (SharedPrefManager.getInstance(this).isLoggedIn()) {
+                startActivity(new Intent(SplashActivity.this, MainActivity.class));
             } else {
-                intent = new Intent(SplashActivity.this, LoginActivity.class);
+                startActivity(new Intent(SplashActivity.this, LoginActivity.class));
             }
-            startActivity(intent);
             finish();
-            overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
-        }, 2500);
+        }, 3000);
     }
 }

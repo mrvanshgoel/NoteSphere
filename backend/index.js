@@ -136,19 +136,6 @@ app.get('/health', (req, res) => res.json({ status: 'ok', timestamp: new Date().
 app.get('/api/debug/models', (req, res) => res.json(getActiveModelInfo()));
 
 // ═══════════════════════════════════════════════════════════
-// UTILS
-// ═══════════════════════════════════════════════════════════
-const formatDoc = (doc) => {
-  if (!doc || !doc.exists) return null;
-  const data = doc.data();
-  // Convert timestamps to strings for Android compatibility
-  const formatted = { id: doc.id, ...data };
-  if (data.createdAt && data.createdAt.toDate) formatted.createdAt = data.createdAt.toDate().toISOString();
-  if (data.updatedAt && data.updatedAt.toDate) formatted.updatedAt = data.updatedAt.toDate().toISOString();
-  return formatted;
-};
-
-// ═══════════════════════════════════════════════════════════
 // AUTH/PROFILE ROUTES
 // ═══════════════════════════════════════════════════════════
 
