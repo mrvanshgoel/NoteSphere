@@ -13,8 +13,8 @@ const port = process.env.PORT || 5000;
 
 // Initialize Supabase
 const supabase = createClient(
-  process.env.VITE_SUPABASE_URL,
-  process.env.VITE_SUPABASE_ANON_KEY
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_ANON_KEY
 );
 
 // Initialize Groq
