@@ -64,7 +64,7 @@ public class ProfileFragment extends Fragment {
         binding = FragmentProfileBinding.inflate(inflater, container, false);
         pref = SharedPrefManager.getInstance(requireContext());
 
-        loadUserData();
+        loadUserProfile();
         loadStats();
 
         binding.fabEditAvatar.setOnClickListener(v -> {
@@ -85,32 +85,41 @@ public class ProfileFragment extends Fragment {
         return binding.getRoot();
     }
 
-    private void loadUserData() {
+    private void loadUserProfile() {
         binding.etName.setText(pref.getUserName());
         binding.etEmail.setText(pref.getUserEmail());
 
-        // Instant load from SharedPref
+        // Fix 5: Load saved avatar IMMEDIATELY from SharedPref first
         String savedUrl = pref.getAvatarUrl();
+        android.util.Log.d("AVATAR", "Initial load from Pref: " + savedUrl);
         if (savedUrl != null && !savedUrl.isEmpty()) {
             loadAvatarWithGlide(savedUrl);
         }
 
-        // Background refresh from API
+        // Fix 3: Background refresh from API
         String authHeader = "Bearer " + pref.getToken();
         ApiClient.getApiService().getProfile(authHeader).enqueue(new Callback<User.UserInfo>() {
             @Override
             public void onResponse(Call<User.UserInfo> call, Response<User.UserInfo> response) {
                 if (isAdded() && response.isSuccessful() && response.body() != null) {
                     String remoteUrl = response.body().getAvatarUrl();
-                    if (remoteUrl != null && !remoteUrl.equals(savedUrl)) {
+                    android.util.Log.d("AVATAR", "Remote URL from API: " + remoteUrl);
+                    
+                    if (remoteUrl != null && !remoteUrl.isEmpty()) {
                         pref.saveAvatarUrl(remoteUrl);
-                        loadAvatarWithGlide(remoteUrl);
+                        if (getActivity() != null) {
+                            getActivity().runOnUiThread(() -> {
+                                loadAvatarWithGlide(remoteUrl);
+                            });
+                        }
                     }
                 }
             }
 
             @Override
-            public void onFailure(Call<User.UserInfo> call, Throwable t) {}
+            public void onFailure(Call<User.UserInfo> call, Throwable t) {
+                android.util.Log.e("AVATAR", "API Error: " + t.getMessage());
+            }
         });
     }
 
@@ -118,8 +127,8 @@ public class ProfileFragment extends Fragment {
         if (binding == null || !isAdded()) return;
         com.bumptech.glide.request.RequestOptions options = new com.bumptech.glide.request.RequestOptions()
             .circleCrop()
-            .placeholder(R.mipmap.ic_launcher_round)
-            .error(R.mipmap.ic_launcher_round)
+            .placeholder(R.drawable.ic_launcher_temp)
+            .error(R.drawable.ic_launcher_temp)
             .diskCacheStrategy(com.bumptech.glide.load.engine.DiskCacheStrategy.NONE)
             .skipMemoryCache(true);
 
@@ -295,7 +304,7 @@ public class ProfileFragment extends Fragment {
         
         // Refresh counts and profile data
         loadStats();
-        loadUserData();
+        loadUserProfile();
     }
 
     @Override
