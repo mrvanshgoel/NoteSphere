@@ -349,7 +349,7 @@ app.get('/api/materials/:subjectId', verifyToken, async (req, res) => {
         id: m.id,
         title: m.title,
         fileUrl: m.file_url || (m.file_path ? supabaseAdmin.storage.from('materials').getPublicUrl(m.file_path).data.publicUrl : ''),
-        fileType: m.file_type,
+        fileType: m.file_type || 'application/octet-stream',
         subjectId: m.subject_id,
         createdAt: m.created_at
     }));
@@ -396,7 +396,6 @@ app.post('/api/materials/upload', verifyToken, upload.single('file'), async (req
         .insert([{
             subject_id: subjectId,
             title: originalName,
-            file_type: mimeType,
             file_path: fileName,
             file_url: publicUrl,
             user_id: req.user.id
