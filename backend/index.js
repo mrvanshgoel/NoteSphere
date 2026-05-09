@@ -20,17 +20,19 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const gemini = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
 
 // Initialize Supabase Clients
-// Client 1: For auth only (anon key)
-const supabase = createClient(
-  process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL,
-  process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY
-);
+const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const anonKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || serviceRoleKey;
 
-// Client 2: For all database operations (bypasses RLS)
-const supabaseAdmin = createClient(
-  process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
+if (!supabaseUrl || (!serviceRoleKey && !anonKey)) {
+  console.error("CRITICAL: Missing Supabase Configuration. Check environment variables.");
+}
+
+// Client 1: For auth only
+const supabase = createClient(supabaseUrl, anonKey);
+
+// Client 2: For database operations (God Mode)
+const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey || anonKey);
 
 // Auto-create buckets (Robustness Fix)
 const initializeStorage = async () => {
