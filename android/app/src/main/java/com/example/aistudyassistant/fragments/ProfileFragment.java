@@ -65,7 +65,7 @@ public class ProfileFragment extends Fragment {
         pref = SharedPrefManager.getInstance(requireContext());
 
         loadUserData();
-        fetchStats();
+        loadStats();
 
         binding.fabEditAvatar.setOnClickListener(v -> {
             Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
@@ -89,20 +89,44 @@ public class ProfileFragment extends Fragment {
         binding.etName.setText(pref.getUserName());
         binding.etEmail.setText(pref.getUserEmail());
 
-        String avatarUrl = pref.getAvatarUrl();
-        if (avatarUrl != null && !avatarUrl.isEmpty()) {
-            com.bumptech.glide.request.RequestOptions options = new com.bumptech.glide.request.RequestOptions()
-                .circleCrop()
-                .placeholder(R.drawable.ic_launcher_temp)
-                .error(R.drawable.ic_launcher_temp)
-                .diskCacheStrategy(com.bumptech.glide.load.engine.DiskCacheStrategy.NONE)
-                .skipMemoryCache(true);
-
-            Glide.with(this)
-                    .load(avatarUrl)
-                    .apply(options)
-                    .into(binding.ivProfile);
+        // Instant load from SharedPref
+        String savedUrl = pref.getAvatarUrl();
+        if (savedUrl != null && !savedUrl.isEmpty()) {
+            loadAvatarWithGlide(savedUrl);
         }
+
+        // Background refresh from API
+        String authHeader = "Bearer " + pref.getToken();
+        ApiClient.getApiService().getProfile(authHeader).enqueue(new Callback<User.UserInfo>() {
+            @Override
+            public void onResponse(Call<User.UserInfo> call, Response<User.UserInfo> response) {
+                if (isAdded() && response.isSuccessful() && response.body() != null) {
+                    String remoteUrl = response.body().getAvatarUrl();
+                    if (remoteUrl != null && !remoteUrl.equals(savedUrl)) {
+                        pref.saveAvatarUrl(remoteUrl);
+                        loadAvatarWithGlide(remoteUrl);
+                    }
+                }
+            }
+
+            @Override
+            public void onFailure(Call<User.UserInfo> call, Throwable t) {}
+        });
+    }
+
+    private void loadAvatarWithGlide(String url) {
+        if (binding == null || !isAdded()) return;
+        com.bumptech.glide.request.RequestOptions options = new com.bumptech.glide.request.RequestOptions()
+            .circleCrop()
+            .placeholder(R.mipmap.ic_launcher_round)
+            .error(R.mipmap.ic_launcher_round)
+            .diskCacheStrategy(com.bumptech.glide.load.engine.DiskCacheStrategy.NONE)
+            .skipMemoryCache(true);
+
+        Glide.with(this)
+                .load(url)
+                .apply(options)
+                .into(binding.ivProfile);
     }
 
     private void showChangeEmailDialog() {
@@ -222,25 +246,40 @@ public class ProfileFragment extends Fragment {
         }
     }
 
-    private void fetchStats() {
+    private void loadStats() {
         if (!isAdded()) return;
-        String authHeader = "Bearer " + pref.getToken();
-        ApiClient.getInstance().getSubjects(authHeader).enqueue(new Callback<List<Subject>>() {
-            @Override
-            public void onResponse(Call<List<Subject>> call, Response<List<Subject>> response) {
-                if (!isAdded() || binding == null) return;
-                if (response.isSuccessful() && response.body() != null) {
-                    List<Subject> subjects = response.body();
-                    binding.tvSubjectCount.setText(String.valueOf(subjects.size()));
-                    int materialCount = 0;
-                    for (Subject s : subjects) materialCount += s.getMaterialCount();
-                    binding.tvMaterialCount.setText(String.valueOf(materialCount));
+        String token = pref.getToken();
+        
+        ApiClient.getApiService().getSubjects("Bearer " + token)
+            .enqueue(new Callback<List<Subject>>() {
+                @Override
+                public void onResponse(Call<List<Subject>> call, Response<List<Subject>> response) {
+                    if (isAdded() && binding != null && response.isSuccessful() && response.body() != null) {
+                        int subjectCount = response.body().size();
+                        
+                        // Count total materials
+                        int totalMaterials = 0;
+                        for (Subject s : response.body()) {
+                            if (s.getMaterialCount() > 0) {
+                                totalMaterials += s.getMaterialCount();
+                            }
+                        }
+                        
+                        final int finalMaterials = totalMaterials;
+                        if (getActivity() != null) {
+                            getActivity().runOnUiThread(() -> {
+                                binding.tvSubjectCount.setText(String.valueOf(subjectCount));
+                                binding.tvMaterialCount.setText(String.valueOf(finalMaterials));
+                            });
+                        }
+                    }
                 }
-            }
-
-            @Override
-            public void onFailure(Call<List<Subject>> call, Throwable t) {}
-        });
+                
+                @Override
+                public void onFailure(Call<List<Subject>> call, Throwable t) {
+                    android.util.Log.e("PROFILE", "Stats error: " + t.getMessage());
+                }
+            });
     }
 
     @Override
@@ -248,23 +287,15 @@ public class ProfileFragment extends Fragment {
         super.onResume();
         if (binding == null) return;
         
+        // Instant load from SharedPref
         String savedUrl = pref.getAvatarUrl();
         if (savedUrl != null && !savedUrl.isEmpty()) {
-            com.bumptech.glide.request.RequestOptions options = new com.bumptech.glide.request.RequestOptions()
-                .circleCrop()
-                .placeholder(R.drawable.ic_launcher_temp)
-                .error(R.drawable.ic_launcher_temp)
-                .diskCacheStrategy(com.bumptech.glide.load.engine.DiskCacheStrategy.NONE)
-                .skipMemoryCache(true);
-
-            Glide.with(this)
-                .load(savedUrl)
-                .apply(options)
-                .into(binding.ivProfile);
+            loadAvatarWithGlide(savedUrl);
         }
         
-        // Refresh counts and profile data in background
-        fetchStats();
+        // Refresh counts and profile data
+        loadStats();
+        loadUserData();
     }
 
     @Override
