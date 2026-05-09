@@ -162,7 +162,12 @@ app.get('/api/auth/profile', verifyToken, async (req, res) => {
       .eq('id', req.user.id)
       .single();
 
-    if (error) throw error;
+    if (error) {
+        console.error("GET PROFILE ERROR:", error.message);
+        throw error;
+    }
+    
+    console.log(`Profile fetched for user ${req.user.id}. Avatar: ${profile.avatar_url}`);
     res.json({
         id: profile.id,
         name: profile.name,
@@ -250,7 +255,13 @@ app.get('/api/subjects', verifyToken, async (req, res) => {
       .from('subjects')
       .select('*')
       .eq('user_id', req.user.id);
-    if (error) throw error;
+    
+    if (error) {
+        console.error("GET SUBJECTS ERROR:", error.message);
+        throw error;
+    }
+    
+    console.log(`Found ${data.length} subjects for user: ${req.user.id}`);
     
     const mapped = data.map(s => ({
         id: s.id,

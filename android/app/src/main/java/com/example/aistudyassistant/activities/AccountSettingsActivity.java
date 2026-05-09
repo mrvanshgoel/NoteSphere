@@ -57,6 +57,7 @@ public class AccountSettingsActivity extends AppCompatActivity {
             Glide.with(this)
                     .load(avatarUrl)
                     .placeholder(R.drawable.ic_launcher_temp)
+                    .error(R.drawable.ic_launcher_temp)
                     .circleCrop()
                     .into(binding.ivProfile);
         }
