@@ -72,11 +72,12 @@ app.post('/api/auth/register', async (req, res) => {
     if (error) throw error;
 
     const user = data.user;
+    // Use upsert to be safe
     const { error: profileError } = await supabase
       .from('profiles')
-      .insert({ id: user.id, name, email, avatar_url: null });
+      .upsert({ id: user.id, name, email, avatar_url: null });
 
-    if (profileError) throw profileError;
+    if (profileError) console.error('Profile creation warning:', profileError);
 
     res.json({ 
       token: data.session?.access_token, 
@@ -94,13 +95,25 @@ app.post('/api/auth/login', async (req, res) => {
 
     if (error) throw error;
 
-    const { data: profile, error: profileError } = await supabase
+    let { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', data.user.id)
       .single();
 
-    if (profileError) throw profileError;
+    // If profile doesn't exist, create it now (robustness fix)
+    if (profileError || !profile) {
+      console.log('Profile missing for user, creating now...');
+      const name = data.user.user_metadata?.name || email.split('@')[0];
+      const { data: newProfile, error: createError } = await supabase
+        .from('profiles')
+        .upsert({ id: data.user.id, name, email, avatar_url: null })
+        .select()
+        .single();
+      
+      if (createError) throw createError;
+      profile = newProfile;
+    }
 
     res.json({ 
       token: data.session.access_token, 
@@ -112,6 +125,7 @@ app.post('/api/auth/login', async (req, res) => {
       } 
     });
   } catch (err) {
+    console.error('Login error:', err);
     res.status(400).json({ error: err.message });
   }
 });
