@@ -14,7 +14,7 @@ const port = process.env.PORT || 5000;
 
 // Initialize Gemini
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const gemini = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+const gemini = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
 
 // Initialize Supabase
 const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
@@ -343,10 +343,36 @@ app.delete('/api/materials/:id', verifyToken, async (req, res) => {
 app.post('/api/ai/summary', verifyToken, async (req, res) => {
   try {
     const { text } = req.body;
+    console.log('Gemini Summary request for text length:', text?.length);
     const result = await gemini.generateContent(`Summarize this study material comprehensively: ${text}`);
     res.json({ content: result.response.text() });
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    console.error('GEMINI SUMMARY ERROR:', err);
+    res.status(400).json({ error: 'Gemini Summary Error: ' + err.message });
+  }
+});
+
+app.post('/api/ai/notes', verifyToken, async (req, res) => {
+  try {
+    const { text } = req.body;
+    console.log('Gemini Notes request for text length:', text?.length);
+    const result = await gemini.generateContent(`Create detailed study notes with headings and bullet points from this material: ${text}`);
+    res.json({ content: result.response.text() });
+  } catch (err) {
+    console.error('GEMINI NOTES ERROR:', err);
+    res.status(400).json({ error: 'Gemini Notes Error: ' + err.message });
+  }
+});
+
+app.post('/api/ai/questions', verifyToken, async (req, res) => {
+  try {
+    const { text } = req.body;
+    console.log('Gemini Questions request for text length:', text?.length);
+    const result = await gemini.generateContent(`Generate 5 important practice questions based on this study material: ${text}`);
+    res.json({ content: result.response.text() });
+  } catch (err) {
+    console.error('GEMINI QUESTIONS ERROR:', err);
+    res.status(400).json({ error: 'Gemini Questions Error: ' + err.message });
   }
 });
 
@@ -438,10 +464,36 @@ app.post('/api/ai/chat', verifyToken, async (req, res) => {
 app.post('/api/ai/summary', verifyToken, async (req, res) => {
   try {
     const { text } = req.body;
+    console.log('Gemini Summary request for text length:', text?.length);
     const result = await gemini.generateContent(`Summarize this study material comprehensively: ${text}`);
     res.json({ content: result.response.text() });
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    console.error('GEMINI SUMMARY ERROR:', err);
+    res.status(400).json({ error: 'Gemini Summary Error: ' + err.message });
+  }
+});
+
+app.post('/api/ai/notes', verifyToken, async (req, res) => {
+  try {
+    const { text } = req.body;
+    console.log('Gemini Notes request for text length:', text?.length);
+    const result = await gemini.generateContent(`Create detailed study notes with headings and bullet points from this material: ${text}`);
+    res.json({ content: result.response.text() });
+  } catch (err) {
+    console.error('GEMINI NOTES ERROR:', err);
+    res.status(400).json({ error: 'Gemini Notes Error: ' + err.message });
+  }
+});
+
+app.post('/api/ai/questions', verifyToken, async (req, res) => {
+  try {
+    const { text } = req.body;
+    console.log('Gemini Questions request for text length:', text?.length);
+    const result = await gemini.generateContent(`Generate 5 important practice questions based on this study material: ${text}`);
+    res.json({ content: result.response.text() });
+  } catch (err) {
+    console.error('GEMINI QUESTIONS ERROR:', err);
+    res.status(400).json({ error: 'Gemini Questions Error: ' + err.message });
   }
 });
 
