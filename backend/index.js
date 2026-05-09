@@ -29,6 +29,23 @@ if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
+// Auto-create buckets (Robustness Fix)
+const initializeStorage = async () => {
+  try {
+    const buckets = ['materials', 'avatars'];
+    for (const b of buckets) {
+      const { data, error } = await supabase.storage.getBucket(b);
+      if (error && error.message.includes('not found')) {
+        console.log(`Creating missing bucket: ${b}`);
+        await supabase.storage.createBucket(b, { public: true });
+      }
+    }
+  } catch (err) {
+    console.error('Storage initialization warning:', err.message);
+  }
+};
+initializeStorage();
+
 // Middleware
 app.use(cors({ origin: '*' }));
 app.use(express.json({ limit: '50mb' }));
