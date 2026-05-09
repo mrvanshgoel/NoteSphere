@@ -13,6 +13,7 @@ dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 5000;
+const currentDate = new Date().toISOString();
 
 // Initialize Gemini
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
@@ -266,40 +267,57 @@ app.post('/api/materials/upload', verifyToken, upload.single('file'), async (req
   try {
     const { subjectId } = req.body;
     const file = req.file;
-    if (!file) throw new Error('No file uploaded');
+    const originalName = file.originalname;
+    const mimeType = file.mimetype;
+    
+    console.log(`Uploading file: ${originalName} for subject: ${subjectId}`);
 
-    const filePath = `${req.user.id}/${Date.now()}_${file.originalname}`;
-    const { error: uploadError } = await supabase.storage
-      .from('materials')
-      .upload(filePath, file.buffer, { contentType: file.mimetype });
-
-    if (uploadError) throw uploadError;
-
-    const { data: { publicUrl } } = supabase.storage.from('materials').getPublicUrl(filePath);
-
-    let contentText = '';
-    if (file.originalname.endsWith('.txt')) {
-      contentText = file.buffer.toString('utf-8');
+    if (!req.file) {
+        console.error("Upload Error: No file found in request.");
+        return res.status(400).json({ error: "No file uploaded" });
     }
 
-    const { data, error } = await supabase
-      .from('materials')
-      .insert({
-        user_id: req.user.id,
-        subject_id: subjectId,
-        title: file.originalname,
-        file_url: publicUrl,
-        file_path: filePath, // Saved for sharing
-        file_type: file.mimetype,
-        content_text: contentText
-      })
-      .select()
-      .single();
+    const fileName = `${Date.now()}_${originalName}`;
+    console.log(`Uploading to Supabase Storage as: ${fileName}`);
 
-    if (error) throw error;
-    res.json(data);
+    const { data: storageData, error: storageError } = await supabase.storage
+        .from('materials')
+        .upload(fileName, req.file.buffer, {
+            contentType: mimeType,
+            upsert: true
+        });
+
+    if (storageError) {
+        console.error("SUPABASE STORAGE ERROR:", storageError.message);
+        return res.status(500).json({ error: "Storage upload failed: " + storageError.message });
+    }
+
+    console.log("File uploaded to storage. Inserting into database...");
+
+    const { data: materialData, error: materialError } = await supabase
+        .from('materials')
+        .insert([{
+            subject_id: subjectId,
+            title: originalName,
+            file_type: mimeType,
+            file_path: fileName,
+            user_id: req.user.id
+        }])
+        .select()
+        .single();
+
+    if (materialError) {
+        console.error("SUPABASE DB ERROR (Materials):", materialError.message);
+        // Cleanup storage if DB fails
+        await supabase.storage.from('materials').remove([fileName]);
+        return res.status(500).json({ error: "Database insert failed: " + materialError.message });
+    }
+
+    console.log("Material created successfully.");
+    res.status(201).json(materialData);
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    console.error("GENERAL UPLOAD ERROR:", err.message);
+    res.status(500).json({ error: "Internal server error during upload" });
   }
 });
 
@@ -343,28 +361,40 @@ app.post('/api/ai/chat', verifyToken, async (req, res) => {
 
 app.post('/api/ai/summary', verifyToken, async (req, res) => {
   try {
-    const result = await gemini.generateContent(`Summarize this material: ${req.body.text}`);
+    const { text } = req.body;
+    const result = await gemini.generateContent(`System: You are an Expert Academic Professor.
+    Task: Summarize this material in an exhaustive, structured way. Do NOT skip key concepts.
+    Material: ${text}`);
     res.json({ content: result.response.text() });
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    console.error("AI Summary Error:", err.message);
+    res.status(400).json({ error: "Summary generation failed" });
   }
 });
 
 app.post('/api/ai/notes', verifyToken, async (req, res) => {
   try {
-    const result = await gemini.generateContent(`Create study notes: ${req.body.text}`);
+    const { text } = req.body;
+    const result = await gemini.generateContent(`System: You are an Expert Academic Professor.
+    Task: Create detailed, exhaustive study notes from this text. Use headings, bullet points, and deep explanations.
+    Material: ${text}`);
     res.json({ content: result.response.text() });
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    console.error("AI Notes Error:", err.message);
+    res.status(400).json({ error: "Notes generation failed" });
   }
 });
 
 app.post('/api/ai/questions', verifyToken, async (req, res) => {
   try {
-    const result = await gemini.generateContent(`Generate practice questions: ${req.body.text}`);
+    const { text } = req.body;
+    const result = await gemini.generateContent(`System: You are an Expert Academic Professor.
+    Task: Generate high-quality practice questions (Multiple Choice and Short Answer) based on this material.
+    Material: ${text}`);
     res.json({ content: result.response.text() });
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    console.error("AI Questions Error:", err.message);
+    res.status(400).json({ error: "Questions generation failed" });
   }
 });
 

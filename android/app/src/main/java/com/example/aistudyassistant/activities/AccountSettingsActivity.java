@@ -1,7 +1,11 @@
 package com.example.aistudyassistant.activities;
 
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.widget.Toast;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 import com.bumptech.glide.Glide;
 import com.example.aistudyassistant.R;
@@ -9,19 +13,15 @@ import com.example.aistudyassistant.api.ApiClient;
 import com.example.aistudyassistant.databinding.ActivityAccountSettingsBinding;
 import com.example.aistudyassistant.models.User;
 import com.example.aistudyassistant.utils.SharedPrefManager;
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
-import android.content.Intent;
-import android.net.Uri;
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
 import okhttp3.RequestBody;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class AccountSettingsActivity extends AppCompatActivity {
     private ActivityAccountSettingsBinding binding;
@@ -42,9 +42,24 @@ public class AccountSettingsActivity extends AppCompatActivity {
         }
         binding.toolbar.setNavigationOnClickListener(v -> onBackPressed());
 
-        loadData();
+        refreshUI();
         binding.ivProfile.setOnClickListener(v -> pickImage());
         binding.btnSave.setOnClickListener(v -> saveSettings());
+    }
+
+    private void refreshUI() {
+        if (binding == null) return;
+        binding.etName.setText(pref.getUserName());
+        binding.etEmail.setText(pref.getUserEmail());
+
+        String avatarUrl = pref.getUserAvatar();
+        if (avatarUrl != null && !avatarUrl.isEmpty()) {
+            Glide.with(this)
+                    .load(avatarUrl)
+                    .placeholder(R.drawable.ic_launcher_temp)
+                    .circleCrop()
+                    .into(binding.ivProfile);
+        }
     }
 
     private final ActivityResultLauncher<Intent> imagePickerLauncher = registerForActivityResult(
@@ -64,6 +79,7 @@ public class AccountSettingsActivity extends AppCompatActivity {
     }
 
     private void uploadAvatar(Uri uri) {
+        if (binding == null) return;
         binding.progressBar.setVisibility(android.view.View.VISIBLE);
         try {
             File file = getFileFromUri(uri);
@@ -79,7 +95,7 @@ public class AccountSettingsActivity extends AppCompatActivity {
                     if (response.isSuccessful() && response.body() != null) {
                         String url = response.body().getAvatarUrl();
                         pref.saveUserInfo(pref.getUserName(), pref.getUserEmail(), url);
-                        loadData();
+                        refreshUI();
                         Toast.makeText(AccountSettingsActivity.this, "Profile picture updated!", Toast.LENGTH_SHORT).show();
                     } else {
                         Toast.makeText(AccountSettingsActivity.this, "Upload failed", Toast.LENGTH_SHORT).show();
@@ -111,19 +127,6 @@ public class AccountSettingsActivity extends AppCompatActivity {
         is.close();
         return file;
     }
-    private void loadData() {
-        binding.etName.setText(pref.getUserName());
-        binding.etEmail.setText(pref.getUserEmail());
-
-        String avatarUrl = pref.getUserAvatar();
-        if (avatarUrl != null && !avatarUrl.isEmpty()) {
-            Glide.with(this)
-                    .load(avatarUrl)
-                    .placeholder(R.drawable.ic_launcher_temp)
-                    .circleCrop()
-                    .into(binding.ivProfile);
-        }
-    }
 
     private void saveSettings() {
         String name = binding.etName.getText().toString().trim();
@@ -143,6 +146,7 @@ public class AccountSettingsActivity extends AppCompatActivity {
         ApiClient.getInstance().updateProfile(authHeader, update).enqueue(new Callback<User.UserInfo>() {
             @Override
             public void onResponse(Call<User.UserInfo> call, Response<User.UserInfo> response) {
+                if (isFinishing() || isDestroyed() || binding == null) return;
                 binding.btnSave.setEnabled(true);
                 binding.btnSave.setText("Save Settings");
                 if (response.isSuccessful() && response.body() != null) {
@@ -156,13 +160,13 @@ public class AccountSettingsActivity extends AppCompatActivity {
 
             @Override
             public void onFailure(Call<User.UserInfo> call, Throwable t) {
+                if (isFinishing() || isDestroyed() || binding == null) return;
                 binding.btnSave.setEnabled(true);
                 binding.btnSave.setText("Save Settings");
                 Toast.makeText(AccountSettingsActivity.this, "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
         
-        // If email changed, usually you'd send a separate verification request
         if (!email.equals(pref.getUserEmail())) {
             Toast.makeText(this, "Verification email sent to " + email, Toast.LENGTH_LONG).show();
         }

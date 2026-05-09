@@ -8,7 +8,6 @@ import com.example.aistudyassistant.models.Material;
 import com.example.aistudyassistant.models.RegisterRequest;
 import com.example.aistudyassistant.models.Subject;
 import com.example.aistudyassistant.models.User;
-import com.example.aistudyassistant.models.AvatarResponse;
 import com.example.aistudyassistant.models.ShareRequest;
 import com.example.aistudyassistant.models.ShareResponse;
 
@@ -44,7 +43,7 @@ public interface ApiService {
 
     @Multipart
     @POST("api/auth/upload-avatar")
-    Call<AvatarResponse> uploadAvatar(
+    Call<User.AvatarResponse> uploadAvatar(
             @Header("Authorization") String token,
             @Part MultipartBody.Part avatar
     );

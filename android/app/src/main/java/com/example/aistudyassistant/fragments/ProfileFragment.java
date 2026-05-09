@@ -20,7 +20,6 @@ import com.example.aistudyassistant.R;
 import com.example.aistudyassistant.activities.LoginActivity;
 import com.example.aistudyassistant.api.ApiClient;
 import com.example.aistudyassistant.databinding.FragmentProfileBinding;
-import com.example.aistudyassistant.models.AvatarResponse;
 import com.example.aistudyassistant.models.Subject;
 import com.example.aistudyassistant.models.User;
 import com.example.aistudyassistant.utils.SharedPrefManager;
@@ -176,9 +175,10 @@ public class ProfileFragment extends Fragment {
 
             Toast.makeText(getContext(), "Uploading avatar...", Toast.LENGTH_SHORT).show();
 
-            ApiClient.getInstance().uploadAvatar(authHeader, body).enqueue(new Callback<AvatarResponse>() {
+            ApiClient.getInstance().uploadAvatar(authHeader, body).enqueue(new Callback<User.AvatarResponse>() {
                 @Override
-                public void onResponse(Call<AvatarResponse> call, Response<AvatarResponse> response) {
+                public void onResponse(Call<User.AvatarResponse> call, Response<User.AvatarResponse> response) {
+                    if (binding == null || !isAdded()) return;
                     if (response.isSuccessful() && response.body() != null) {
                         String newUrl = response.body().getAvatarUrl();
                         pref.saveUserInfo(pref.getUserName(), pref.getUserEmail(), newUrl);
@@ -190,7 +190,8 @@ public class ProfileFragment extends Fragment {
                 }
 
                 @Override
-                public void onFailure(Call<AvatarResponse> call, Throwable t) {
+                public void onFailure(Call<User.AvatarResponse> call, Throwable t) {
+                    if (binding == null || !isAdded()) return;
                     Toast.makeText(getContext(), "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
                 }
             });
