@@ -359,14 +359,20 @@ app.get('/api/materials/:subjectId', verifyToken, async (req, res) => {
     if (error) throw error;
     
     // Map to Android Model Keys
-    const mapped = data.map(m => ({
-        id: m.id,
-        title: m.title,
-        fileUrl: m.file_url || (m.file_path ? supabaseAdmin.storage.from('materials').getPublicUrl(m.file_path).data.publicUrl : ''),
-        fileType: m.file_type || 'application/octet-stream',
-        subjectId: m.subject_id,
-        createdAt: m.created_at
-    }));
+    const mapped = data.map(m => {
+        let url = m.file_url;
+        if (!url && m.file_path) {
+            url = supabaseAdmin.storage.from('materials').getPublicUrl(m.file_path).data.publicUrl;
+        }
+        return {
+            id: m.id,
+            title: m.title,
+            fileUrl: url || '',
+            fileType: m.file_type || 'application/octet-stream',
+            subjectId: m.subject_id,
+            createdAt: m.created_at
+        };
+    });
     
     res.json(mapped);
   } catch (err) {
@@ -411,7 +417,6 @@ app.post('/api/materials/upload', verifyToken, upload.single('file'), async (req
             subject_id: subjectId,
             title: originalName,
             file_path: fileName,
-            file_url: publicUrl,
             user_id: req.user.id
         }])
         .select()
