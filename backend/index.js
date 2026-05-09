@@ -205,18 +205,24 @@ app.post('/api/auth/upload-avatar', verifyToken, upload.single('avatar'), async 
     const fileName = `${req.user.id}-${Date.now()}.${fileExt}`;
     const filePath = fileName; // Simplified path
 
-    console.log(`Uploading avatar to bucket 'avatars' as: ${filePath}`);
-
+    console.log(`STEP 1: Starting Supabase Storage upload for ${filePath}...`);
     const { error: uploadError } = await supabase.storage
       .from('avatars')
       .upload(filePath, file.buffer, { contentType: file.mimetype });
 
-    if (uploadError) throw uploadError;
+    if (uploadError) {
+        console.error("STEP 1 FAILED (Storage):", uploadError.message);
+        throw uploadError;
+    }
+    console.log("STEP 1 SUCCESS: File uploaded to storage.");
 
+    console.log("STEP 2: Generating Public URL...");
     const { data: { publicUrl } } = supabase.storage
       .from('avatars')
       .getPublicUrl(filePath);
+    console.log(`STEP 2 SUCCESS: Generated URL: ${publicUrl}`);
 
+    console.log("STEP 3: Updating profiles table in database...");
     const { data: profile, error: updateError } = await supabase
       .from('profiles')
       .update({ avatar_url: publicUrl })
@@ -224,11 +230,15 @@ app.post('/api/auth/upload-avatar', verifyToken, upload.single('avatar'), async 
       .select()
       .single();
 
-    if (updateError) throw updateError;
+    if (updateError) {
+        console.error("STEP 3 FAILED (Database):", updateError.message);
+        throw updateError;
+    }
+    console.log("STEP 3 SUCCESS: Profile updated in database.");
 
     res.json({ avatarUrl: publicUrl });
   } catch (err) {
-    console.error("Avatar Upload Error:", err.message);
+    console.error("AVATAR UPLOAD CRITICAL ERROR:", err.message);
     res.status(400).json({ error: err.message });
   }
 });
