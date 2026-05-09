@@ -387,25 +387,34 @@ app.post('/api/ai/chat', verifyToken, async (req, res) => {
   try {
     const { messages, systemPrompt } = req.body;
     const lastUserMessage = messages[messages.length - 1]?.content || "";
+    const currentDate = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
     
-    console.log('AI Chat request with search check:', lastUserMessage);
+    console.log('AI Chat request (India Time):', currentDate, '| Query:', lastUserMessage);
 
     // 1. Determine if we need a web search
     let searchResults = "";
     const searchDecision = await groq.chat.completions.create({
       messages: [
-        { role: 'system', content: 'Output "SEARCH" if this query needs real-time info/search, else "NO". Query: ' + lastUserMessage }
+        { 
+          role: 'system', 
+          content: `You are a search coordinator. Output "SEARCH" if the user query needs current events, weather, news, or real-time info. Otherwise output "NO".
+          User Query: "${lastUserMessage}"` 
+        }
       ],
       model: "llama-3.1-8b-instant",
     });
 
-    if (searchDecision.choices[0].message.content.includes("SEARCH")) {
+    const shouldSearch = searchDecision.choices[0].message.content.toUpperCase().includes("SEARCH");
+
+    if (shouldSearch) {
       console.log('Performing web search for:', lastUserMessage);
       try {
         const searchResponse = await search(lastUserMessage, { safeSearch: true });
-        searchResults = searchResponse.results.slice(0, 3).map(r => `Source: ${r.url}\nTitle: ${r.title}\nContent: ${r.description}`).join('\n\n');
+        searchResults = searchResponse.results.slice(0, 3)
+          .map(r => `Source: ${r.url}\nTitle: ${r.title}\nContent: ${r.description}`)
+          .join('\n\n');
       } catch (searchErr) {
-        console.error('Search failed:', searchErr);
+        console.error('Search library error:', searchErr);
       }
     }
 
@@ -414,8 +423,14 @@ app.post('/api/ai/chat', verifyToken, async (req, res) => {
       messages: [
         { 
           role: 'system', 
-          content: (systemPrompt || "You are an expert AI study assistant.") + 
-                   (searchResults ? "\n\nUSE THESE REAL-TIME SEARCH RESULTS TO ANSWER:\n" + searchResults : "") 
+          content: `You are an expert AI study assistant. 
+          Current Date and Time in India: ${currentDate}.
+          
+          ${systemPrompt || "Help students understand their study material and answer questions clearly."}
+          
+          ${searchResults ? "\n\nCRITICAL: Use these live search results to provide an up-to-date answer:\n" + searchResults : ""}
+          
+          If the user asks for today's date, use the provided current date above.` 
         },
         ...messages
       ],
