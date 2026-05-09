@@ -345,39 +345,132 @@ async function getMaterialText(materialId, userId) {
 
 app.post('/api/ai/chat', verifyToken, async (req, res) => {
   try {
-    const { message, history = [] } = req.body;
+    const { message, history = [], chatId, materialId } = req.body;
     if (!message) return res.status(400).json({ error: 'Message required' });
 
-    console.log(`[AI Chat] Request: ${message}`);
-    const systemPrompt = "You are Notesphere AI, an advanced, concise, and helpful study assistant.";
+    console.log(`[AI Chat] Request: ${message} (ChatId: ${chatId})`);
     
-    // Clean history to ensure it's valid for Gemini (alternating user/model)
-    const cleanedHistory = (history || [])
+    let context = "";
+    if (materialId) {
+      try {
+        context = await getMaterialText(materialId, req.user.id);
+        console.log(`[AI Chat] Using context from material: ${materialId}`);
+      } catch (e) {
+        console.warn('Failed to fetch context for chat:', e.message);
+      }
+    }
+
+    const developerInfo = `
+Developer Info:
+- Name: Vansh Goel
+- Age: 19 (Born May 30, 2006)
+- Background: Pursuing BCA (Hons. with Research) in Multimedia & Animation from Galgotias University.
+- Origin: Meerut, Uttar Pradesh, India.
+- Profile: Tech & creative enthusiast, graphic designer, UI/UX freelancer.
+`;
+
+    const systemPrompt = `You are Notesphere AI, a deeply integrated Study Operating System assistant. 
+Your goal is to be a student's 'Second Brain', inspired by systems like NotebookLM.
+Be proactive, smart, and academic yet encouraging. 
+
+${developerInfo}
+
+When asked about your origin or creator, mention Vansh Goel with pride.
+Always prioritize providing context-aware answers based on the student's study materials.`;
+    const contextSection = context ? `\n\n[CONTEXT FROM ATTACHED FILE]:\n${context.substring(0, 10000)}` : "";
+    
+    // Clean history
+    const validatedHistory = (history || [])
       .filter(m => m.content && m.content.trim() !== '')
       .map(m => ({
         role: m.role === 'assistant' ? 'model' : 'user',
         parts: [{ text: m.content }]
       }));
-    
-    // Ensure history doesn't start with model and doesn't have consecutive same roles
-    const validatedHistory = [];
-    cleanedHistory.forEach(msg => {
-      if (validatedHistory.length === 0) {
-        if (msg.role === 'user') validatedHistory.push(msg);
-      } else {
-        if (validatedHistory[validatedHistory.length - 1].role !== msg.role) {
-          validatedHistory.push(msg);
-        }
-      }
-    });
 
-    const result = await generateWithFallback(`${systemPrompt}\n\nUser: ${message}`, validatedHistory);
+    const result = await generateWithFallback(`${systemPrompt}${contextSection}\n\nUser: ${message}`, validatedHistory);
     const responseText = result.text;
-    console.log(`[AI Chat] Response (Model: ${result.modelUsed}): ${responseText.substring(0, 100)}...`);
-    res.json({ content: responseText, role: 'assistant', model: result.modelUsed });
+    
+    // Auto-save chat if chatId is provided or this is a new session
+    let savedChatId = chatId;
+    if (savedChatId) {
+      const chatRef = db.collection('chats').doc(savedChatId);
+      await chatRef.update({
+        messages: admin.firestore.FieldValue.arrayUnion(
+          { role: 'user', content: message, timestamp: new Date().toISOString() },
+          { role: 'assistant', content: responseText, timestamp: new Date().toISOString(), model: result.modelUsed }
+        ),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+    }
+
+    res.json({ 
+      content: responseText, 
+      role: 'assistant', 
+      model: result.modelUsed,
+      chatId: savedChatId
+    });
   } catch (err) {
     console.error('[AI Chat Error]', err.message);
     res.status(500).json({ error: 'AI chat failed', detail: err.message });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════
+// CHAT PERSISTENCE ROUTES
+// ═══════════════════════════════════════════════════════════
+
+app.get('/api/ai/chats', verifyToken, async (req, res) => {
+  try {
+    const snapshot = await db.collection('chats')
+      .where('userId', '==', req.user.id)
+      .orderBy('updatedAt', 'desc')
+      .get();
+    
+    const chats = [];
+    snapshot.forEach(doc => chats.push(formatDoc(doc)));
+    res.json(chats);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.post('/api/ai/chats', verifyToken, async (req, res) => {
+  try {
+    const { title = "New Chat", messages = [] } = req.body;
+    const docRef = await db.collection('chats').add({
+      userId: req.user.id,
+      title,
+      messages,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+    res.json({ id: docRef.id, title });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.get('/api/ai/chats/:chatId', verifyToken, async (req, res) => {
+  try {
+    const doc = await db.collection('chats').doc(req.params.chatId).get();
+    if (!doc.exists) return res.status(404).json({ error: 'Chat not found' });
+    if (doc.data().userId !== req.user.id) return res.status(403).json({ error: 'Forbidden' });
+    res.json(formatDoc(doc));
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.delete('/api/ai/chats/:chatId', verifyToken, async (req, res) => {
+  try {
+    const doc = await db.collection('chats').doc(req.params.chatId).get();
+    if (!doc.exists) return res.status(404).json({ error: 'Chat not found' });
+    if (doc.data().userId !== req.user.id) return res.status(403).json({ error: 'Forbidden' });
+    
+    await db.collection('chats').doc(req.params.chatId).delete();
+    res.json({ success: true });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
   }
 });
 
@@ -551,6 +644,90 @@ app.put('/api/syllabus/:id', verifyToken, async (req, res) => {
 
 app.post('/api/share/generate', verifyToken, async (req, res) => {
   res.status(501).json({ error: 'Not Implemented without Cloud Storage' });
+});
+
+// ═══════════════════════════════════════════════════════════
+// STUDY INTELLIGENCE & ANALYTICS (Phase 1)
+// ═══════════════════════════════════════════════════════════
+
+app.get('/api/study/intelligence', verifyToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    // Fetch user activity, quiz results, and chats
+    const [quizSnap, chatsSnap, materialsSnap] = await Promise.all([
+      db.collection('quiz_results').where('userId', '==', userId).orderBy('timestamp', 'desc').limit(10).get(),
+      db.collection('chats').where('userId', '==', userId).limit(5).get(),
+      db.collection('materials').where('userId', '==', userId).limit(10).get()
+    ]);
+
+    const weakTopics = new Set();
+    let avgAccuracy = 0;
+    let quizCount = 0;
+
+    quizSnap.forEach(doc => {
+      const data = doc.data();
+      if (data.score < (data.total * 0.6)) {
+        if (data.subjectName) weakTopics.add(data.subjectName);
+      }
+      avgAccuracy += (data.score / data.total);
+      quizCount++;
+    });
+
+    const intelligence = {
+      suggestions: [],
+      stats: {
+        avgAccuracy: quizCount > 0 ? (avgAccuracy / quizCount) * 100 : 0,
+        materialsCount: materialsSnap.size,
+        activeChats: chatsSnap.size
+      },
+      weakTopics: Array.from(weakTopics)
+    };
+
+    // Generate Proactive Suggestions
+    if (intelligence.weakTopics.length > 0) {
+      intelligence.suggestions.push({
+        type: 'revision',
+        priority: 'high',
+        message: `You struggled with ${intelligence.weakTopics[0]} recently. Would you like to revise the key concepts?`,
+        action: 'REVISE_TOPIC',
+        topic: intelligence.weakTopics[0]
+      });
+    }
+
+    if (materialsSnap.size > 0 && quizCount === 0) {
+      intelligence.suggestions.push({
+        type: 'engagement',
+        priority: 'medium',
+        message: "You have new study materials! Generate a quick quiz to test your knowledge?",
+        action: 'GENERATE_QUIZ'
+      });
+    }
+
+    res.json(intelligence);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/study/track-quiz', verifyToken, async (req, res) => {
+  try {
+    const { subjectId, subjectName, score, total, weakQuestions = [] } = req.body;
+    
+    await db.collection('quiz_results').add({
+      userId: req.user.id,
+      subjectId,
+      subjectName,
+      score,
+      total,
+      weakQuestions,
+      timestamp: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    res.json({ success: true });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
 });
 
 // ═══════════════════════════════════════════════════════════

@@ -52,7 +52,42 @@ public class HomeFragment extends Fragment {
         binding.tvStreakCount.setText(String.valueOf(pref.getStudyStreak()));
 
         fetchData();
+        fetchIntelligence();
         return binding.getRoot();
+    }
+
+    private void fetchIntelligence() {
+        String token = "Bearer " + pref.getToken();
+        ApiClient.getInstance().getStudyIntelligence(token).enqueue(new Callback<com.google.gson.JsonObject>() {
+            @Override
+            public void onResponse(Call<com.google.gson.JsonObject> call, Response<com.google.gson.JsonObject> response) {
+                if (!isAdded() || binding == null) return;
+                if (response.isSuccessful() && response.body() != null) {
+                    com.google.gson.JsonArray suggestionsArr = response.body().getAsJsonArray("suggestions");
+                    java.util.List<com.google.gson.JsonObject> list = new java.util.ArrayList<>();
+                    for (com.google.gson.JsonElement el : suggestionsArr) {
+                        list.add(el.getAsJsonObject());
+                    }
+                    
+                    com.notesphere.app.adapters.IntelligenceAdapter adapter = new com.notesphere.app.adapters.IntelligenceAdapter(list, s -> {
+                        String action = s.get("action").getAsString();
+                        if (action.equals("REVISE_TOPIC")) {
+                            navigateToTab(R.id.nav_subjects);
+                        } else if (action.equals("GENERATE_QUIZ")) {
+                            navigateToTab(R.id.nav_subjects);
+                        }
+                    });
+                    
+                    binding.rvIntelligence.setAdapter(adapter);
+                    binding.layoutIntelligence.setVisibility(list.isEmpty() ? View.GONE : View.VISIBLE);
+                }
+            }
+
+            @Override
+            public void onFailure(Call<com.google.gson.JsonObject> call, Throwable t) {
+                if (binding != null) binding.layoutIntelligence.setVisibility(View.GONE);
+            }
+        });
     }
 
     @Override

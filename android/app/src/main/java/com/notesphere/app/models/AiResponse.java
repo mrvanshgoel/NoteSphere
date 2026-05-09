@@ -4,6 +4,7 @@ public class AiResponse {
     private String type;
     private String content;
     private String materialId;
+    private String model;
 
     public AiResponse(String type, String content, String materialId) {
         this.type = type;
@@ -14,4 +15,5 @@ public class AiResponse {
     public String getType() { return type; }
     public String getContent() { return content; }
     public String getMaterialId() { return materialId; }
+    public String getModel() { return model; }
 }

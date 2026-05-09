@@ -12,6 +12,7 @@ import com.notesphere.app.models.User;
 import com.notesphere.app.models.ShareRequest;
 import com.notesphere.app.models.ShareResponse;
 import com.notesphere.app.models.Syllabus;
+import com.notesphere.app.models.ChatSession;
 import com.notesphere.app.models.DoubtRequest;
 
 import java.util.List;
@@ -85,6 +86,18 @@ public interface ApiService {
     @POST("api/ai/chat")
     Call<AiResponse> chat(@Header("Authorization") String token, @Body ChatRequest body);
 
+    @GET("api/ai/chats")
+    Call<List<ChatSession>> getChatSessions(@Header("Authorization") String token);
+
+    @POST("api/ai/chats")
+    Call<ChatSession> createChatSession(@Header("Authorization") String token, @Body ChatSession body);
+
+    @GET("api/ai/chats/{chatId}")
+    Call<ChatSession> getChatSession(@Header("Authorization") String token, @Path("chatId") String chatId);
+
+    @DELETE("api/ai/chats/{chatId}")
+    Call<Void> deleteChatSession(@Header("Authorization") String token, @Path("chatId") String chatId);
+
     // ─── AI: Summarize (multi-mode: summary/notes/concepts/viva) ─────────
     @POST("api/ai/summarize")
     Call<AiResponse> summarize(@Header("Authorization") String token, @Body AiRequest body);
@@ -114,4 +127,11 @@ public interface ApiService {
     // ─── Share ───────────────────────────────────────────────────────────
     @POST("api/share/generate")
     Call<ShareResponse> generateShareLink(@Header("Authorization") String token, @Body ShareRequest body);
+
+    // ─── Study Intelligence ──────────────────────────────────────────────
+    @GET("api/study/intelligence")
+    Call<com.google.gson.JsonObject> getStudyIntelligence(@Header("Authorization") String token);
+
+    @POST("api/study/track-quiz")
+    Call<Void> trackQuizResult(@Header("Authorization") String token, @Body com.google.gson.JsonObject body);
 }

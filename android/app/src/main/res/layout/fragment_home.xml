@@ -108,6 +108,50 @@
                 </LinearLayout>
             </LinearLayout>
 
+            <!-- AI Intelligence Section -->
+            <LinearLayout
+                android:id="@+id/layoutIntelligence"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginBottom="24dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:layout_marginBottom="12dp">
+                    
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Study Intelligence"
+                        style="@style/Notesphere.Text.Section" />
+
+                    <TextView
+                        android:id="@+id/tvModelUsedHome"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Gemini 3.1"
+                        android:textColor="@color/ns_text_secondary"
+                        android:textSize="10sp"
+                        android:background="@drawable/bg_pill_surface"
+                        android:paddingHorizontal="8dp"
+                        android:paddingVertical="2dp" />
+                </LinearLayout>
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvIntelligence"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:clipToPadding="false"
+                    app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
+
+            </LinearLayout>
+
             <!-- Stats Row -->
             <LinearLayout
                 android:layout_width="match_parent"
