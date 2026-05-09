@@ -47,10 +47,8 @@ Real-time tracking of your academic journey.
 
 ## 👨‍💻 Developer
 Created with ❤️ by **Vansh Goel**.
-*   **Age**: 19 (Born May 30, 2006)
 *   **Academic**: BCA (Hons. with Research) in Multimedia & Animation, **Galgotias University**.
 *   **Profile**: Tech & creative enthusiast, Freelance UI/UX & Graphic Designer.
-*   **Origin**: Meerut, Uttar Pradesh, India.
 
 ---
 
