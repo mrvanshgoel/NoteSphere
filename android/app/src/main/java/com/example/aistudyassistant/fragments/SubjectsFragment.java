@@ -84,47 +84,49 @@ public class SubjectsFragment extends Fragment {
                 .setView(et)
                 .setPositiveButton("Create", (dialog, which) -> {
                     String name = et.getText().toString().trim();
-                    if (!name.isEmpty()) createSubject(name);
+                    if (!name.isEmpty()) {
+                        // Random nice color and icon for premium feel
+                        String[] colors = {"#6C63FF", "#FF6584", "#4CAF50", "#2196F3", "#FF9800"};
+                        String color = colors[(int)(Math.random() * colors.length)];
+                        createSubject(name, color, "📚");
+                    }
                     else Toast.makeText(getContext(), "Name cannot be empty", Toast.LENGTH_SHORT).show();
                 })
                 .setNegativeButton("Cancel", null)
                 .show();
     }
 
-    private void createSubject(String name) {
-        String token = SharedPrefManager.getInstance(requireContext()).getToken();
-        String authHeader = "Bearer " + token;
+    private void createSubject(String name, String color, String icon) {
+        String token = SharedPrefManager.getInstance(getContext()).getToken();
         
-        // Random nice color and icon for premium feel
-        String[] colors = {"#6C63FF", "#FF6584", "#4CAF50", "#2196F3", "#FF9800"};
-        String color = colors[(int)(Math.random() * colors.length)];
+        Subject subject = new Subject();
+        subject.setName(name);
+        subject.setColor(color);
+        subject.setIcon(icon);
         
-        Subject subject = new Subject(null, name, "book", color, null, 0);
-        ApiClient.getInstance().createSubject(authHeader, subject).enqueue(new Callback<Subject>() {
-            @Override
-            public void onResponse(Call<Subject> call, Response<Subject> response) {
-                if (response.isSuccessful()) {
-                    Toast.makeText(getContext(), "Subject added!", Toast.LENGTH_SHORT).show();
-                    fetchSubjects();
-                } else {
-                    String errorMsg = "Failed to add subject";
-                    try {
-                        if (response.errorBody() != null) {
-                            errorMsg = response.errorBody().string();
-                        }
-                    } catch (Exception e) {
-                        if (response.code() == 401) errorMsg = "Session expired. Please login again.";
-                        else errorMsg += ": " + response.code();
+        android.util.Log.d("SUBJECTS", "Calling POST /api/subjects with name: " + name);
+        
+        ApiClient.getInstance().createSubject("Bearer " + token, subject)
+            .enqueue(new Callback<Subject>() {
+                @Override
+                public void onResponse(Call<Subject> call, Response<Subject> response) {
+                    android.util.Log.d("SUBJECTS", "Response code: " + response.code());
+                    if (response.isSuccessful() && response.body() != null) {
+                        android.util.Log.d("SUBJECTS", "Subject created: " + response.body().getName());
+                        Toast.makeText(getContext(), "Subject created!", Toast.LENGTH_SHORT).show();
+                        fetchSubjects(); // refresh list
+                    } else {
+                        android.util.Log.d("SUBJECTS", "Error body: " + (response.errorBody() != null ? response.errorBody().toString() : "null"));
+                        Toast.makeText(getContext(), "Failed to create subject", Toast.LENGTH_SHORT).show();
                     }
-                    Toast.makeText(getContext(), errorMsg, Toast.LENGTH_SHORT).show();
                 }
-            }
-
-            @Override
-            public void onFailure(Call<Subject> call, Throwable t) {
-                Toast.makeText(getContext(), "Network Error", Toast.LENGTH_SHORT).show();
-            }
-        });
+                
+                @Override
+                public void onFailure(Call<Subject> call, Throwable t) {
+                    android.util.Log.e("SUBJECTS", "Network error: " + t.getMessage());
+                    Toast.makeText(getContext(), "Network error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                }
+            });
     }
 
     private void deleteSubject(String id) {
