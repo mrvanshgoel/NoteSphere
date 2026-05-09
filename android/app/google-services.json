@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "60328720841",
+    "project_id": "vansh-notesphere",
+    "storage_bucket": "vansh-notesphere.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:60328720841:android:68f49314a3765eb79c9018",
+        "android_client_info": {
+          "package_name": "com.notesphere.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "60328720841-kilqtvjptc9ndluu5h43qck18qc9q8a5.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.notesphere.app",
+            "certificate_hash": "43f86315e44f3fe42ce367561ef09b08cb289f00"
+          }
+        },
+        {
+          "client_id": "60328720841-t81rsvbcspvn033g067l3s8859a54v22.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyABKc8wOSPa_HPHgZ_G_xRC1K2O9qBrbTo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "60328720841-t81rsvbcspvn033g067l3s8859a54v22.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

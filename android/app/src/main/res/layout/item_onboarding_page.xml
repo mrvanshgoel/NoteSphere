@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="24dp">
+
+    <!-- Lottie animation illustration -->
+    <com.airbnb.lottie.LottieAnimationView
+        android:id="@+id/lottieOnboarding"
+        android:layout_width="280dp"
+        android:layout_height="280dp"
+        app:lottie_autoPlay="true"
+        app:lottie_loop="true"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintVertical_bias="0.35"
+        app:layout_constraintBottom_toTopOf="@id/tvOnboardingTitle"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- Title -->
+    <TextView
+        android:id="@+id/tvOnboardingTitle"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:textSize="26sp"
+        android:textStyle="bold"
+        android:textColor="@color/ns_text_primary"
+        android:gravity="center"
+        android:letterSpacing="-0.01"
+        app:layout_constraintTop_toBottomOf="@id/lottieOnboarding"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="32dp" />
+
+    <!-- Description -->
+    <TextView
+        android:id="@+id/tvOnboardingDesc"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:textSize="15sp"
+        android:textColor="@color/ns_text_secondary"
+        android:gravity="center"
+        android:lineSpacingMultiplier="1.5"
+        android:layout_marginTop="16dp"
+        app:layout_constraintTop_toBottomOf="@id/tvOnboardingTitle"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
