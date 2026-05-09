@@ -67,6 +67,7 @@ public class MaterialDetailActivity extends AppCompatActivity {
         ApiClient.getInstance().generateShareLink(token, request).enqueue(new Callback<com.example.aistudyassistant.models.ShareResponse>() {
             @Override
             public void onResponse(Call<com.example.aistudyassistant.models.ShareResponse> call, Response<com.example.aistudyassistant.models.ShareResponse> response) {
+                if (isFinishing() || isDestroyed() || binding == null) return;
                 binding.progressBar.setVisibility(View.GONE);
                 if (response.isSuccessful() && response.body() != null) {
                     Intent intent = new Intent(MaterialDetailActivity.this, ShareActivity.class);
@@ -81,6 +82,7 @@ public class MaterialDetailActivity extends AppCompatActivity {
 
             @Override
             public void onFailure(Call<com.example.aistudyassistant.models.ShareResponse> call, Throwable t) {
+                if (isFinishing() || isDestroyed() || binding == null) return;
                 binding.progressBar.setVisibility(View.GONE);
                 Toast.makeText(MaterialDetailActivity.this, "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
@@ -109,6 +111,7 @@ public class MaterialDetailActivity extends AppCompatActivity {
         call.enqueue(new Callback<AiResponse>() {
             @Override
             public void onResponse(Call<AiResponse> call, Response<AiResponse> response) {
+                if (isFinishing() || isDestroyed() || binding == null) return;
                 binding.progressBar.setVisibility(View.GONE);
                 if (response.isSuccessful() && response.body() != null) {
                     binding.cardResult.setVisibility(View.VISIBLE);
@@ -120,6 +123,7 @@ public class MaterialDetailActivity extends AppCompatActivity {
 
             @Override
             public void onFailure(Call<AiResponse> call, Throwable t) {
+                if (isFinishing() || isDestroyed() || binding == null) return;
                 binding.progressBar.setVisibility(View.GONE);
                 Toast.makeText(MaterialDetailActivity.this, "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
@@ -151,15 +155,24 @@ public class MaterialDetailActivity extends AppCompatActivity {
         PdfDocument.Page page = document.startPage(pageInfo);
 
         Canvas canvas = page.getCanvas();
-        Paint paint = new Paint();
-        paint.setColor(Color.BLACK);
-        paint.setTextSize(12f);
+        Paint titlePaint = new Paint();
+        titlePaint.setColor(Color.BLACK);
+        titlePaint.setTextSize(16f);
+        titlePaint.setFakeBoldText(true);
+
+        Paint headerPaint = new Paint();
+        headerPaint.setColor(Color.BLACK);
+        headerPaint.setTextSize(12f);
+        headerPaint.setFakeBoldText(true);
+
+        Paint contentPaint = new Paint();
+        contentPaint.setColor(Color.BLACK);
+        contentPaint.setTextSize(10f);
 
         int x = 40, y = 50;
-        canvas.drawText(binding.tvResultTitle.getText().toString(), x, y, paint);
-        y += 30;
+        canvas.drawText(binding.tvResultTitle.getText().toString(), x, y, titlePaint);
+        y += 40;
 
-        paint.setTextSize(10f);
         String[] lines = content.split("\n");
         for (String line : lines) {
             if (y > 800) {
@@ -168,12 +181,27 @@ public class MaterialDetailActivity extends AppCompatActivity {
                 canvas = page.getCanvas();
                 y = 50;
             }
-            canvas.drawText(line, x, y, paint);
+
+            String processedLine = line.trim();
+            Paint activePaint = contentPaint;
+
+            // Simple Markdown Parsing for PDF
+            if (processedLine.startsWith("###")) {
+                processedLine = processedLine.replace("###", "").trim();
+                activePaint = headerPaint;
+                y += 10;
+            } else if (processedLine.startsWith("**") && processedLine.endsWith("**")) {
+                processedLine = processedLine.replace("**", "").trim();
+                activePaint = headerPaint;
+            } else {
+                processedLine = processedLine.replace("**", "").replace("*", "").replace("`", "");
+            }
+
+            canvas.drawText(processedLine, x, y, activePaint);
             y += 15;
         }
 
         document.finishPage(page);
-
         File downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
         String fileName = materialTitle.replaceAll("[^a-zA-Z0-9]", "_") + "_Notes.pdf";
         File file = new File(downloadsDir, fileName);
@@ -184,7 +212,6 @@ public class MaterialDetailActivity extends AppCompatActivity {
         } catch (IOException e) {
             Toast.makeText(this, "Error saving PDF: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
-
         document.close();
     }
 }

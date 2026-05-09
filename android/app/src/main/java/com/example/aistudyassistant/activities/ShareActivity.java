@@ -23,11 +23,22 @@ public class ShareActivity extends AppCompatActivity {
         binding = ActivityShareBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
+        if (getIntent() == null) {
+            finish();
+            return;
+        }
+
         String shareUrl = getIntent().getStringExtra("share_url");
         String shareCode = getIntent().getStringExtra("share_code");
         String fileName = getIntent().getStringExtra("file_name");
 
-        binding.tvFileName.setText(fileName);
+        if (shareUrl == null || shareCode == null) {
+            Toast.makeText(this, "Sharing session invalid", Toast.LENGTH_SHORT).show();
+            finish();
+            return;
+        }
+
+        binding.tvFileName.setText(fileName != null ? fileName : "Shared File");
         binding.tvShareCode.setText(shareCode);
 
         // Generate QR Code

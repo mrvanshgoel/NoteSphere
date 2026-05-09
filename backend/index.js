@@ -327,8 +327,14 @@ app.post('/api/ai/chat', verifyToken, async (req, res) => {
         role: m.role === 'assistant' ? 'model' : 'user',
         parts: [{ text: m.content }],
       })),
+      generationConfig: { maxOutputTokens: 2048, temperature: 0.7 },
     });
-    const result = await chat.sendMessage(`Instructions: ${systemPrompt}\nUser: ${lastUserMessage}`);
+
+    const prompt = `System Instructions: You are an expert academic professor. Provide extremely detailed, exhaustive, and structured study material. Do NOT skip any details. Use headings, bullet points, and deep explanations for every concept.
+    Current Time: ${currentDate}.
+    User Question: ${lastUserMessage}`;
+
+    const result = await chat.sendMessage(prompt);
     res.json({ content: result.response.text(), role: 'assistant' });
   } catch (err) {
     res.status(500).json({ error: err.message });

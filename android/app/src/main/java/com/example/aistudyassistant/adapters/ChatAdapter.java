@@ -67,35 +67,47 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         ChatMessage message = messages.get(position);
         if (holder instanceof UserViewHolder) {
             UserViewHolder userHolder = (UserViewHolder) holder;
-            userHolder.binding.tvMessage.setText(message.getMessage());
-            String time = new SimpleDateFormat("hh:mm a", Locale.getDefault()).format(new Date());
-            userHolder.binding.tvTime.setText(time);
+            if (userHolder.binding != null) {
+                userHolder.binding.tvMessage.setText(message.getMessage() != null ? message.getMessage() : "");
+                String time = new SimpleDateFormat("hh:mm a", Locale.getDefault()).format(new Date());
+                if (userHolder.binding.tvTime != null) {
+                    userHolder.binding.tvTime.setText(time);
+                }
+            }
             userHolder.binding.getRoot().setOnLongClickListener(v -> {
                 if (longClickListener != null) {
                     longClickListener.onLongClick(message.getMessage());
                 }
                 return true;
             });
-        } else {
+        } else if (holder instanceof AiViewHolder) {
             AiViewHolder aiHolder = (AiViewHolder) holder;
-            if (markwon == null) {
-                markwon = Markwon.create(aiHolder.binding.getRoot().getContext());
+            if (aiHolder.binding != null) {
+                if (markwon == null) {
+                    markwon = Markwon.create(aiHolder.binding.getRoot().getContext());
+                }
+                markwon.setMarkdown(aiHolder.binding.tvMessage, message.getMessage() != null ? message.getMessage() : "");
+                
+                String time = new SimpleDateFormat("hh:mm a", Locale.getDefault()).format(new Date());
+                if (aiHolder.binding.tvTime != null) {
+                    aiHolder.binding.tvTime.setText(time);
+                }
+
+                if (aiHolder.binding.btnCopy != null) {
+                    aiHolder.binding.btnCopy.setOnClickListener(v -> {
+                        ClipboardManager clipboard = (ClipboardManager) v.getContext().getSystemService(Context.CLIPBOARD_SERVICE);
+                        ClipData clip = ClipData.newPlainText("AI Response", message.getMessage());
+                        clipboard.setPrimaryClip(clip);
+                        Toast.makeText(v.getContext(), "Copied to clipboard", Toast.LENGTH_SHORT).show();
+                    });
+                }
+
+                if (aiHolder.binding.btnPdf != null) {
+                    aiHolder.binding.btnPdf.setOnClickListener(v -> {
+                        saveChatAsPdf(v.getContext(), message.getMessage());
+                    });
+                }
             }
-            markwon.setMarkdown(aiHolder.binding.tvMessage, message.getMessage());
-            
-            String time = new SimpleDateFormat("hh:mm a", Locale.getDefault()).format(new Date());
-            aiHolder.binding.tvTime.setText(time);
-
-            aiHolder.binding.btnCopy.setOnClickListener(v -> {
-                ClipboardManager clipboard = (ClipboardManager) v.getContext().getSystemService(Context.CLIPBOARD_SERVICE);
-                ClipData clip = ClipData.newPlainText("AI Response", message.getMessage());
-                clipboard.setPrimaryClip(clip);
-                Toast.makeText(v.getContext(), "Copied to clipboard", Toast.LENGTH_SHORT).show();
-            });
-
-            aiHolder.binding.btnPdf.setOnClickListener(v -> {
-                saveChatAsPdf(v.getContext(), message.getMessage());
-            });
 
             aiHolder.binding.getRoot().setOnLongClickListener(v -> {
                 if (longClickListener != null) {

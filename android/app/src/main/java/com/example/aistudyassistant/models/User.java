@@ -33,4 +33,8 @@ public class User {
     public String getName() { return user != null ? user.getName() : "Student"; }
     public String getEmail() { return user != null ? user.getEmail() : ""; }
     public String getAvatarUrl() { return user != null ? user.getAvatarUrl() : null; }
+    public static class AvatarResponse {
+        private String avatar_url;
+        public String getAvatarUrl() { return avatar_url; }
+    }
 }

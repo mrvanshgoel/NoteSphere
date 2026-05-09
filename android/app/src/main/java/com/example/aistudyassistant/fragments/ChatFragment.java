@@ -82,7 +82,7 @@ public class ChatFragment extends Fragment {
         ApiClient.getInstance().chat(authHeader, request).enqueue(new Callback<AiResponse>() {
             @Override
             public void onResponse(Call<AiResponse> call, Response<AiResponse> response) {
-                if (!isAdded()) return;
+                if (!isAdded() || binding == null) return;
                 binding.loadingAnimation.setVisibility(View.GONE);
 
                 if (response.isSuccessful() && response.body() != null) {
@@ -108,7 +108,7 @@ public class ChatFragment extends Fragment {
 
             @Override
             public void onFailure(Call<AiResponse> call, Throwable t) {
-                if (!isAdded()) return;
+                if (!isAdded() || binding == null) return;
                 binding.loadingAnimation.setVisibility(View.GONE);
                 Toast.makeText(getContext(), "Connection Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }

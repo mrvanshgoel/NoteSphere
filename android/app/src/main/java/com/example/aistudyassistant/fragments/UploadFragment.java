@@ -97,49 +97,76 @@ public class UploadFragment extends Fragment {
             return;
         }
 
+        if (binding == null) return;
         binding.progressBar.setVisibility(View.VISIBLE);
         binding.btnUpload.setEnabled(false);
 
         try {
             File file = getFileFromUri(selectedFileUri);
-            RequestBody requestFile = RequestBody.create(MediaType.parse(getContext().getContentResolver().getType(selectedFileUri)), file);
+            if (file == null || !file.exists()) throw new Error("Failed to prepare file");
+
+            String mimeType = getContext().getContentResolver().getType(selectedFileUri);
+            if (mimeType == null) mimeType = "application/octet-stream";
+
+            RequestBody requestFile = RequestBody.create(MediaType.parse(mimeType), file);
             MultipartBody.Part body = MultipartBody.Part.createFormData("file", file.getName(), requestFile);
             RequestBody subjectIdPart = RequestBody.create(MediaType.parse("text/plain"), selectedSubjectId);
 
             String token = "Bearer " + SharedPrefManager.getInstance(getContext()).getToken();
+            
             ApiClient.getInstance().uploadMaterial(token, subjectIdPart, body).enqueue(new Callback<Material>() {
                 @Override
                 public void onResponse(Call<Material> call, Response<Material> response) {
+                    if (binding == null) return;
                     binding.progressBar.setVisibility(View.GONE);
                     binding.btnUpload.setEnabled(true);
+
                     if (response.isSuccessful()) {
                         Toast.makeText(getContext(), "Upload Successful!", Toast.LENGTH_SHORT).show();
                         binding.tvFileName.setText("Tap to select PDF, Image or Text");
                         selectedFileUri = null;
+                        // Clean up temp file
+                        if (file.exists()) file.delete();
                     } else {
-                        Toast.makeText(getContext(), "Upload Failed", Toast.LENGTH_SHORT).show();
+                        String errorMsg = "Upload Failed";
+                        try {
+                            if (response.errorBody() != null) errorMsg += ": " + response.errorBody().string();
+                        } catch (Exception e) {}
+                        Toast.makeText(getContext(), errorMsg, Toast.LENGTH_LONG).show();
                     }
                 }
 
                 @Override
                 public void onFailure(Call<Material> call, Throwable t) {
+                    if (binding == null) return;
                     binding.progressBar.setVisibility(View.GONE);
                     binding.btnUpload.setEnabled(true);
-                    Toast.makeText(getContext(), "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getContext(), "Network Error: " + t.getMessage(), Toast.LENGTH_LONG).show();
                 }
             });
         } catch (Exception e) {
-            binding.progressBar.setVisibility(View.GONE);
-            binding.btnUpload.setEnabled(true);
-            Toast.makeText(getContext(), "File error", Toast.LENGTH_SHORT).show();
+            if (binding != null) {
+                binding.progressBar.setVisibility(View.GONE);
+                binding.btnUpload.setEnabled(true);
+            }
+            Toast.makeText(getContext(), "File Error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
     }
 
     private File getFileFromUri(Uri uri) throws Exception {
+        String fileName = "upload_" + System.currentTimeMillis();
+        // Try to get actual name
+        try (android.database.Cursor cursor = getContext().getContentResolver().query(uri, null, null, null, null)) {
+            if (cursor != null && cursor.moveToFirst()) {
+                int nameIndex = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME);
+                if (nameIndex != -1) fileName = cursor.getString(nameIndex);
+            }
+        }
+
         InputStream is = getContext().getContentResolver().openInputStream(uri);
-        File file = new File(getContext().getCacheDir(), "upload_temp");
+        File file = new File(getContext().getCacheDir(), fileName);
         FileOutputStream fos = new FileOutputStream(file);
-        byte[] buffer = new byte[1024];
+        byte[] buffer = new byte[8192];
         int read;
         while ((read = is.read(buffer)) != -1) fos.write(buffer, 0, read);
         fos.flush();
