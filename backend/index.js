@@ -204,8 +204,9 @@ app.post('/api/auth/upload-avatar', verifyToken, upload.single('avatar'), async 
 
     if (updateError) throw updateError;
 
-    res.json({ avatar_url: publicUrl });
+    res.json({ avatarUrl: publicUrl });
   } catch (err) {
+    console.error("Avatar Upload Error:", err.message);
     res.status(400).json({ error: err.message });
   }
 });
