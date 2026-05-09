@@ -824,6 +824,62 @@ app.get('/api/study/analytics', verifyToken, async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+// ═══════════════════════════════════════════════════════════
+// NOTESPHERE SHARE (ToffeeShare inspired)
+// ═══════════════════════════════════════════════════════════
+
+app.post('/api/share/generate', verifyToken, async (req, res) => {
+  try {
+    const { materialId } = req.body;
+    const matDoc = await db.collection('materials').doc(materialId).get();
+    
+    if (!matDoc.exists || matDoc.data().userId !== req.user.id) {
+      return res.status(403).json({ error: 'Unauthorized or not found' });
+    }
+
+    const material = matDoc.data();
+    const shareCode = Math.floor(100000 + Math.random() * 900000).toString(); // 6 digit code
+    
+    await db.collection('shares').doc(shareCode).set({
+      materialId,
+      userId: req.user.id,
+      fileName: material.title,
+      filePath: material.filePath,
+      expiresAt: admin.firestore.Timestamp.fromDate(new Date(Date.now() + 24 * 60 * 60 * 1000)), // 24h
+      createdAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    const shareUrl = `${req.protocol}://${req.get('host')}/share/${shareCode}`;
+    
+    res.json({
+      shareUrl,
+      shareCode,
+      name: material.title
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Public download route
+app.get('/share/:code', async (req, res) => {
+  try {
+    const shareDoc = await db.collection('shares').doc(req.params.code).get();
+    if (!shareDoc.exists) return res.status(404).send('Share link expired or invalid');
+
+    const shareData = shareDoc.data();
+    const filePath = path.join(__dirname, shareData.filePath);
+
+    if (fs.existsSync(filePath)) {
+      res.download(filePath, shareData.fileName);
+    } else {
+      res.status(404).send('File no longer exists on server');
+    }
+  } catch (err) {
+    res.status(500).send(err.message);
+  }
+});
+
 app.use((err, req, res, next) => {
   console.error('[Global Error]', err);
   res.status(500).json({ 

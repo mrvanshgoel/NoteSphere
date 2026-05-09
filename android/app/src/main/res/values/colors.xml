@@ -2,13 +2,16 @@
 <resources>
     <!-- Notesphere Cyber Dark Palette -->
     <color name="ns_bg_dark">#000000</color>
+    <color name="ns_deep_blue">#000000</color>
     <color name="ns_surface">#0D0D0D</color>
     <color name="ns_surface_elevated">#121214</color>
     <color name="ns_surface_variant">#1A1A1C</color>
     
     <color name="ns_purple">#8B5CF6</color>
+    <color name="ns_purple_light">#C4B5FD</color>
     <color name="ns_purple_glow">#4D8B5CF6</color>
     <color name="ns_cyan">#22D3EE</color>
+    <color name="ns_blue">#22D3EE</color>
     <color name="ns_cyan_glow">#4D22D3EE</color>
     <color name="ns_electric_blue">#00F2FF</color>
     <color name="ns_teal">#10B981</color>
@@ -16,6 +19,7 @@
     <color name="ns_text_primary">#F8FAFC</color>
     <color name="ns_text_secondary">#94A3B8</color>
     <color name="ns_text_dim">#64748B</color>
+    <color name="ns_text_hint">#64748B</color>
     
     <color name="ns_error">#EF4444</color>
     <color name="ns_success">#10B981</color>

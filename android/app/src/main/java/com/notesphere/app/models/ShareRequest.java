@@ -7,7 +7,5 @@ public class ShareRequest {
         this.materialId = materialId;
     }
 
-    public String getMaterialId() {
-        return materialId;
-    }
+    public String getMaterialId() { return materialId; }
 }
