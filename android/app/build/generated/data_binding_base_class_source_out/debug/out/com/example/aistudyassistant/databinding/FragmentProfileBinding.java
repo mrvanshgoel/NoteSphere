@@ -4,6 +4,7 @@ package com.example.aistudyassistant.databinding;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
@@ -21,13 +22,16 @@ public final class FragmentProfileBinding implements ViewBinding {
   private final LinearLayout rootView;
 
   @NonNull
+  public final MaterialButton btnEditProfile;
+
+  @NonNull
   public final MaterialButton btnLogout;
 
   @NonNull
-  public final TextView tvEmail;
+  public final ImageView ivProfile;
 
   @NonNull
-  public final TextView tvInitials;
+  public final TextView tvEmail;
 
   @NonNull
   public final TextView tvMaterialCount;
@@ -38,13 +42,15 @@ public final class FragmentProfileBinding implements ViewBinding {
   @NonNull
   public final TextView tvSubjectCount;
 
-  private FragmentProfileBinding(@NonNull LinearLayout rootView, @NonNull MaterialButton btnLogout,
-      @NonNull TextView tvEmail, @NonNull TextView tvInitials, @NonNull TextView tvMaterialCount,
+  private FragmentProfileBinding(@NonNull LinearLayout rootView,
+      @NonNull MaterialButton btnEditProfile, @NonNull MaterialButton btnLogout,
+      @NonNull ImageView ivProfile, @NonNull TextView tvEmail, @NonNull TextView tvMaterialCount,
       @NonNull TextView tvName, @NonNull TextView tvSubjectCount) {
     this.rootView = rootView;
+    this.btnEditProfile = btnEditProfile;
     this.btnLogout = btnLogout;
+    this.ivProfile = ivProfile;
     this.tvEmail = tvEmail;
-    this.tvInitials = tvInitials;
     this.tvMaterialCount = tvMaterialCount;
     this.tvName = tvName;
     this.tvSubjectCount = tvSubjectCount;
@@ -77,21 +83,27 @@ public final class FragmentProfileBinding implements ViewBinding {
     // This is done to optimize the compiled bytecode for size and performance.
     int id;
     missingId: {
+      id = R.id.btnEditProfile;
+      MaterialButton btnEditProfile = ViewBindings.findChildViewById(rootView, id);
+      if (btnEditProfile == null) {
+        break missingId;
+      }
+
       id = R.id.btnLogout;
       MaterialButton btnLogout = ViewBindings.findChildViewById(rootView, id);
       if (btnLogout == null) {
         break missingId;
       }
 
-      id = R.id.tvEmail;
-      TextView tvEmail = ViewBindings.findChildViewById(rootView, id);
-      if (tvEmail == null) {
+      id = R.id.ivProfile;
+      ImageView ivProfile = ViewBindings.findChildViewById(rootView, id);
+      if (ivProfile == null) {
         break missingId;
       }
 
-      id = R.id.tvInitials;
-      TextView tvInitials = ViewBindings.findChildViewById(rootView, id);
-      if (tvInitials == null) {
+      id = R.id.tvEmail;
+      TextView tvEmail = ViewBindings.findChildViewById(rootView, id);
+      if (tvEmail == null) {
         break missingId;
       }
 
@@ -113,8 +125,8 @@ public final class FragmentProfileBinding implements ViewBinding {
         break missingId;
       }
 
-      return new FragmentProfileBinding((LinearLayout) rootView, btnLogout, tvEmail, tvInitials,
-          tvMaterialCount, tvName, tvSubjectCount);
+      return new FragmentProfileBinding((LinearLayout) rootView, btnEditProfile, btnLogout,
+          ivProfile, tvEmail, tvMaterialCount, tvName, tvSubjectCount);
     }
     String missingId = rootView.getResources().getResourceName(id);
     throw new NullPointerException("Missing required view with ID: ".concat(missingId));

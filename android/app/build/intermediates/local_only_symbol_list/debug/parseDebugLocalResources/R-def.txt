@@ -16,9 +16,11 @@ drawable ai_bubble_bg
 drawable badge_bg
 drawable circle_bg
 drawable ic_launcher_temp
+drawable premium_gradient_bg
 drawable user_bubble_bg
 id bottom_navigation
 id btnCopy
+id btnEditProfile
 id btnLogin
 id btnLogout
 id btnNotes
@@ -42,6 +44,7 @@ id etPassword
 id fabAdd
 id fragment_container
 id ivLogo
+id ivProfile
 id layoutInput
 id nav_chat
 id nav_home
@@ -60,8 +63,8 @@ id tvDate
 id tvEmail
 id tvEmpty
 id tvFileName
+id tvForgotPassword
 id tvInfo
-id tvInitials
 id tvLogin
 id tvMaterialCount
 id tvMessage
@@ -69,6 +72,7 @@ id tvName
 id tvRegister
 id tvResultTitle
 id tvSubjectCount
+id tvSubtitle
 id tvTitle
 id tvTypeIcon
 id tvWelcome

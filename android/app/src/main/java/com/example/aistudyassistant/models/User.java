@@ -1,44 +1,36 @@
 package com.example.aistudyassistant.models;
 
 public class User {
-    private String id;
-    private String email;
-    private UserData user;
-    private Session session;
+    private String token;
+    private UserInfo user;
 
-    public static class UserData {
+    public static class UserInfo {
         private String id;
+        private String name;
         private String email;
-        private UserMetadata user_metadata;
-
-        public String getId() { return id; }
-        public String getEmail() { return email; }
-        public UserMetadata getUserMetadata() { return user_metadata; }
-    }
-
-    public static class UserMetadata {
-        private String full_name;
         private String avatar_url;
 
-        public String getFullName() { return full_name; }
-        public String getAvatarUrl() { return avatar_url; }
-    }
+        public UserInfo() {}
 
-    public static class Session {
-        private String access_token;
-        public String getAccessToken() { return access_token; }
-    }
-
-    public UserData getUser() { return user; }
-    public Session getSession() { return session; }
-    
-    // Legacy support for LoginActivity
-    public String getToken() { return session != null ? session.getAccessToken() : null; }
-    public String getName() { 
-        if (user != null && user.getUserMetadata() != null) {
-            return user.getUserMetadata().getFullName();
+        public UserInfo(String name, String avatar_url) {
+            this.name = name;
+            this.avatar_url = avatar_url;
         }
-        return "Student";
+
+        public String getId() { return id; }
+        public String getName() { return name; }
+        public String getEmail() { return email; }
+        public String getAvatarUrl() { return avatar_url; }
+
+        public void setName(String name) { this.name = name; }
+        public void setAvatarUrl(String avatar_url) { this.avatar_url = avatar_url; }
     }
-    public String getEmail() { return user != null ? user.getEmail() : email; }
+
+    public String getToken() { return token; }
+    public UserInfo getUser() { return user; }
+    
+    // Compatibility helpers for legacy code
+    public String getName() { return user != null ? user.getName() : "Student"; }
+    public String getEmail() { return user != null ? user.getEmail() : ""; }
+    public String getAvatarUrl() { return user != null ? user.getAvatarUrl() : null; }
 }

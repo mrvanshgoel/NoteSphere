@@ -1,5 +1,8 @@
 package com.example.aistudyassistant.fragments;
 
+import android.content.ClipData;
+import android.content.ClipboardManager;
+import android.content.Context;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -13,6 +16,7 @@ import com.example.aistudyassistant.adapters.ChatAdapter;
 import com.example.aistudyassistant.api.ApiClient;
 import com.example.aistudyassistant.databinding.FragmentChatBinding;
 import com.example.aistudyassistant.models.AiResponse;
+import com.example.aistudyassistant.models.ApiMessage;
 import com.example.aistudyassistant.models.ChatMessage;
 import com.example.aistudyassistant.models.ChatRequest;
 import com.example.aistudyassistant.utils.SharedPrefManager;
@@ -26,6 +30,7 @@ public class ChatFragment extends Fragment {
     private FragmentChatBinding binding;
     private ChatAdapter adapter;
     private List<ChatMessage> messages = new ArrayList<>();
+    private List<ApiMessage> apiHistory = new ArrayList<>();
 
     @Nullable
     @Override
@@ -37,6 +42,14 @@ public class ChatFragment extends Fragment {
         binding.rvChat.setAdapter(adapter);
 
         binding.btnSend.setOnClickListener(v -> sendMessage());
+        
+        // Setup long press to copy
+        adapter.setOnMessageLongClickListener(text -> {
+            ClipboardManager clipboard = (ClipboardManager) requireContext().getSystemService(Context.CLIPBOARD_SERVICE);
+            ClipData clip = ClipData.newPlainText("Copied Message", text);
+            clipboard.setPrimaryClip(clip);
+            Toast.makeText(getContext(), "Message copied to clipboard", Toast.LENGTH_SHORT).show();
+        });
 
         return binding.getRoot();
     }
@@ -45,11 +58,15 @@ public class ChatFragment extends Fragment {
         String text = binding.etMessage.getText().toString().trim();
         if (text.isEmpty()) return;
 
+        // UI Update
         messages.add(new ChatMessage(text, true));
         adapter.notifyItemInserted(messages.size() - 1);
-        binding.rvChat.scrollToPosition(messages.size() - 1);
+        binding.rvChat.smoothScrollToPosition(messages.size() - 1);
         binding.etMessage.setText("");
 
+        // API Prep
+        apiHistory.add(new ApiMessage("user", text));
+        
         String token = SharedPrefManager.getInstance(requireContext()).getToken();
         if (token == null) {
             Toast.makeText(getContext(), "Please login again", Toast.LENGTH_SHORT).show();
@@ -57,16 +74,24 @@ public class ChatFragment extends Fragment {
         }
         
         String authHeader = "Bearer " + token;
-        ChatRequest request = new ChatRequest(text);
+        ChatRequest request = new ChatRequest(new ArrayList<>(apiHistory));
+
+        // Show typing indicator
+        binding.tvTyping.setVisibility(View.VISIBLE);
 
         ApiClient.getInstance().chat(authHeader, request).enqueue(new Callback<AiResponse>() {
             @Override
             public void onResponse(Call<AiResponse> call, Response<AiResponse> response) {
                 if (!isAdded()) return;
+                binding.tvTyping.setVisibility(View.GONE);
+
                 if (response.isSuccessful() && response.body() != null) {
-                    messages.add(new ChatMessage(response.body().getContent(), false));
+                    String content = response.body().getContent();
+                    messages.add(new ChatMessage(content, false));
+                    apiHistory.add(new ApiMessage("assistant", content));
+                    
                     adapter.notifyItemInserted(messages.size() - 1);
-                    binding.rvChat.scrollToPosition(messages.size() - 1);
+                    binding.rvChat.smoothScrollToPosition(messages.size() - 1);
                 } else {
                     String errorMsg = "AI Chat failed";
                     if (response.code() == 401) errorMsg = "Session expired. Please login again.";
@@ -76,7 +101,9 @@ public class ChatFragment extends Fragment {
 
             @Override
             public void onFailure(Call<AiResponse> call, Throwable t) {
-                if (isAdded()) Toast.makeText(getContext(), "Connection Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                if (!isAdded()) return;
+                binding.tvTyping.setVisibility(View.GONE);
+                Toast.makeText(getContext(), "Connection Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
     }

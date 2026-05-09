@@ -32,6 +32,19 @@ public interface ApiService {
     @POST("api/auth/register")
     Call<User> register(@Body RegisterRequest body);
 
+    @GET("api/auth/profile")
+    Call<User.UserInfo> getProfile(@Header("Authorization") String token);
+
+    @PUT("api/auth/profile")
+    Call<User.UserInfo> updateProfile(@Header("Authorization") String token, @Body User.UserInfo profile);
+
+    @Multipart
+    @POST("api/auth/upload-avatar")
+    Call<AvatarResponse> uploadAvatar(
+            @Header("Authorization") String token,
+            @Part MultipartBody.Part avatar
+    );
+
     // Subjects
     @GET("api/subjects")
     Call<List<Subject>> getSubjects(@Header("Authorization") String token);

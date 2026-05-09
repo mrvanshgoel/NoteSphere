@@ -3,6 +3,7 @@ package com.example.aistudyassistant.activities;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
+import android.view.View;
 import androidx.appcompat.app.AppCompatActivity;
 import com.example.aistudyassistant.R;
 import com.example.aistudyassistant.utils.SharedPrefManager;
