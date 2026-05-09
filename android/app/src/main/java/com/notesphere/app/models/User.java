@@ -1,5 +1,7 @@
 package com.notesphere.app.models;
 
+import com.google.gson.annotations.SerializedName;
+
 public class User {
     private String token;
     private UserInfo user;
@@ -8,6 +10,7 @@ public class User {
         private String id;
         private String name;
         private String email;
+        @SerializedName("avatar_url")
         private String avatar_url;
 
         public UserInfo() {}
@@ -33,7 +36,9 @@ public class User {
     public String getName() { return user != null ? user.getName() : "Student"; }
     public String getEmail() { return user != null ? user.getEmail() : ""; }
     public String getAvatarUrl() { return user != null ? user.getAvatarUrl() : null; }
+    
     public static class AvatarResponse {
+        @SerializedName("avatar_url")
         private String avatar_url;
         public String getAvatarUrl() { return avatar_url; }
     }

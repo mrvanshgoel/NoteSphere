@@ -156,12 +156,16 @@ app.get('/api/auth/profile', verifyToken, async (req, res) => {
 
 app.put('/api/auth/profile', verifyToken, async (req, res) => {
   try {
-    const { name, avatar_url } = req.body;
-    await db.collection('profiles').doc(req.user.id).set({
-      name, 
-      avatar_url, 
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
-    }, { merge: true });
+    const { name, avatar_url, avatarUrl } = req.body;
+    const finalAvatarUrl = avatar_url || avatarUrl;
+    
+    const updateData = {};
+    if (name !== undefined) updateData.name = name;
+    if (finalAvatarUrl !== undefined) updateData.avatar_url = finalAvatarUrl;
+    
+    updateData.updatedAt = admin.firestore.FieldValue.serverTimestamp();
+
+    await db.collection('profiles').doc(req.user.id).set(updateData, { merge: true });
     
     const updated = await db.collection('profiles').doc(req.user.id).get();
     res.json(formatDoc(updated));
@@ -177,13 +181,14 @@ app.post('/api/auth/upload-avatar', verifyToken, upload.single('avatar'), async 
 
     // Store relative path
     const avatarUrl = `${req.protocol}://${req.get('host')}/uploads/${file.filename}`;
+    console.log(`[Avatar] Uploaded to: ${avatarUrl} for UID: ${req.user.id}`);
 
     await db.collection('profiles').doc(req.user.id).set({
       avatar_url: avatarUrl,
       updatedAt: admin.firestore.FieldValue.serverTimestamp()
     }, { merge: true });
 
-    res.json({ avatar_url: avatarUrl });
+    res.json({ avatar_url: avatarUrl, avatarUrl: avatarUrl });
   } catch (err) {
     console.error('Avatar upload error:', err);
     res.status(500).json({ error: err.message });

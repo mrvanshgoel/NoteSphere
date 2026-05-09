@@ -45,7 +45,21 @@ public class AccountSettingsActivity extends AppCompatActivity {
         refreshUI();
         binding.ivProfile.setOnClickListener(v -> pickImage());
         binding.tvRemoveAvatar.setOnClickListener(v -> removeAvatar());
+        binding.btnApplyUrl.setOnClickListener(v -> applyUrlAvatar());
         binding.btnSave.setOnClickListener(v -> saveSettings());
+    }
+
+    private void applyUrlAvatar() {
+        String url = binding.etAvatarUrl.getText().toString().trim();
+        if (url.isEmpty()) {
+            Toast.makeText(this, "Please enter a URL", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Preview the image
+        pref.saveAvatarUrl(url);
+        loadAvatarWithGlide(url);
+        Toast.makeText(this, "Avatar URL applied! Click Save to persist.", Toast.LENGTH_SHORT).show();
     }
 
     private void removeAvatar() {
@@ -83,18 +97,24 @@ public class AccountSettingsActivity extends AppCompatActivity {
 
         String avatarUrl = pref.getAvatarUrl();
         if (avatarUrl != null && !avatarUrl.isEmpty()) {
-            com.bumptech.glide.request.RequestOptions options = new com.bumptech.glide.request.RequestOptions()
-                .circleCrop()
-                .placeholder(R.drawable.ic_launcher_temp)
-                .error(R.drawable.ic_launcher_temp)
-                .diskCacheStrategy(com.bumptech.glide.load.engine.DiskCacheStrategy.NONE)
-                .skipMemoryCache(true);
-
-            Glide.with(this)
-                    .load(avatarUrl)
-                    .apply(options)
-                    .into(binding.ivProfile);
+            loadAvatarWithGlide(avatarUrl);
+            binding.etAvatarUrl.setText(avatarUrl);
         }
+    }
+
+    private void loadAvatarWithGlide(String url) {
+        if (isFinishing() || isDestroyed() || binding == null) return;
+        com.bumptech.glide.request.RequestOptions options = new com.bumptech.glide.request.RequestOptions()
+            .circleCrop()
+            .placeholder(R.drawable.ic_launcher_temp)
+            .error(R.drawable.ic_launcher_temp)
+            .diskCacheStrategy(com.bumptech.glide.load.engine.DiskCacheStrategy.NONE)
+            .skipMemoryCache(true);
+
+        Glide.with(this)
+                .load(url)
+                .apply(options)
+                .into(binding.ivProfile);
     }
 
     private final ActivityResultLauncher<Intent> imagePickerLauncher = registerForActivityResult(
@@ -129,6 +149,7 @@ public class AccountSettingsActivity extends AppCompatActivity {
                     if (response.isSuccessful() && response.body() != null) {
                         String url = response.body().getAvatarUrl();
                         pref.saveAvatarUrl(url);
+                        binding.etAvatarUrl.setText(url);
                         
                         runOnUiThread(() -> {
                             com.bumptech.glide.request.RequestOptions options = new com.bumptech.glide.request.RequestOptions()
