@@ -1,93 +1,73 @@
-# AI Study Assistant
+# 🚀 NoteSphere AI — The Study Operating System
 
-An Android-style, full-stack web application designed for students to manage study materials and get AI-powered insights (summaries, notes, practice questions, and document Q&A).
+NoteSphere AI is an AI-native study ecosystem inspired by **NotebookLM**, designed to transform how students interact with their learning materials. It's not just a collection of tools; it's a "Second Brain" that proactively helps you retain, revise, and master your subjects.
 
-## Tech Stack
-- **Frontend**: React, Tailwind CSS, Framer Motion, Vite
-- **Backend**: Node.js, Express, Anthropic API (Claude 3.5 Sonnet)
-- **Database & Storage**: Supabase (PostgreSQL, Storage, Auth)
+---
 
-## Setup Instructions
+## 🧠 Core Pillars of Intelligence
 
-### 1. Supabase Setup
-1. Create a new project on [Supabase](https://supabase.com).
-2. Go to **Authentication** and enable **Email/Password** sign-in.
-3. Go to **SQL Editor** and run the following commands to create your database tables:
+### 1. ⚡ Study Intelligence Hub (Phase 1)
+NoteSphere doesn't just wait for you; it's proactive. It tracks your **weak topics** from quizzes, monitors your **study consistency**, and generates **intelligent reminders**. 
+*   "You struggled with DBMS Normalization last week. Time for a quick recap?"
+*   "You haven't revised OS Unit 3 in 5 days."
 
-```sql
--- Create subjects table
-CREATE TABLE subjects (
-  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
-  name TEXT NOT NULL,
-  color TEXT NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+### 2. 🗂️ AI-Native Flashcards (Phase 2 & 3)
+Transform any PDF or image into a high-quality study deck instantly.
+*   **Swipe UI**: Interactive cards with flip animations.
+*   **Active Recall**: Mark cards as mastered to focus on what you don't know.
 
--- Create materials table
-CREATE TABLE materials (
-  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
-  subject_id UUID REFERENCES subjects(id) ON DELETE CASCADE,
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
-  name TEXT NOT NULL,
-  type TEXT NOT NULL,
-  file_url TEXT NOT NULL,
-  storage_path TEXT NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+### 3. 💬 Context-Aware AI Chat
+Chat with your documents like never before. NoteSphere uses **RAG (Retrieval-Augmented Generation)** to answer questions based specifically on your uploaded materials.
+*   **Multi-Modal**: Supports PDFs and Images (Native OCR via Gemini Vision).
+*   **Persistent Sessions**: Chat history saved automatically to Firestore.
 
--- Row Level Security (RLS)
-ALTER TABLE subjects ENABLE ROW LEVEL SECURITY;
-ALTER TABLE materials ENABLE ROW LEVEL SECURITY;
+### 4. 🛠️ Study Analytics
+Real-time tracking of your academic journey.
+*   **Study Streaks**: Stay consistent.
+*   **Accuracy Tracking**: Watch your understanding grow through quiz analytics.
+*   **Syllabus Progress**: Visualize how much of your course is complete.
 
-CREATE POLICY "Users can view own subjects" ON subjects FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY "Users can insert own subjects" ON subjects FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "Users can update own subjects" ON subjects FOR UPDATE USING (auth.uid() = user_id);
-CREATE POLICY "Users can delete own subjects" ON subjects FOR DELETE USING (auth.uid() = user_id);
+---
 
-CREATE POLICY "Users can view own materials" ON materials FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY "Users can insert own materials" ON materials FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "Users can delete own materials" ON materials FOR DELETE USING (auth.uid() = user_id);
-```
+## 🛠️ Technical Architecture
 
-4. Go to **Storage** and create a new bucket named `study_materials`.
-   - Set the bucket to **Public**.
-   - Under Configuration -> Policies, allow authenticated users to SELECT and INSERT.
+### **Mobile (Android)**
+*   **Language**: Java / XML
+*   **Design**: Material Design 3 (Dark Mode Optimized)
+*   **Networking**: Retrofit 2 with GSON
+*   **Image Processing**: Glide
 
-### 2. Environment Variables
+### **Backend (Node.js)**
+*   **Runtime**: Express.js
+*   **AI Engine**: Google Gemini API (Dynamic Fallback System)
+*   **Auth & Database**: Firebase (Auth, Firestore, Admin SDK)
+*   **OCR & Parsing**: Gemini Vision + pdf-parse (Robust Implementation)
 
-**Frontend (`frontend/.env.local`):**
-```
-VITE_SUPABASE_URL=your_supabase_project_url
-VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
-```
+---
 
-**Backend (`backend/.env`):**
-```
-PORT=5000
-SUPABASE_URL=your_supabase_project_url
-SUPABASE_ANON_KEY=your_supabase_anon_key
-ANTHROPIC_API_KEY=your_anthropic_api_key
-```
+## 👨‍💻 Developer
+Created with ❤️ by **Vansh Goel**.
+*   **Age**: 19 (Born May 30, 2006)
+*   **Academic**: BCA (Hons. with Research) in Multimedia & Animation, **Galgotias University**.
+*   **Profile**: Tech & creative enthusiast, Freelance UI/UX & Graphic Designer.
+*   **Origin**: Meerut, Uttar Pradesh, India.
 
-### 3. Running the App Locally
+---
 
-**Start the Backend:**
-```bash
-cd backend
-npm run dev
-```
+## 🚀 Getting Started
 
-**Start the Frontend:**
-```bash
-cd frontend
-npm run dev
-```
+### 1. Backend Setup
+1. `cd backend`
+2. `npm install`
+3. Create `.env` with `FIREBASE_SERVICE_ACCOUNT` (JSON) and `GEMINI_API_KEY`.
+4. `npm start`
 
-## Features Complete
-- [x] Multi-Student Login System via Supabase
-- [x] Subject-wise folder creation
-- [x] Uploading files directly to Supabase storage
-- [x] AI-powered Chat & Q&A
-- [x] Summary, Notes & Practice quiz generation
-- [x] Smooth, dark-theme UI with Android/mobile-first feel
+### 2. Android Setup
+1. Open `android/` in Android Studio.
+2. Add your `google-services.json` from Firebase.
+3. Update `BASE_URL` in `ApiClient.java` to your server.
+4. Build & Run.
+
+---
+
+*NoteSphere AI is a continuous evolution. We are doubling down on Source-Aware responses and Multi-Document context in the upcoming phases.*
