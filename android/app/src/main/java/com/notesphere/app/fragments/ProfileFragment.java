@@ -100,10 +100,8 @@ public class ProfileFragment extends Fragment {
             loadAvatarWithGlide(savedUrl);
         }
 
-        String authHeader = "Bearer " + pref.getToken();
-        
         if (activeCall != null) activeCall.cancel();
-        Call<User.UserInfo> call = ApiClient.getApiService().getProfile(authHeader);
+        Call<User.UserInfo> call = ApiClient.getApiService().getProfile();
         activeCall = call;
 
         call.enqueue(new Callback<User.UserInfo>() {
@@ -176,10 +174,8 @@ public class ProfileFragment extends Fragment {
         binding.btnSave.setEnabled(false);
         binding.btnSave.setText("Saving...");
 
-        String authHeader = "Bearer " + pref.getToken();
-        
         if (activeCall != null) activeCall.cancel();
-        Call<User.UserInfo> call = ApiClient.getInstance().updateProfile(authHeader, new User.UserInfo(newName, pref.getAvatarUrl()));
+        Call<User.UserInfo> call = ApiClient.getInstance().updateProfile(new User.UserInfo(newName, pref.getAvatarUrl()));
         activeCall = call;
 
         call.enqueue(new Callback<User.UserInfo>() {
@@ -234,12 +230,8 @@ public class ProfileFragment extends Fragment {
             
             RequestBody requestFile = RequestBody.create(MediaType.parse(mimeType), file);
             MultipartBody.Part body = MultipartBody.Part.createFormData("avatar", file.getName(), requestFile);
-            String authHeader = "Bearer " + pref.getToken();
-
-            Toast.makeText(context, "Uploading avatar...", Toast.LENGTH_SHORT).show();
-
             if (activeCall != null) activeCall.cancel();
-            Call<User.AvatarResponse> call = ApiClient.getInstance().uploadAvatar(authHeader, body);
+            Call<User.AvatarResponse> call = ApiClient.getInstance().uploadAvatar(body);
             activeCall = call;
 
             call.enqueue(new Callback<User.AvatarResponse>() {
@@ -278,10 +270,8 @@ public class ProfileFragment extends Fragment {
 
     private void loadStats() {
         if (!isAdded()) return;
-        String token = pref.getToken();
-        
         if (activeCall != null) activeCall.cancel();
-        Call<List<Subject>> call = ApiClient.getApiService().getSubjects("Bearer " + token);
+        Call<List<Subject>> call = ApiClient.getApiService().getSubjects();
         activeCall = call;
 
         call.enqueue(new Callback<List<Subject>>() {

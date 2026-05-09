@@ -45,15 +45,10 @@ public class SubjectsFragment extends Fragment {
         Context context = getContext();
         if (context == null) return;
         
-        String token = SharedPrefManager.getInstance(context).getToken();
-        if (token == null) return;
-        
-        String authHeader = "Bearer " + token;
-        
         showShimmer(true);
         if (activeCall != null) activeCall.cancel();
         
-        Call<List<Subject>> call = ApiClient.getInstance().getSubjects(authHeader);
+        Call<List<Subject>> call = ApiClient.getInstance().getSubjects();
         activeCall = call;
         
         call.enqueue(new Callback<List<Subject>>() {
@@ -141,8 +136,6 @@ public class SubjectsFragment extends Fragment {
         Context context = getContext();
         if (context == null) return;
         
-        String token = SharedPrefManager.getInstance(context).getToken();
-        
         Subject subject = new Subject();
         subject.setName(name);
         subject.setColor(color);
@@ -150,7 +143,7 @@ public class SubjectsFragment extends Fragment {
         
         if (activeCall != null) activeCall.cancel();
         
-        Call<Subject> call = ApiClient.getInstance().createSubject("Bearer " + token, subject);
+        Call<Subject> call = ApiClient.getInstance().createSubject(subject);
         activeCall = call;
         
         call.enqueue(new Callback<Subject>() {
@@ -178,11 +171,9 @@ public class SubjectsFragment extends Fragment {
         Context context = getContext();
         if (context == null) return;
         
-        String token = "Bearer " + SharedPrefManager.getInstance(context).getToken();
-        
         if (activeCall != null) activeCall.cancel();
         
-        Call<Void> call = ApiClient.getInstance().deleteSubject(token, id);
+        Call<Void> call = ApiClient.getInstance().deleteSubject(id);
         activeCall = call;
         
         call.enqueue(new Callback<Void>() {

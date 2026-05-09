@@ -119,10 +119,8 @@ public class SubjectDetailActivity extends AppCompatActivity {
     }
 
     private void fetchMaterials() {
-        String token = "Bearer " + SharedPrefManager.getInstance(this).getToken();
-        
         if (activeCall != null) activeCall.cancel();
-        Call<List<Material>> call = ApiClient.getInstance().getMaterials(token, subjectId);
+        Call<List<Material>> call = ApiClient.getInstance().getMaterials(subjectId);
         activeCall = call;
 
         call.enqueue(new Callback<List<Material>>() {
@@ -195,9 +193,7 @@ public class SubjectDetailActivity extends AppCompatActivity {
             RequestBody subjectIdPart = RequestBody.create(MediaType.parse("text/plain"), subjectId);
             RequestBody namePart = RequestBody.create(MediaType.parse("text/plain"), fileName);
 
-            String token = "Bearer " + SharedPrefManager.getInstance(this).getToken();
-            
-            ApiClient.getInstance().uploadMaterial(token, subjectIdPart, namePart, filePart).enqueue(new Callback<Material>() {
+            ApiClient.getInstance().uploadMaterial(subjectIdPart, namePart, filePart).enqueue(new Callback<Material>() {
                 @Override
                 public void onResponse(Call<Material> call, Response<Material> response) {
                     if (isFinishing() || isDestroyed()) return;

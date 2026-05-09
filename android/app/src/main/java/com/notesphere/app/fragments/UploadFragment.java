@@ -101,11 +101,9 @@ public class UploadFragment extends Fragment {
         Context context = getContext();
         if (context == null) return;
 
-        String token = "Bearer " + SharedPrefManager.getInstance(context).getToken();
-        
         if (activeCall != null) activeCall.cancel();
         
-        Call<List<Subject>> call = ApiClient.getInstance().getSubjects(token);
+        Call<List<Subject>> call = ApiClient.getInstance().getSubjects();
         activeCall = call;
         
         call.enqueue(new Callback<List<Subject>>() {
@@ -165,11 +163,9 @@ public class UploadFragment extends Fragment {
             RequestBody subjectIdPart = RequestBody.create(MediaType.parse("text/plain"), selectedSubjectId);
             RequestBody namePart = RequestBody.create(MediaType.parse("text/plain"), selectedFileName);
 
-            String token = "Bearer " + SharedPrefManager.getInstance(context).getToken();
-            
             if (activeCall != null) activeCall.cancel();
             
-            Call<Material> call = ApiClient.getInstance().uploadMaterial(token, subjectIdPart, namePart, filePart);
+            Call<Material> call = ApiClient.getInstance().uploadMaterial(subjectIdPart, namePart, filePart);
             activeCall = call;
 
             call.enqueue(new Callback<Material>() {

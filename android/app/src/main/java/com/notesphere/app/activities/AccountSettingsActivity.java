@@ -50,9 +50,8 @@ public class AccountSettingsActivity extends AppCompatActivity {
 
     private void removeAvatar() {
         binding.progressBar.setVisibility(android.view.View.VISIBLE);
-        String token = "Bearer " + pref.getToken();
         
-        ApiClient.getInstance().deleteAvatar(token).enqueue(new Callback<Void>() {
+        ApiClient.getInstance().deleteAvatar().enqueue(new Callback<Void>() {
             @Override
             public void onResponse(Call<Void> call, Response<Void> response) {
                 if (isFinishing() || isDestroyed() || binding == null) return;
@@ -121,9 +120,8 @@ public class AccountSettingsActivity extends AppCompatActivity {
             File file = getFileFromUri(uri);
             RequestBody requestFile = RequestBody.create(MediaType.parse(getContentResolver().getType(uri)), file);
             MultipartBody.Part body = MultipartBody.Part.createFormData("avatar", file.getName(), requestFile);
-            String token = "Bearer " + pref.getToken();
 
-            ApiClient.getInstance().uploadAvatar(token, body).enqueue(new Callback<User.AvatarResponse>() {
+            ApiClient.getInstance().uploadAvatar(body).enqueue(new Callback<User.AvatarResponse>() {
                 @Override
                 public void onResponse(Call<User.AvatarResponse> call, Response<User.AvatarResponse> response) {
                     if (isFinishing() || isDestroyed() || binding == null) return;
@@ -192,10 +190,9 @@ public class AccountSettingsActivity extends AppCompatActivity {
         binding.btnSave.setEnabled(false);
         binding.btnSave.setText("Saving...");
 
-        String authHeader = "Bearer " + pref.getToken();
         User.UserInfo update = new User.UserInfo(name, pref.getAvatarUrl());
         
-        ApiClient.getInstance().updateProfile(authHeader, update).enqueue(new Callback<User.UserInfo>() {
+        ApiClient.getInstance().updateProfile(update).enqueue(new Callback<User.UserInfo>() {
             @Override
             public void onResponse(Call<User.UserInfo> call, Response<User.UserInfo> response) {
                 if (isFinishing() || isDestroyed() || binding == null) return;

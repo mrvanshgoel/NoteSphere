@@ -57,8 +57,7 @@ public class HomeFragment extends Fragment {
     }
 
     private void fetchIntelligence() {
-        String token = "Bearer " + pref.getToken();
-        ApiClient.getInstance().getStudyIntelligence(token).enqueue(new Callback<com.google.gson.JsonObject>() {
+        ApiClient.getInstance().getStudyIntelligence().enqueue(new Callback<com.google.gson.JsonObject>() {
             @Override
             public void onResponse(Call<com.google.gson.JsonObject> call, Response<com.google.gson.JsonObject> response) {
                 if (!isAdded() || binding == null) return;
@@ -185,10 +184,8 @@ public class HomeFragment extends Fragment {
         if (context == null) return;
 
         showShimmer(true);
-        String token = "Bearer " + pref.getToken();
-
         if (activeCall != null) activeCall.cancel();
-        Call<List<Subject>> call = ApiClient.getInstance().getSubjects(token);
+        Call<List<Subject>> call = ApiClient.getInstance().getSubjects();
         activeCall = call;
 
         call.enqueue(new Callback<List<Subject>>() {
@@ -207,7 +204,7 @@ public class HomeFragment extends Fragment {
                     for (Subject s : subjects) totalMaterials += s.getMaterialCount();
                     binding.tvMaterialCount.setText(String.valueOf(totalMaterials));
 
-                    fetchSyllabusProgress(token);
+                    fetchSyllabusProgress();
                 }
             }
 
@@ -222,9 +219,9 @@ public class HomeFragment extends Fragment {
         });
     }
 
-    private void fetchSyllabusProgress(String token) {
+    private void fetchSyllabusProgress() {
         String userId = pref.getUserId();
-        ApiClient.getInstance().getSyllabuses(token, userId).enqueue(new Callback<List<Syllabus>>() {
+        ApiClient.getInstance().getSyllabuses(userId).enqueue(new Callback<List<Syllabus>>() {
             @Override
             public void onResponse(Call<List<Syllabus>> call, Response<List<Syllabus>> response) {
                 if (!isAdded() || binding == null) return;

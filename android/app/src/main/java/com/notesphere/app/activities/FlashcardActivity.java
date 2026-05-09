@@ -50,11 +50,10 @@ public class FlashcardActivity extends AppCompatActivity {
     }
 
     private void fetchFlashcards(String materialId) {
-        String token = "Bearer " + SharedPrefManager.getInstance(this).getToken();
         JsonObject body = new JsonObject();
         body.addProperty("materialId", materialId);
 
-        ApiClient.getInstance().generateFlashcards(token, body).enqueue(new Callback<JsonObject>() {
+        ApiClient.getInstance().generateFlashcards(body).enqueue(new Callback<JsonObject>() {
             @Override
             public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
                 if (response.isSuccessful() && response.body() != null) {

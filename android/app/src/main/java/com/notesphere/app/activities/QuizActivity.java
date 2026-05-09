@@ -50,11 +50,10 @@ public class QuizActivity extends AppCompatActivity {
         binding.layoutQuizContent.setVisibility(View.GONE);
         binding.layoutLoading.setVisibility(View.VISIBLE);
         binding.quizProgress.setIndeterminate(true);
-        String token = "Bearer " + SharedPrefManager.getInstance(this).getToken();
         AiRequest request = new AiRequest(materialId);
 
         if (activeCall != null) activeCall.cancel();
-        Call<QuizResponse> call = ApiClient.getInstance().generateQuiz(token, request);
+        Call<QuizResponse> call = ApiClient.getInstance().generateQuiz(request);
         activeCall = call;
 
         call.enqueue(new Callback<QuizResponse>() {

@@ -39,7 +39,6 @@ public class SyllabusDashboardActivity extends AppCompatActivity {
     }
 
     private void loadSyllabus() {
-        String token = "Bearer " + SharedPrefManager.getInstance(this).getToken();
         String userId = SharedPrefManager.getInstance(this).getUserId();
 
         if (userId == null) {
@@ -47,7 +46,7 @@ public class SyllabusDashboardActivity extends AppCompatActivity {
             return;
         }
 
-        ApiClient.getInstance().getSyllabuses(token, userId).enqueue(new Callback<List<Syllabus>>() {
+        ApiClient.getInstance().getSyllabuses(userId).enqueue(new Callback<List<Syllabus>>() {
             @Override
             public void onResponse(Call<List<Syllabus>> call, Response<List<Syllabus>> response) {
                 if (isFinishing() || isDestroyed()) return;
@@ -116,8 +115,7 @@ public class SyllabusDashboardActivity extends AppCompatActivity {
 
     private void updateSyllabusOnServer(Syllabus syllabus) {
         updateProgressUI(syllabus);
-        String token = "Bearer " + SharedPrefManager.getInstance(this).getToken();
-        ApiClient.getInstance().updateSyllabus(token, syllabus.getId(), syllabus).enqueue(new Callback<Syllabus>() {
+        ApiClient.getInstance().updateSyllabus(syllabus.getId(), syllabus).enqueue(new Callback<Syllabus>() {
             @Override
             public void onResponse(Call<Syllabus> call, Response<Syllabus> response) {}
             @Override

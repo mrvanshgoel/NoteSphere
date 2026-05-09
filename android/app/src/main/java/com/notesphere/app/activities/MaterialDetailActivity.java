@@ -106,7 +106,6 @@ public class MaterialDetailActivity extends AppCompatActivity {
         binding.layoutResultActions.setVisibility(View.GONE);
         binding.tvContent.setText("AI is analyzing " + materialTitle + "..."); 
 
-        String token = "Bearer " + SharedPrefManager.getInstance(this).getToken();
         AiRequest request = new AiRequest(materialId, action);
         
         android.util.Log.d("AI_TRACE", "--- MATERIAL ANALYSIS REQUEST ---");
@@ -116,7 +115,7 @@ public class MaterialDetailActivity extends AppCompatActivity {
 
         if (activeCall != null) activeCall.cancel();
         
-        Call<AiResponse> call = ApiClient.getInstance().summarize(token, request);
+        Call<AiResponse> call = ApiClient.getInstance().summarize(request);
         
         // Update UI titles based on action
         switch (action) {
@@ -169,8 +168,7 @@ public class MaterialDetailActivity extends AppCompatActivity {
 
     private void generateP2PShare() {
         binding.pbLoading.setVisibility(View.VISIBLE);
-        String token = "Bearer " + SharedPrefManager.getInstance(this).getToken();
-        ApiClient.getInstance().generateShareLink(token, new com.notesphere.app.models.ShareRequest(materialId))
+        ApiClient.getInstance().generateShareLink(new com.notesphere.app.models.ShareRequest(materialId))
             .enqueue(new Callback<com.notesphere.app.models.ShareResponse>() {
                 @Override
                 public void onResponse(Call<com.notesphere.app.models.ShareResponse> call, Response<com.notesphere.app.models.ShareResponse> response) {

@@ -72,21 +72,18 @@ public class ChatFragment extends Fragment {
         binding.btnAttachFile.setColorFilter(null);
         
         // Create a placeholder session on the backend
-        String token = pref.getToken();
-        if (token != null) {
-            ChatSession newSession = new ChatSession("New Chat");
-            ApiClient.getInstance().createChatSession("Bearer " + token, newSession).enqueue(new Callback<ChatSession>() {
-                @Override
-                public void onResponse(Call<ChatSession> call, Response<ChatSession> response) {
-                    if (response.isSuccessful() && response.body() != null) {
-                        currentChatId = response.body().getId();
-                        android.util.Log.d("CHAT", "New Chat Session Created: " + currentChatId);
-                    }
+        ChatSession newSession = new ChatSession("New Chat");
+        ApiClient.getInstance().createChatSession(newSession).enqueue(new Callback<ChatSession>() {
+            @Override
+            public void onResponse(Call<ChatSession> call, Response<ChatSession> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    currentChatId = response.body().getId();
+                    android.util.Log.d("CHAT", "New Chat Session Created: " + currentChatId);
                 }
-                @Override
-                public void onFailure(Call<ChatSession> call, Throwable t) {}
-            });
-        }
+            }
+            @Override
+            public void onFailure(Call<ChatSession> call, Throwable t) {}
+        });
     }
 
     private void showChatHistory() {
@@ -97,8 +94,7 @@ public class ChatFragment extends Fragment {
         RecyclerView rv = sheetView.findViewById(R.id.rvChatHistory);
         rv.setLayoutManager(new LinearLayoutManager(requireContext()));
 
-        String token = "Bearer " + pref.getToken();
-        ApiClient.getInstance().getChatSessions(token).enqueue(new Callback<List<ChatSession>>() {
+        ApiClient.getInstance().getChatSessions().enqueue(new Callback<List<ChatSession>>() {
             @Override
             public void onResponse(Call<List<ChatSession>> call, Response<List<ChatSession>> response) {
                 if (response.isSuccessful() && response.body() != null) {
@@ -106,7 +102,7 @@ public class ChatFragment extends Fragment {
                         loadChat(session);
                         dialog.dismiss();
                     }, session -> {
-                        deleteChat(session, token, dialog);
+                        deleteChat(session, dialog);
                     });
                     rv.setAdapter(historyAdapter);
                 }
@@ -139,8 +135,8 @@ public class ChatFragment extends Fragment {
         if (!messages.isEmpty()) binding.rvChat.smoothScrollToPosition(messages.size() - 1);
     }
 
-    private void deleteChat(ChatSession session, String token, BottomSheetDialog dialog) {
-        ApiClient.getInstance().deleteChatSession(token, session.getId()).enqueue(new Callback<Void>() {
+    private void deleteChat(ChatSession session, BottomSheetDialog dialog) {
+        ApiClient.getInstance().deleteChatSession(session.getId()).enqueue(new Callback<Void>() {
             @Override
             public void onResponse(Call<Void> call, Response<Void> response) {
                 if (response.isSuccessful()) {
@@ -167,7 +163,6 @@ public class ChatFragment extends Fragment {
         binding.rvChat.smoothScrollToPosition(messages.size() - 1);
         binding.etMessage.setText("");
 
-        String token = "Bearer " + pref.getToken();
         ChatRequest request = new ChatRequest(text, new ArrayList<>(apiHistory));
         request.setChatId(currentChatId);
         request.setMaterialId(attachedMaterialId);
@@ -175,7 +170,7 @@ public class ChatFragment extends Fragment {
         binding.loadingAnimation.setVisibility(View.VISIBLE);
         binding.viewStatusDot.setBackgroundResource(R.drawable.bg_circle_green);
 
-        ApiClient.getInstance().chat(token, request).enqueue(new Callback<AiResponse>() {
+        ApiClient.getInstance().chat(request).enqueue(new Callback<AiResponse>() {
             @Override
             public void onResponse(Call<AiResponse> call, Response<AiResponse> response) {
                 if (!isAdded() || binding == null) return;

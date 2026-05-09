@@ -59,13 +59,12 @@ public class DoubtSolverActivity extends AppCompatActivity {
         binding.rvChat.smoothScrollToPosition(messages.size() - 1);
         binding.etMessage.setText("");
 
-        String token = "Bearer " + SharedPrefManager.getInstance(this).getToken();
         DoubtRequest request = new DoubtRequest(materialId, question);
 
         binding.loadingAnimation.setVisibility(View.VISIBLE);
 
         if (activeCall != null) activeCall.cancel();
-        Call<AiResponse> call = ApiClient.getInstance().solveDoubt(token, request);
+        Call<AiResponse> call = ApiClient.getInstance().solveDoubt(request);
         activeCall = call;
 
         call.enqueue(new Callback<AiResponse>() {

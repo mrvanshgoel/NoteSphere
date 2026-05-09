@@ -73,7 +73,7 @@ public class LoginActivity extends AppCompatActivity {
                 pref.saveToken(idToken);
 
                 // Fetch profile from backend to sync SharedPrefs
-                ApiClient.getInstance().getProfile("Bearer " + idToken).enqueue(new Callback<User.UserInfo>() {
+                ApiClient.getInstance().getProfile().enqueue(new Callback<User.UserInfo>() {
                     @Override
                     public void onResponse(Call<User.UserInfo> call, Response<User.UserInfo> response) {
                         if (response.isSuccessful() && response.body() != null) {
