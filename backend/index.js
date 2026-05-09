@@ -6,7 +6,7 @@ const fs = require('fs');
 const path = require('path');
 const dotenv = require('dotenv');
 const { extractTextFromBuffer } = require('./ai_utils');
-const { getModel, callAIWithTimeout } = require('./aiService');
+const { discoverModels, generateWithFallback, getActiveModelInfo } = require('./ai_model_manager');
 
 dotenv.config();
 
@@ -129,9 +129,11 @@ const verifyToken = async (req, res, next) => {
 app.get('/', (req, res) => res.json({
   status: 'ok',
   message: 'Notesphere API is running (Firebase Native)',
-  version: '2.1.0'
+  version: '2.5.0',
+  aiModel: getActiveModelInfo().activeModel
 }));
 app.get('/health', (req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
+app.get('/api/debug/models', (req, res) => res.json(getActiveModelInfo()));
 
 // ═══════════════════════════════════════════════════════════
 // AUTH/PROFILE ROUTES
@@ -370,15 +372,10 @@ app.post('/api/ai/chat', verifyToken, async (req, res) => {
       }
     });
 
-    const chat = model.startChat({
-      history: validatedHistory,
-      generationConfig: { maxOutputTokens: 1024, temperature: 0.7 }
-    });
-
-    const result = await callAIWithTimeout(() => chat.sendMessage(`${systemPrompt}\n\nUser: ${message}`));
-    const responseText = result.response.text();
-    console.log(`[AI Chat] Response: ${responseText.substring(0, 100)}...`);
-    res.json({ content: responseText, role: 'assistant' });
+    const result = await generateWithFallback(`${systemPrompt}\n\nUser: ${message}`, validatedHistory);
+    const responseText = result.text;
+    console.log(`[AI Chat] Response (Model: ${result.modelUsed}): ${responseText.substring(0, 100)}...`);
+    res.json({ content: responseText, role: 'assistant', model: result.modelUsed });
   } catch (err) {
     console.error('[AI Chat Error]', err.message);
     res.status(500).json({ error: 'AI chat failed', detail: err.message });
@@ -397,9 +394,6 @@ app.post('/api/ai/summarize', verifyToken, async (req, res) => {
     
     if (!text) return res.status(400).json({ error: 'No text or materialId provided' });
 
-    console.log(`[AI Summarize] Mode: ${mode}, Text Length: ${text.length}`);
-    const model = getModel();
-
     const prompts = {
       summary: `You are an expert academic summarizer. Create a comprehensive, structured summary of the following material. Include: key concepts, main ideas, important definitions, and a brief overview. Use markdown formatting.\n\nMaterial:\n${text}`,
       notes: `You are an expert academic note-taker. Create detailed, exam-ready study notes from the following material. Use ## headings, **bold** for key terms, bullet points for facts, and examples. Aim for completeness.\n\nMaterial:\n${text}`,
@@ -408,10 +402,10 @@ app.post('/api/ai/summarize', verifyToken, async (req, res) => {
     };
 
     const prompt = prompts[mode] || prompts.summary;
-    const result = await callAIWithTimeout(() => model.generateContent(prompt), 45000);
-    const responseText = result.response.text();
-    console.log(`[AI Summarize] Success`);
-    res.json({ content: responseText, mode });
+    const result = await generateWithFallback(prompt);
+    const responseText = result.text;
+    console.log(`[AI Summarize] Success (Model: ${result.modelUsed})`);
+    res.json({ content: responseText, mode, model: result.modelUsed });
   } catch (err) {
     console.error('[AI Summarize Error]', err.message);
     res.status(500).json({ error: 'Summarization failed', detail: err.message });
@@ -428,8 +422,6 @@ app.post('/api/ai/quiz', verifyToken, async (req, res) => {
     }
     if (!text) return res.status(400).json({ error: 'No text or materialId provided' });
 
-    console.log(`[AI Quiz] Request for material: ${materialId}`);
-    const model = getModel();
     const prompt = `You are an expert exam question generator. Generate exactly ${count} multiple-choice questions from the following material.
 
 Difficulty: ${difficulty}
@@ -453,14 +445,15 @@ IMPORTANT: Respond with ONLY valid JSON in this exact format:
 Material:
 ${text}`;
 
-    const result = await callAIWithTimeout(() => model.generateContent(prompt), 30000);
-    const rawText = result.response.text().trim();
+    console.log(`[AI Quiz] Generating with fallback...`);
+    const result = await generateWithFallback(prompt);
+    const rawText = result.text.trim();
 
     const jsonMatch = rawText.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error('Invalid AI response format');
 
     const parsed = JSON.parse(jsonMatch[0]);
-    res.json(parsed);
+    res.json({ ...parsed, model: result.modelUsed });
   } catch (err) {
     console.error('[AI Quiz Error]', err.message);
     res.status(500).json({ error: 'Quiz generation failed', detail: err.message });
@@ -483,24 +476,20 @@ app.post('/api/ai/doubt', verifyToken, async (req, res) => {
     }
 
     console.log(`[AI Doubt] Question: ${question}`);
-    const model = getModel();
     const contextSection = context ? `\n\nReference Material:\n${context.substring(0, 8000)}` : '';
-
-    const chat = model.startChat({
-      history: history.map(m => ({
-        role: m.role === 'assistant' ? 'model' : 'user',
-        parts: [{ text: m.content }]
-      })),
-      generationConfig: { maxOutputTokens: 2048, temperature: 0.5 }
-    });
 
     const prompt = `You are a knowledgeable study assistant helping a student understand their learning material. 
 Answer the following question clearly and helpfully. If the answer is in the provided material, cite it. Use markdown formatting for clarity.${contextSection}
 
 Student Question: ${question}`;
 
-    const result = await callAIWithTimeout(() => chat.sendMessage(prompt));
-    res.json({ content: result.response.text(), role: 'assistant' });
+    const validatedHistory = history.map(m => ({
+      role: m.role === 'assistant' ? 'model' : 'user',
+      parts: [{ text: m.content }]
+    }));
+
+    const result = await generateWithFallback(prompt, validatedHistory);
+    res.json({ content: result.text, role: 'assistant', model: result.modelUsed });
   } catch (err) {
     console.error('[AI Doubt Error]', err.message);
     res.status(500).json({ error: 'Could not process question', detail: err.message });
@@ -576,6 +565,7 @@ app.use((err, req, res, next) => {
   });
 });
 
-app.listen(port, () => {
+app.listen(port, async () => {
   console.log(`Server running on port ${port}`);
+  await discoverModels();
 });
