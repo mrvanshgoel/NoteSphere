@@ -153,7 +153,7 @@ app.post('/api/auth/login', async (req, res) => {
         id: profile.id, 
         name: profile.name, 
         email: profile.email, 
-        avatarUrl: profile.avatar_url 
+        avatar_url: profile.avatar_url 
       } 
     });
   } catch (err) {
@@ -180,7 +180,7 @@ app.get('/api/auth/profile', verifyToken, async (req, res) => {
         id: profile.id,
         name: profile.name,
         email: profile.email,
-        avatarUrl: profile.avatar_url
+        avatar_url: profile.avatar_url
     });
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -202,7 +202,7 @@ app.put('/api/auth/profile', verifyToken, async (req, res) => {
         id: data.id,
         name: data.name,
         email: data.email,
-        avatarUrl: data.avatar_url
+        avatar_url: data.avatar_url
     });
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -249,7 +249,7 @@ app.post('/api/auth/upload-avatar', verifyToken, upload.single('avatar'), async 
     }
     console.log("STEP 3 SUCCESS: Profile updated in database.");
 
-    res.json({ avatarUrl: publicUrl });
+    res.json({ avatar_url: publicUrl });
   } catch (err) {
     console.error("AVATAR UPLOAD CRITICAL ERROR:", err.message);
     res.status(400).json({ error: err.message });
