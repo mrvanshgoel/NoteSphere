@@ -7,10 +7,12 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.aistudyassistant.databinding.ItemChatAiBinding;
 import com.example.aistudyassistant.databinding.ItemChatUserBinding;
 import com.example.aistudyassistant.models.ChatMessage;
+import io.noties.markwon.Markwon;
 import java.util.List;
 
 public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private List<ChatMessage> messages;
+    private Markwon markwon;
     private static final int TYPE_USER = 1;
     private static final int TYPE_AI = 2;
     private OnMessageLongClickListener longClickListener;
@@ -58,7 +60,10 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             });
         } else {
             AiViewHolder aiHolder = (AiViewHolder) holder;
-            aiHolder.binding.tvMessage.setText(message.getMessage());
+            if (markwon == null) {
+                markwon = Markwon.create(aiHolder.binding.getRoot().getContext());
+            }
+            markwon.setMarkdown(aiHolder.binding.tvMessage, message.getMessage());
             aiHolder.binding.getRoot().setOnLongClickListener(v -> {
                 if (longClickListener != null) {
                     longClickListener.onLongClick(message.getMessage());
