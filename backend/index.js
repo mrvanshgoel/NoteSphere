@@ -200,14 +200,12 @@ app.post('/api/auth/upload-avatar', verifyToken, upload.single('avatar'), async 
 });
 
 // 4. SUBJECTS ROUTES
-
 app.get('/api/subjects', verifyToken, async (req, res) => {
   try {
     const { data, error } = await supabase
       .from('subjects')
       .select('*')
       .eq('user_id', req.user.id);
-
     if (error) throw error;
     res.json(data);
   } catch (err) {
@@ -218,8 +216,6 @@ app.get('/api/subjects', verifyToken, async (req, res) => {
 app.post('/api/subjects', verifyToken, async (req, res) => {
   try {
     const { name, color, icon } = req.body;
-    console.log('Attempting to create subject:', { name, color, icon, user_id: req.user.id });
-    
     const { data, error } = await supabase
       .from('subjects')
       .insert({ 
@@ -230,16 +226,10 @@ app.post('/api/subjects', verifyToken, async (req, res) => {
       })
       .select()
       .single();
-
-    if (error) {
-      console.error('SUPABASE INSERT ERROR:', error);
-      return res.status(400).json({ error: error.message });
-    }
-    
+    if (error) throw error;
     res.json(data);
   } catch (err) {
-    console.error('SERVER EXCEPTION:', err);
-    res.status(500).json({ error: err.message });
+    res.status(400).json({ error: err.message });
   }
 });
 
@@ -250,7 +240,6 @@ app.delete('/api/subjects/:id', verifyToken, async (req, res) => {
       .delete()
       .eq('id', req.params.id)
       .eq('user_id', req.user.id);
-
     if (error) throw error;
     res.json({ success: true });
   } catch (err) {
@@ -259,7 +248,6 @@ app.delete('/api/subjects/:id', verifyToken, async (req, res) => {
 });
 
 // 5. MATERIALS ROUTES
-
 app.get('/api/materials/:subjectId', verifyToken, async (req, res) => {
   try {
     const { data, error } = await supabase
@@ -267,7 +255,6 @@ app.get('/api/materials/:subjectId', verifyToken, async (req, res) => {
       .select('*')
       .eq('subject_id', req.params.subjectId)
       .eq('user_id', req.user.id);
-
     if (error) throw error;
     res.json(data);
   } catch (err) {
@@ -281,16 +268,14 @@ app.post('/api/materials/upload', verifyToken, upload.single('file'), async (req
     const file = req.file;
     if (!file) throw new Error('No file uploaded');
 
-    const fileName = `${req.user.id}/${Date.now()}_${file.originalname}`;
+    const filePath = `${req.user.id}/${Date.now()}_${file.originalname}`;
     const { error: uploadError } = await supabase.storage
       .from('materials')
-      .upload(fileName, file.buffer, { contentType: file.mimetype });
+      .upload(filePath, file.buffer, { contentType: file.mimetype });
 
     if (uploadError) throw uploadError;
 
-    const { data: { publicUrl } } = supabase.storage
-      .from('materials')
-      .getPublicUrl(fileName);
+    const { data: { publicUrl } } = supabase.storage.from('materials').getPublicUrl(filePath);
 
     let contentText = '';
     if (file.originalname.endsWith('.txt')) {
@@ -304,6 +289,7 @@ app.post('/api/materials/upload', verifyToken, upload.single('file'), async (req
         subject_id: subjectId,
         title: file.originalname,
         file_url: publicUrl,
+        file_path: filePath, // Saved for sharing
         file_type: file.mimetype,
         content_text: contentText
       })
@@ -319,21 +305,12 @@ app.post('/api/materials/upload', verifyToken, upload.single('file'), async (req
 
 app.delete('/api/materials/:id', verifyToken, async (req, res) => {
   try {
-    // Get material to find subject_id for count update
-    const { data: material } = await supabase
-      .from('materials')
-      .select('subject_id')
-      .eq('id', req.params.id)
-      .single();
-
     const { error } = await supabase
       .from('materials')
       .delete()
       .eq('id', req.params.id)
       .eq('user_id', req.user.id);
-
     if (error) throw error;
-
     res.json({ success: true });
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -341,195 +318,67 @@ app.delete('/api/materials/:id', verifyToken, async (req, res) => {
 });
 
 // 6. AI ROUTES
-
-app.post('/api/ai/summary', verifyToken, async (req, res) => {
-  try {
-    const { text } = req.body;
-    console.log('Gemini Summary request for text length:', text?.length);
-    const result = await gemini.generateContent(`Summarize this study material comprehensively: ${text}`);
-    res.json({ content: result.response.text() });
-  } catch (err) {
-    console.error('GEMINI SUMMARY ERROR:', err);
-    res.status(400).json({ error: 'Gemini Summary Error: ' + err.message });
-  }
-});
-
-app.post('/api/ai/notes', verifyToken, async (req, res) => {
-  try {
-    const { text } = req.body;
-    console.log('Gemini Notes request for text length:', text?.length);
-    const result = await gemini.generateContent(`Create detailed study notes with headings and bullet points from this material: ${text}`);
-    res.json({ content: result.response.text() });
-  } catch (err) {
-    console.error('GEMINI NOTES ERROR:', err);
-    res.status(400).json({ error: 'Gemini Notes Error: ' + err.message });
-  }
-});
-
-app.post('/api/ai/questions', verifyToken, async (req, res) => {
-  try {
-    const { text } = req.body;
-    console.log('Gemini Questions request for text length:', text?.length);
-    const result = await gemini.generateContent(`Generate 5 important practice questions based on this study material: ${text}`);
-    res.json({ content: result.response.text() });
-  } catch (err) {
-    console.error('GEMINI QUESTIONS ERROR:', err);
-    res.status(400).json({ error: 'Gemini Questions Error: ' + err.message });
-  }
-});
-
-app.post('/api/ai/notes', verifyToken, async (req, res) => {
-  try {
-    const { text } = req.body;
-    const result = await gemini.generateContent(`Create detailed study notes with key points, definitions and important concepts from: ${text}`);
-    res.json({ content: result.response.text() });
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-});
-
-app.post('/api/ai/questions', verifyToken, async (req, res) => {
-  try {
-    const { text } = req.body;
-    const completion = await gemini.generateContent(`Generate 10 practice questions with answers from this study material: ${text}`);
-    res.json({ content: completion.response.text() });
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-});
-
-// 6. P2P SHARING ROUTE
-app.post('/api/share/generate', verifyToken, async (req, res) => {
-  try {
-    const { materialId } = req.body;
-    
-    // 1. Get material info
-    const { data: material, error: mError } = await supabase
-      .from('materials')
-      .select('*')
-      .eq('id', materialId)
-      .eq('user_id', req.user.id)
-      .single();
-
-    if (mError || !material) throw new Error('Material not found');
-
-    // 2. Generate a long-lived signed URL (7 days)
-    // Extract file path from URL or use stored path
-    const filePath = material.url.split('/').pop();
-    const { data: signData, error: sError } = await supabase.storage
-      .from('materials')
-      .createSignedUrl(filePath, 60 * 60 * 24 * 7);
-
-    if (sError) throw sError;
-
-    res.json({ 
-      shareUrl: signData.signedUrl,
-      name: material.name,
-      expiresIn: '7 days'
-    });
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-});
-
-// 7. GEMINI AI ROUTES
 app.post('/api/ai/chat', verifyToken, async (req, res) => {
   try {
     const { messages, systemPrompt } = req.body;
     const lastUserMessage = messages[messages.length - 1]?.content || "";
-    const currentDate = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
-
-    console.log('Gemini Chat request:', lastUserMessage);
-
     const chat = gemini.startChat({
       history: messages.slice(0, -1).map(m => ({
         role: m.role === 'assistant' ? 'model' : 'user',
         parts: [{ text: m.content }],
       })),
-      generationConfig: { maxOutputTokens: 1000 },
     });
-
-    const prompt = `System Instructions: ${systemPrompt || "You are an expert study assistant."}
-    Current Time: ${currentDate}.
-    User Question: ${lastUserMessage}`;
-
-    const result = await chat.sendMessage(prompt);
-    const response = await result.response;
-    
-    res.json({ content: response.text(), role: 'assistant' });
+    const result = await chat.sendMessage(`Instructions: ${systemPrompt}\nUser: ${lastUserMessage}`);
+    res.json({ content: result.response.text(), role: 'assistant' });
   } catch (err) {
-    console.error('GEMINI ERROR:', err);
-    res.status(500).json({ error: 'Gemini AI Error: ' + err.message });
+    res.status(500).json({ error: err.message });
   }
 });
 
 app.post('/api/ai/summary', verifyToken, async (req, res) => {
   try {
-    const { text } = req.body;
-    console.log('Gemini Summary request for text length:', text?.length);
-    const result = await gemini.generateContent(`Summarize this study material comprehensively: ${text}`);
+    const result = await gemini.generateContent(`Summarize this material: ${req.body.text}`);
     res.json({ content: result.response.text() });
   } catch (err) {
-    console.error('GEMINI SUMMARY ERROR:', err);
-    res.status(400).json({ error: 'Gemini Summary Error: ' + err.message });
+    res.status(400).json({ error: err.message });
   }
 });
 
 app.post('/api/ai/notes', verifyToken, async (req, res) => {
   try {
-    const { text } = req.body;
-    console.log('Gemini Notes request for text length:', text?.length);
-    const result = await gemini.generateContent(`Create detailed study notes with headings and bullet points from this material: ${text}`);
+    const result = await gemini.generateContent(`Create study notes: ${req.body.text}`);
     res.json({ content: result.response.text() });
   } catch (err) {
-    console.error('GEMINI NOTES ERROR:', err);
-    res.status(400).json({ error: 'Gemini Notes Error: ' + err.message });
+    res.status(400).json({ error: err.message });
   }
 });
 
 app.post('/api/ai/questions', verifyToken, async (req, res) => {
   try {
-    const { text } = req.body;
-    console.log('Gemini Questions request for text length:', text?.length);
-    const result = await gemini.generateContent(`Generate 5 important practice questions based on this study material: ${text}`);
+    const result = await gemini.generateContent(`Generate practice questions: ${req.body.text}`);
     res.json({ content: result.response.text() });
   } catch (err) {
-    console.error('GEMINI QUESTIONS ERROR:', err);
-    res.status(400).json({ error: 'Gemini Questions Error: ' + err.message });
+    res.status(400).json({ error: err.message });
   }
 });
 
-// 8. P2P SHARING SYSTEM
+// 7. P2P SHARING SYSTEM
 const activeShares = new Map();
 
 app.post('/api/share/generate', verifyToken, async (req, res) => {
   try {
-    const { materialId, expiresHours = 24 } = req.body;
-    
-    const { data: material, error: fetchErr } = await supabase
-      .from('materials')
-      .select('*')
-      .eq('id', materialId)
-      .single();
+    const { materialId } = req.body;
+    const { data: material } = await supabase.from('materials').select('*').eq('id', materialId).single();
+    if (!material) throw new Error('Material not found');
 
-    if (fetchErr || !material) throw new Error('Material not found');
-
-    const { data: signedUrl, error: signErr } = await supabase.storage
-      .from('materials')
-      .createSignedUrl(material.file_path, expiresHours * 3600);
-
-    if (signErr) throw new Error('Failed to generate secure link');
+    const path = material.file_path || material.file_url.split('/').pop();
+    const { data: signedUrl } = await supabase.storage.from('materials').createSignedUrl(path, 3600 * 24);
 
     const shareCode = crypto.randomBytes(3).toString('hex').toUpperCase();
-    
-    activeShares.set(shareCode, {
-      name: material.title,
-      url: signedUrl.signedUrl,
-      expiresAt: Date.now() + (expiresHours * 3600000)
-    });
+    activeShares.set(shareCode, { name: material.title, url: signedUrl.signedUrl, expiresAt: Date.now() + 86400000 });
 
     res.json({
-      shareCode: shareCode,
+      shareCode,
       shareUrl: `${req.protocol}://${req.get('host')}/share/${shareCode}`,
       name: material.title
     });
