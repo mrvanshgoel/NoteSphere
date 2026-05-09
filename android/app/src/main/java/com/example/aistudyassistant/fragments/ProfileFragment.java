@@ -24,6 +24,13 @@ import com.example.aistudyassistant.models.Subject;
 import com.example.aistudyassistant.models.User;
 import com.example.aistudyassistant.utils.SharedPrefManager;
 import com.google.android.material.textfield.TextInputEditText;
+import com.bumptech.glide.load.DataSource;
+import com.bumptech.glide.load.engine.GlideException;
+import com.bumptech.glide.request.RequestListener;
+import com.bumptech.glide.request.target.Target;
+import android.graphics.drawable.Drawable;
+import androidx.annotation.Nullable;
+import android.util.Log;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -82,7 +89,37 @@ public class ProfileFragment extends Fragment {
             startActivity(intent);
         });
 
+        runGlideTest();
+
         return binding.getRoot();
+    }
+
+    private void runGlideTest() {
+        // Fix: Hardcoded URL test
+        String testUrl = "https://gwigrsuetfkwbyucvjri.supabase.co/storage/v1/object/public/avatars/33327c77-85b1-4b6d-a867-bf0c2f354534-1778314125722.jpg";
+        Log.d("GLIDE_TEST", "Starting test with URL: " + testUrl);
+
+        Glide.with(requireContext())
+            .load(testUrl)
+            .diskCacheStrategy(com.bumptech.glide.load.engine.DiskCacheStrategy.NONE)
+            .skipMemoryCache(true)
+            .circleCrop()
+            .listener(new RequestListener<Drawable>() {
+                @Override
+                public boolean onLoadFailed(@Nullable GlideException e, Object model,
+                        Target<Drawable> target, boolean isFirstResource) {
+                    Log.e("GLIDE_TEST", "FAILED: " + (e != null ? e.getMessage() : "Unknown error"));
+                    if (e != null) e.logRootCauses("GLIDE_TEST");
+                    return false;
+                }
+                @Override
+                public boolean onResourceReady(Drawable resource, Object model,
+                        Target<Drawable> target, DataSource dataSource, boolean isFirstResource) {
+                    Log.d("GLIDE_TEST", "SUCCESS! Image loaded!");
+                    return false;
+                }
+            })
+            .into(binding.ivProfile);
     }
 
     private void loadUserProfile() {
