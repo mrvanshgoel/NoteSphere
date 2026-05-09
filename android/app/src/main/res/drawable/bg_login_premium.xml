@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Main Gradient -->
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:angle="135"
+                android:endColor="#000000"
+                android:startColor="#1A1A1C"
+                android:type="linear" />
+        </shape>
+    </item>
+
+    <!-- Glowing Circles/Shapes for depth -->
+    <item android:top="-100dp" android:left="-100dp">
+        <shape android:shape="oval">
+            <size android:width="300dp" android:height="300dp" />
+            <gradient
+                android:centerColor="#33FF9F43"
+                android:endColor="#00000000"
+                android:type="radial"
+                android:gradientRadius="150dp" />
+        </shape>
+    </item>
+
+    <item android:bottom="-50dp" android:right="-50dp">
+        <shape android:shape="oval">
+            <size android:width="250dp" android:height="250dp" />
+            <gradient
+                android:centerColor="#338E44AD"
+                android:endColor="#00000000"
+                android:type="radial"
+                android:gradientRadius="125dp" />
+        </shape>
+    </item>
+</layer-list>
