@@ -299,10 +299,11 @@ app.post('/api/subjects', verifyToken, async (req, res) => {
       .single();
     
     if (error) {
-        console.error("SUPABASE DB ERROR (Subjects):", error.message);
-        throw error;
+      console.error("SUPABASE DB ERROR (Subjects):", error.message);
+      throw error;
     }
-    
+
+    console.log('Subject created SUCCESS:', data);
     const mapped = {
         id: data.id,
         name: data.name,
@@ -311,21 +312,7 @@ app.post('/api/subjects', verifyToken, async (req, res) => {
         userId: data.user_id,
         materialCount: 0
     };
-    
     res.json(mapped);
-  } catch (err) {
-        icon: icon || '📚',
-        user_id: userId 
-      }])
-      .select();
-    
-    if (error) {
-      console.log('Subject insert ERROR:', error);
-      return res.status(400).json({ error: error.message });
-    }
-    
-    console.log('Subject created SUCCESS:', data);
-    res.json(data[0]);
   } catch (err) {
     console.log('Subject route CRASH:', err.message);
     res.status(500).json({ error: err.message });
