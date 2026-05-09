@@ -59,7 +59,7 @@ public class IntelligenceAdapter extends RecyclerView.Adapter<IntelligenceAdapte
 
     static class ViewHolder extends RecyclerView.ViewHolder {
         TextView tvIcon, tvType, tvMessage;
-        View btnAction;
+        com.google.android.material.button.MaterialButton btnAction;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);

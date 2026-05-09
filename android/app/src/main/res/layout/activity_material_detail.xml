@@ -142,6 +142,15 @@
                         app:chipIcon="@android:drawable/ic_menu_help" />
 
                     <com.google.android.material.chip.Chip
+                        android:id="@+id/btnFlashcards"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="8dp"
+                        android:text="AI Flashcards"
+                        app:chipBackgroundColor="@color/ns_surface"
+                        app:chipIcon="@android:drawable/ic_menu_sort_by_size" />
+
+                    <com.google.android.material.chip.Chip
                         android:id="@+id/btnRevision"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"

@@ -134,4 +134,7 @@ public interface ApiService {
 
     @POST("api/study/track-quiz")
     Call<Void> trackQuizResult(@Header("Authorization") String token, @Body com.google.gson.JsonObject body);
+
+    @POST("api/ai/flashcards")
+    Call<com.google.gson.JsonObject> generateFlashcards(@Header("Authorization") String token, @Body com.google.gson.JsonObject body);
 }

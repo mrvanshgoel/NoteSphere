@@ -61,6 +61,12 @@ public class MaterialDetailActivity extends AppCompatActivity {
             startActivity(intent);
         });
         binding.btnRevision.setOnClickListener(v -> callAiApi("viva")); // Reuse viva mode for revision points
+        binding.btnFlashcards.setOnClickListener(v -> {
+            Intent intent = new Intent(this, FlashcardActivity.class);
+            intent.putExtra("materialId", materialId);
+            intent.putExtra("subjectName", materialTitle);
+            startActivity(intent);
+        });
 
         // Interactive Group
         binding.btnDoubt.setOnClickListener(v -> openInteractiveChat());
