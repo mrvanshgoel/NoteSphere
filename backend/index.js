@@ -844,6 +844,9 @@ app.get('/api/study/flashcards', verifyToken, async (req, res) => {
   }
 });
 
+app.get('/api/study/analytics', verifyToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
     // Fetch aggregated data for the dashboard
     const [quizSnap, chatsSnap, materialsSnap, subjectsSnap] = await Promise.all([
       db.collection('quiz_results').where('userId', '==', userId).get(),
