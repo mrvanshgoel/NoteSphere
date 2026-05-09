@@ -14,11 +14,11 @@ const port = process.env.PORT || 5000;
 
 // Initialize Gemini
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-// Explicitly using the stable model ID and checking if we can force v1 via options (if available in this SDK version)
-const gemini = genAI.getGenerativeModel({ 
-  model: "gemini-1.5-flash",
-  apiVersion: 'v1' 
-});
+// The second argument is for RequestOptions like apiVersion
+const gemini = genAI.getGenerativeModel(
+  { model: "gemini-1.5-flash" },
+  { apiVersion: 'v1' }
+);
 
 // Initialize Supabase
 const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
