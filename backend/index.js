@@ -310,22 +310,21 @@ app.post('/api/subjects', verifyToken, async (req, res) => {
     
     res.json(mapped);
   } catch (err) {
-    console.error("SUBJECT CREATION FAILED:", err.message);
-    res.status(400).json({ error: err.message });
-  }
-});
-
-app.delete('/api/subjects/:id', verifyToken, async (req, res) => {
-  try {
-    const { error } = await supabase
-      .from('subjects')
-      .delete()
-      .eq('id', req.params.id)
-      .eq('user_id', req.user.id);
-    if (error) throw error;
-    res.json({ success: true });
+        icon: icon || '📚',
+        user_id: userId 
+      }])
+      .select();
+    
+    if (error) {
+      console.log('Subject insert ERROR:', error);
+      return res.status(400).json({ error: error.message });
+    }
+    
+    console.log('Subject created SUCCESS:', data);
+    res.json(data[0]);
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    console.log('Subject route CRASH:', err.message);
+    res.status(500).json({ error: err.message });
   }
 });
 

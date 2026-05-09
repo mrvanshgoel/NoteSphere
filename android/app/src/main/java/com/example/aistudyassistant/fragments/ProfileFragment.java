@@ -93,8 +93,8 @@ public class ProfileFragment extends Fragment {
         if (avatarUrl != null && !avatarUrl.isEmpty()) {
             com.bumptech.glide.request.RequestOptions options = new com.bumptech.glide.request.RequestOptions()
                 .circleCrop()
-                .placeholder(R.mipmap.ic_launcher_round)
-                .error(R.mipmap.ic_launcher_round)
+                .placeholder(R.drawable.ic_launcher_temp)
+                .error(R.drawable.ic_launcher_temp)
                 .diskCacheStrategy(com.bumptech.glide.load.engine.DiskCacheStrategy.NONE)
                 .skipMemoryCache(true);
 
@@ -193,8 +193,8 @@ public class ProfileFragment extends Fragment {
                             getActivity().runOnUiThread(() -> {
                                 com.bumptech.glide.request.RequestOptions options = new com.bumptech.glide.request.RequestOptions()
                                     .circleCrop()
-                                    .placeholder(R.mipmap.ic_launcher_round)
-                                    .error(R.mipmap.ic_launcher_round)
+                                    .placeholder(R.drawable.ic_launcher_temp)
+                                    .error(R.drawable.ic_launcher_temp)
                                     .diskCacheStrategy(com.bumptech.glide.load.engine.DiskCacheStrategy.NONE)
                                     .skipMemoryCache(true);
 
@@ -252,8 +252,8 @@ public class ProfileFragment extends Fragment {
         if (savedUrl != null && !savedUrl.isEmpty()) {
             com.bumptech.glide.request.RequestOptions options = new com.bumptech.glide.request.RequestOptions()
                 .circleCrop()
-                .placeholder(R.mipmap.ic_launcher_round)
-                .error(R.mipmap.ic_launcher_round)
+                .placeholder(R.drawable.ic_launcher_temp)
+                .error(R.drawable.ic_launcher_temp)
                 .diskCacheStrategy(com.bumptech.glide.load.engine.DiskCacheStrategy.NONE)
                 .skipMemoryCache(true);
 
