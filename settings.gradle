@@ -1,4 +1,9 @@
-// Root settings.gradle to help IDEs find the Android project
+// Root settings.gradle
 rootProject.name = 'AI Study Assistant'
+
+// Include the android project as a module
 include ':android'
-project(':android').projectDir = new File('android')
+
+// Include the app module inside the android folder
+include ':app'
+project(':app').projectDir = new File('android/app')
