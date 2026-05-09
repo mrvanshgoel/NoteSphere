@@ -32,11 +32,13 @@ public class ChatFragment extends Fragment {
     private List<ChatMessage> messages = new ArrayList<>();
     private List<ApiMessage> apiHistory = new ArrayList<>();
     private Call<?> activeCall;
+    private SharedPrefManager pref;
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         binding = FragmentChatBinding.inflate(inflater, container, false);
+        pref = SharedPrefManager.getInstance(requireContext());
 
         adapter = new ChatAdapter(messages);
         binding.rvChat.setLayoutManager(new LinearLayoutManager(getContext()));
@@ -81,7 +83,12 @@ public class ChatFragment extends Fragment {
         }
         
         String authHeader = "Bearer " + token;
-        ChatRequest request = new ChatRequest(new ArrayList<>(apiHistory));
+        ChatRequest request = new ChatRequest(text, new ArrayList<>(apiHistory));
+
+        android.util.Log.d("AI_TRACE", "--- AI CHAT REQUEST ---");
+        android.util.Log.d("AI_TRACE", "Target URL: /api/ai/chat");
+        android.util.Log.d("AI_TRACE", "Token State: " + (authHeader.length() > 20 ? "Valid prefix" : "Invalid/Empty"));
+        android.util.Log.d("AI_TRACE", "Payload: " + new com.google.gson.Gson().toJson(request));
 
         // Show typing indicator
         binding.loadingAnimation.setVisibility(View.VISIBLE);
@@ -98,11 +105,19 @@ public class ChatFragment extends Fragment {
                 if (!isAdded() || innerContext == null || binding == null) return;
                 
                 binding.loadingAnimation.setVisibility(View.GONE);
+                
+                android.util.Log.d("AI_TRACE", "--- AI CHAT RESPONSE ---");
+                android.util.Log.d("AI_TRACE", "Status Code: " + response.code());
 
                 if (response.isSuccessful() && response.body() != null) {
+                    binding.layoutOfflineBanner.setVisibility(View.GONE);
                     String content = response.body().getContent();
+                    android.util.Log.d("AI_TRACE", "Success: content received (" + content.length() + " chars)");
                     messages.add(new ChatMessage(content, false));
                     apiHistory.add(new ApiMessage("assistant", content));
+                    
+                    // Increment session for goal tracking
+                    pref.incrementAiSessions();
                     
                     adapter.notifyItemInserted(messages.size() - 1);
                     binding.rvChat.smoothScrollToPosition(messages.size() - 1);
@@ -113,12 +128,13 @@ public class ChatFragment extends Fragment {
                             String errorJson = response.errorBody().string();
                             com.google.gson.JsonObject obj = com.google.gson.JsonParser.parseString(errorJson).getAsJsonObject();
                             if (obj.has("error")) errorMsg = obj.get("error").getAsString();
+                            if (obj.has("detail")) errorMsg += ": " + obj.get("detail").getAsString();
                         }
                     } catch (Exception e) {
                         if (response.code() == 401) errorMsg = "Session expired. Please login again.";
-                        else errorMsg += ": " + response.code();
+                        else errorMsg += " (Code: " + response.code() + ")";
                     }
-                    Toast.makeText(innerContext, errorMsg, Toast.LENGTH_SHORT).show();
+                    Toast.makeText(innerContext, errorMsg, Toast.LENGTH_LONG).show();
                 }
             }
 
@@ -129,7 +145,10 @@ public class ChatFragment extends Fragment {
                 if (call.isCanceled()) return;
 
                 binding.loadingAnimation.setVisibility(View.GONE);
-                Toast.makeText(innerContext, "Connection Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                binding.layoutOfflineBanner.setVisibility(View.VISIBLE);
+                messages.add(new ChatMessage("Network Error: I'm currently offline. Please check your connection.", false));
+                adapter.notifyItemInserted(messages.size() - 1);
+                binding.rvChat.smoothScrollToPosition(messages.size() - 1);
             }
         });
     }

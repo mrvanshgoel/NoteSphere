@@ -70,6 +70,9 @@ public class RegisterActivity extends AppCompatActivity {
         user.getIdToken(true).addOnCompleteListener(task -> {
             if (task.isSuccessful()) {
                 String idToken = task.getResult().getToken();
+                android.util.Log.d("AUTH_DIAGNOSTIC", "Token Source: FirebaseUser.getIdToken(true) [Register]");
+                android.util.Log.d("AUTH_DIAGNOSTIC", "Token Prefix: " + idToken.substring(0, Math.min(20, idToken.length())));
+                
                 SharedPrefManager pref = SharedPrefManager.getInstance(RegisterActivity.this);
                 pref.saveToken(idToken);
 

@@ -13,6 +13,8 @@ public class SharedPrefManager {
     private static final String KEY_STUDY_STREAK = "study_streak";
     private static final String KEY_LAST_ACTIVE_DATE = "last_active_date";
     private static final String KEY_STORAGE_PATH = "storage_path";
+    private static final String KEY_STUDY_GOAL = "study_goal_hours";
+    private static final String KEY_AI_SESSIONS = "ai_sessions_count";
 
     private static SharedPrefManager instance;
     private final Context context;
@@ -141,5 +143,21 @@ public class SharedPrefManager {
 
     public void setStoragePath(String path) {
         prefs().edit().putString(KEY_STORAGE_PATH, path).apply();
+    }
+
+    public int getStudyGoal() {
+        return prefs().getInt(KEY_STUDY_GOAL, 5); // Default 5 hours
+    }
+
+    public void setStudyGoal(int hours) {
+        prefs().edit().putInt(KEY_STUDY_GOAL, hours).apply();
+    }
+
+    public int getAiSessions() {
+        return prefs().getInt(KEY_AI_SESSIONS, 0);
+    }
+
+    public void incrementAiSessions() {
+        prefs().edit().putInt(KEY_AI_SESSIONS, getAiSessions() + 1).apply();
     }
 }

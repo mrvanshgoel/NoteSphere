@@ -1,139 +1,196 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:background="#121212"
-    android:padding="20dp">
+    android:background="@color/background">
 
-    <!-- Header -->
-    <RelativeLayout
+    <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="20dp">
+        android:background="@color/background"
+        app:elevation="0dp">
 
-        <ImageButton
-            android:id="@+id/btnBack"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:src="@android:drawable/ic_menu_revert"
-            app:tint="@color/white" />
-
-        <TextView
-            android:id="@+id/tvProgress"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_centerInParent="true"
-            android:text="Question 1/5"
-            android:textColor="@color/white"
-            android:textSize="18sp"
-            android:textStyle="bold" />
-    </RelativeLayout>
-
-    <com.google.android.material.progressindicator.LinearProgressIndicator
-        android:id="@+id/quizProgress"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="30dp"
-        app:indicatorColor="#6C63FF"
-        app:trackColor="#333333"
-        app:trackThickness="4dp" />
-
-    <!-- Quiz Card -->
-    <androidx.cardview.widget.CardView
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        app:cardBackgroundColor="#1E1E1E"
-        app:cardCornerRadius="24dp"
-        app:cardElevation="8dp">
-
-        <LinearLayout
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbar"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:orientation="vertical"
-            android:padding="24dp">
+            android:layout_height="?attr/actionBarSize"
+            app:navigationIcon="@android:drawable/ic_menu_revert"
+            app:navigationIconTint="@color/ns_text_primary">
 
             <TextView
-                android:id="@+id/tvQuestion"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="30dp"
-                android:text="Loading question..."
-                android:textColor="@color/white"
-                android:textSize="20sp"
-                android:textStyle="bold" />
-
-            <RadioGroup
-                android:id="@+id/optionsGroup"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical">
-                <!-- Dynamic options added here -->
-            </RadioGroup>
-
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_weight="1" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnSubmit"
-                android:layout_width="match_parent"
-                android:layout_height="60dp"
-                android:text="Check Answer"
-                android:textAllCaps="false"
-                android:textSize="16sp"
-                app:cornerRadius="16dp"
-                android:backgroundTint="#6C63FF" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnNext"
-                android:layout_width="match_parent"
-                android:layout_height="60dp"
-                android:text="Next Question"
-                android:textAllCaps="false"
-                android:textSize="16sp"
-                android:visibility="gone"
-                app:cornerRadius="16dp"
-                android:backgroundTint="#4CAF50" />
-        </LinearLayout>
-    </androidx.cardview.widget.CardView>
-
-    <!-- Explanation Card (Initially hidden) -->
-    <androidx.cardview.widget.CardView
-        android:id="@+id/cardExplanation"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
-        android:visibility="gone"
-        app:cardBackgroundColor="#2D2D2D"
-        app:cardCornerRadius="16dp">
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="16dp">
-
-            <TextView
-                android:id="@+id/tvExplanationTitle"
+                android:id="@+id/tvProgress"
+                style="@style/Notesphere.Text.Section"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Explanation"
-                android:textColor="#4CAF50"
-                android:textStyle="bold" />
+                android:layout_gravity="center"
+                tools:text="Question 1/5" />
+        </com.google.android.material.appbar.MaterialToolbar>
 
-            <TextView
-                android:id="@+id/tvExplanation"
+        <com.google.android.material.progressindicator.LinearProgressIndicator
+            android:id="@+id/quizProgress"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:indicatorColor="@color/ns_cyan"
+            app:trackColor="@color/ns_surface"
+            app:trackThickness="4dp" />
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:clipToPadding="false"
+        android:paddingBottom="100dp"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:animateLayoutChanges="true"
+            android:orientation="vertical"
+            android:paddingHorizontal="24dp"
+            android:paddingTop="24dp">
+
+            <!-- Loading State -->
+            <LinearLayout
+                android:id="@+id/layoutLoading"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="This is why the answer is correct."
-                android:textColor="#BBBBBB" />
-        </LinearLayout>
-    </androidx.cardview.widget.CardView>
+                android:layout_marginTop="40dp"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:visibility="gone">
 
-</LinearLayout>
+                <com.google.android.material.progressindicator.CircularProgressIndicator
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:indeterminate="true"
+                    app:indicatorColor="@color/ns_cyan" />
+
+                <TextView
+                    android:id="@+id/tvLoadingText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:text="Generating quiz with AI..."
+                    android:textColor="@color/ns_text_secondary" />
+            </LinearLayout>
+
+            <!-- Error State -->
+            <LinearLayout
+                android:id="@+id/layoutError"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="40dp"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <ImageView
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:src="@android:drawable/ic_dialog_alert"
+                    app:tint="@color/ns_text_secondary" />
+
+                <TextView
+                    android:id="@+id/tvErrorText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:layout_marginHorizontal="32dp"
+                    android:textAlignment="center"
+                    android:text="Failed to connect to AI."
+                    android:textColor="@color/ns_text_secondary" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnRetry"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:text="Try Again"
+                    android:textColor="@color/ns_text_primary"
+                    app:cornerRadius="20dp"
+                    app:strokeColor="@color/ns_surface" />
+            </LinearLayout>
+
+            <!-- Quiz Content (Hidden while loading) -->
+            <LinearLayout
+                android:id="@+id/layoutQuizContent"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:animateLayoutChanges="true"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/tvQuestion"
+                    style="@style/Notesphere.Text.Hero"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="32dp"
+                    android:textSize="24sp"
+                    tools:text="What is the primary function of a Convolutional Neural Network?" />
+
+                <RadioGroup
+                    android:id="@+id/optionsGroup"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="32dp"
+                    android:orientation="vertical" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnSubmit"
+                    style="@style/Notesphere.Button.Primary"
+                    android:layout_width="match_parent"
+                    android:layout_height="60dp"
+                    android:text="Check Answer" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnNext"
+                    style="@style/Notesphere.Button.Primary"
+                    android:layout_width="match_parent"
+                    android:layout_height="60dp"
+                    android:backgroundTint="#4CAF50"
+                    android:text="Next Question"
+                    android:visibility="gone" />
+
+                <!-- Explanation Card (Animated in) -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardExplanation"
+                    style="@style/Notesphere.Card.AI"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="24dp"
+                    android:visibility="gone">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="20dp">
+
+                        <TextView
+                            android:id="@+id/tvExplanationTitle"
+                            style="@style/Notesphere.Text.Section"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            tools:text="Correct!"
+                            tools:textColor="#4CAF50" />
+
+                        <TextView
+                            android:id="@+id/tvExplanation"
+                            style="@style/Notesphere.Text.Body"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="12dp"
+                            tools:text="This is why the answer is correct." />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+            </LinearLayout>
+
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

@@ -66,6 +66,9 @@ public class LoginActivity extends AppCompatActivity {
         user.getIdToken(true).addOnCompleteListener(task -> {
             if (task.isSuccessful()) {
                 String idToken = task.getResult().getToken();
+                android.util.Log.d("AUTH_DIAGNOSTIC", "Token Source: FirebaseUser.getIdToken(true)");
+                android.util.Log.d("AUTH_DIAGNOSTIC", "Token Prefix: " + idToken.substring(0, Math.min(20, idToken.length())));
+                
                 SharedPrefManager pref = SharedPrefManager.getInstance(LoginActivity.this);
                 pref.saveToken(idToken);
 
@@ -76,6 +79,7 @@ public class LoginActivity extends AppCompatActivity {
                         if (response.isSuccessful() && response.body() != null) {
                             User.UserInfo u = response.body();
                             pref.saveUserInfo(u.getName(), u.getEmail(), u.getAvatarUrl());
+                            pref.saveUserId(u.getId());
                         }
                         startActivity(new Intent(LoginActivity.this, MainActivity.class));
                         finish();

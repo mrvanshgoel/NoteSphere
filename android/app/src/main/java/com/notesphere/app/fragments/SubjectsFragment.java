@@ -1,6 +1,7 @@
 package com.notesphere.app.fragments;
 
 import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -61,13 +62,18 @@ public class SubjectsFragment extends Fragment {
                 if (!isAdded() || binding == null) return;
                 showShimmer(false);
                 if (response.isSuccessful() && response.body() != null) {
+                    binding.layoutOfflineBanner.setVisibility(View.GONE);
                     List<Subject> subjects = response.body();
                     if (subjects.isEmpty()) {
                         binding.layoutEmptySubjects.setVisibility(View.VISIBLE);
                     } else {
                         binding.layoutEmptySubjects.setVisibility(View.GONE);
                         adapter = new SubjectAdapter(subjects, subject -> {
-                            // Open Materials Activity logic
+                            Intent intent = new Intent(getContext(), com.notesphere.app.activities.SubjectDetailActivity.class);
+                            intent.putExtra("subject_id", subject.getId());
+                            intent.putExtra("subject_name", subject.getName());
+                            intent.putExtra("subject_color", subject.getColor());
+                            startActivity(intent);
                         }, subject -> {
                             deleteSubject(subject.getId());
                         });
@@ -84,6 +90,7 @@ public class SubjectsFragment extends Fragment {
                 if (!isAdded() || getContext() == null) return;
                 if (call.isCanceled()) return;
                 showShimmer(false);
+                binding.layoutOfflineBanner.setVisibility(View.VISIBLE);
                 Toast.makeText(getContext(), "Network Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });

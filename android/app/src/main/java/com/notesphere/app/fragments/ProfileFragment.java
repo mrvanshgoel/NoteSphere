@@ -229,7 +229,10 @@ public class ProfileFragment extends Fragment {
             outputStream.close();
             inputStream.close();
 
-            RequestBody requestFile = RequestBody.create(MediaType.parse("image/*"), file);
+            String mimeType = context.getContentResolver().getType(uri);
+            if (mimeType == null) mimeType = "image/*";
+            
+            RequestBody requestFile = RequestBody.create(MediaType.parse(mimeType), file);
             MultipartBody.Part body = MultipartBody.Part.createFormData("avatar", file.getName(), requestFile);
             String authHeader = "Bearer " + pref.getToken();
 
@@ -262,7 +265,9 @@ public class ProfileFragment extends Fragment {
                     Context innerContext = getContext();
                     if (!isAdded() || innerContext == null || binding == null) return;
                     if (call.isCanceled()) return;
-                    Toast.makeText(innerContext, "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                    String msg = "Network error: " + t.getMessage();
+                    Toast.makeText(innerContext, msg, Toast.LENGTH_LONG).show();
+                    android.util.Log.e("AVATAR", "Failure: " + msg, t);
                 }
             });
 

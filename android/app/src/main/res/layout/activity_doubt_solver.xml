@@ -1,68 +1,92 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#0D0D12">
+    android:background="@color/background"
+    android:fitsSystemWindows="true">
 
-    <!-- Header -->
-    <LinearLayout
-        android:id="@+id/header"
+    <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/appBarLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="16dp"
-        android:background="#12121A">
+        android:background="@color/background"
+        app:elevation="4dp">
 
-        <RelativeLayout
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbar"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="?attr/actionBarSize"
+            app:navigationIcon="@android:drawable/ic_menu_revert"
+            app:navigationIconTint="@color/ns_text_primary">
 
-            <ImageButton
-                android:id="@+id/btnBack"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:src="@android:drawable/ic_menu_revert"
-                app:tint="@color/white" />
-
-            <TextView
-                android:id="@+id/tvTitle"
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_centerInParent="true"
-                android:text="Doubt Solver"
-                android:textColor="@color/white"
-                android:textSize="20sp"
-                android:textStyle="bold" />
-        </RelativeLayout>
+                android:orientation="vertical">
 
-        <TextView
-            android:id="@+id/tvMaterialName"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_horizontal"
-            android:text="Discussing: Document Name"
-            android:textColor="#9B9BB5"
-            android:textSize="12sp"
-            android:layout_marginTop="4dp"/>
-    </LinearLayout>
+                <TextView
+                    style="@style/Notesphere.Text.Section"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Doubt Solver" />
+
+                <TextView
+                    android:id="@+id/tvMaterialName"
+                    style="@style/Notesphere.Text.Caption"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:textColor="@color/ns_cyan"
+                    tools:text="Introduction to Neural Networks" />
+            </LinearLayout>
+        </com.google.android.material.appbar.MaterialToolbar>
+    </com.google.android.material.appbar.AppBarLayout>
 
     <!-- Chat Area -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvChat"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_above="@+id/inputArea"
-        android:layout_below="@+id/header"
+        android:layout_marginBottom="80dp"
         android:clipToPadding="false"
-        android:padding="16dp" />
+        android:padding="16dp"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior" />
+
+    <!-- Fallback / Error State -->
+    <LinearLayout
+        android:id="@+id/layoutError"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <ImageView
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:src="@android:drawable/ic_dialog_alert"
+            app:tint="@color/ns_text_secondary" />
+
+        <TextView
+            android:id="@+id/tvErrorText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:layout_marginHorizontal="32dp"
+            android:textAlignment="center"
+            android:text="Failed to connect to AI."
+            android:textColor="@color/ns_text_secondary" />
+    </LinearLayout>
 
     <com.airbnb.lottie.LottieAnimationView
         android:id="@+id/loadingAnimation"
         android:layout_width="100dp"
         android:layout_height="100dp"
-        android:layout_centerInParent="true"
+        android:layout_gravity="center"
         android:visibility="gone"
         app:lottie_autoPlay="true"
         app:lottie_loop="true"
@@ -73,10 +97,12 @@
         android:id="@+id/inputArea"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:background="#12121A"
+        android:layout_gravity="bottom"
+        android:background="@color/ns_surface"
+        android:elevation="8dp"
         android:orientation="horizontal"
-        android:padding="12dp">
+        android:paddingHorizontal="16dp"
+        android:paddingVertical="12dp">
 
         <EditText
             android:id="@+id/etMessage"
@@ -84,19 +110,21 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:background="@drawable/bg_chat_input"
-            android:hint="Ask a doubt about this document..."
+            android:hint="Ask a doubt..."
+            android:maxLines="4"
             android:padding="12dp"
-            android:textColor="@color/white"
-            android:textColorHint="#5A5A72" />
+            android:textColor="@color/ns_text_primary"
+            android:textColorHint="@color/ns_text_secondary" />
 
         <ImageButton
             android:id="@+id/btnSend"
             android:layout_width="48dp"
             android:layout_height="48dp"
+            android:layout_gravity="bottom"
             android:layout_marginStart="8dp"
             android:background="@drawable/bg_send_button"
             android:src="@android:drawable/ic_menu_send"
-            app:tint="@color/white" />
+            app:tint="@color/ns_surface" />
     </LinearLayout>
 
-</RelativeLayout>
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

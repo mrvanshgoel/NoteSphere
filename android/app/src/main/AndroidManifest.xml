@@ -55,7 +55,8 @@
             android:name=".activities.MainActivity"
             android:exported="false"
             android:theme="@style/Theme.Notesphere.NoActionBar"
-            android:launchMode="singleTop" />
+            android:launchMode="singleTop"
+            android:windowSoftInputMode="adjustResize" />
 
         <!-- FEATURE ACTIVITIES -->
         <activity
@@ -82,6 +83,11 @@
             android:theme="@style/Theme.Notesphere.NoActionBar"
             android:windowSoftInputMode="adjustResize" />
 
+        <activity
+            android:name=".activities.SubjectDetailActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.Notesphere.NoActionBar" />
         <activity
             android:name=".activities.AccountSettingsActivity"
             android:exported="false"

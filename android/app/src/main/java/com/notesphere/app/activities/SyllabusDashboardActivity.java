@@ -34,12 +34,8 @@ public class SyllabusDashboardActivity extends AppCompatActivity {
         showState(State.LOADING);
         loadSyllabus();
 
-        binding.fabUploadSyllabus.setOnClickListener(v ->
-            Toast.makeText(this, "Upload a Syllabus PDF to extract topics (coming soon)", Toast.LENGTH_SHORT).show()
-        );
-        binding.btnAiAnalyze.setOnClickListener(v ->
-            Toast.makeText(this, "AI is analyzing your study progress...", Toast.LENGTH_SHORT).show()
-        );
+        binding.fabUploadSyllabus.setVisibility(View.GONE);
+        binding.btnAiAnalyze.setVisibility(View.GONE);
     }
 
     private void loadSyllabus() {

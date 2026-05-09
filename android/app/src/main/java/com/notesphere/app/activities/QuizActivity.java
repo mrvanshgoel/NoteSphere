@@ -4,6 +4,7 @@ import android.graphics.Color;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.RadioButton;
+import android.widget.RadioGroup;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import com.google.gson.Gson;
@@ -36,14 +37,18 @@ public class QuizActivity extends AppCompatActivity {
 
         materialId = getIntent().getStringExtra("material_id");
         
-        binding.btnBack.setOnClickListener(v -> finish());
+        binding.toolbar.setNavigationOnClickListener(v -> finish());
         binding.btnSubmit.setOnClickListener(v -> checkAnswer());
         binding.btnNext.setOnClickListener(v -> nextQuestion());
+        binding.btnRetry.setOnClickListener(v -> loadQuiz());
 
         loadQuiz();
     }
 
     private void loadQuiz() {
+        binding.layoutError.setVisibility(View.GONE);
+        binding.layoutQuizContent.setVisibility(View.GONE);
+        binding.layoutLoading.setVisibility(View.VISIBLE);
         binding.quizProgress.setIndeterminate(true);
         String token = "Bearer " + SharedPrefManager.getInstance(this).getToken();
         AiRequest request = new AiRequest(materialId);
@@ -57,13 +62,16 @@ public class QuizActivity extends AppCompatActivity {
             public void onResponse(Call<QuizResponse> call, Response<QuizResponse> response) {
                 if (isFinishing() || isDestroyed()) return;
                 binding.quizProgress.setIndeterminate(false);
+                binding.layoutLoading.setVisibility(View.GONE);
+
                 if (response.isSuccessful() && response.body() != null
                         && response.body().getQuestions() != null
                         && !response.body().getQuestions().isEmpty()) {
                     questions = response.body().getQuestions();
+                    binding.layoutQuizContent.setVisibility(View.VISIBLE);
                     displayQuestion();
                 } else {
-                    Toast.makeText(QuizActivity.this, "No questions generated. Try again.", Toast.LENGTH_SHORT).show();
+                    showError("No questions generated. The material might be too short or complex.");
                 }
             }
 
@@ -71,9 +79,15 @@ public class QuizActivity extends AppCompatActivity {
             public void onFailure(Call<QuizResponse> call, Throwable t) {
                 if (isFinishing() || isDestroyed()) return;
                 binding.quizProgress.setIndeterminate(false);
-                Toast.makeText(QuizActivity.this, "Network Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                binding.layoutLoading.setVisibility(View.GONE);
+                showError("Network Error: " + t.getMessage());
             }
         });
+    }
+
+    private void showError(String message) {
+        binding.layoutError.setVisibility(View.VISIBLE);
+        binding.tvErrorText.setText(message);
     }
 
     private void displayQuestion() {
@@ -90,9 +104,21 @@ public class QuizActivity extends AppCompatActivity {
         for (int i = 0; i < q.getOptions().size(); i++) {
             RadioButton rb = new RadioButton(this);
             rb.setText(q.getOptions().get(i));
-            rb.setTextColor(Color.WHITE);
+            rb.setTextColor(Color.WHITE); // Assuming dark mode NotebookLM theme
             rb.setId(i);
-            rb.setPadding(16, 16, 16, 16);
+            rb.setPadding(24, 32, 24, 32);
+            rb.setTextSize(16f);
+            
+            RadioGroup.LayoutParams params = new RadioGroup.LayoutParams(
+                RadioGroup.LayoutParams.MATCH_PARENT, 
+                RadioGroup.LayoutParams.WRAP_CONTENT
+            );
+            params.setMargins(0, 0, 0, 16);
+            rb.setLayoutParams(params);
+            
+            // Add a subtle pill background
+            rb.setBackgroundResource(com.notesphere.app.R.drawable.bg_pill_surface);
+
             binding.optionsGroup.addView(rb);
         }
     }

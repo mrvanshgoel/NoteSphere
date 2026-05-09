@@ -9,7 +9,9 @@ import com.notesphere.app.fragments.ChatFragment;
 import com.notesphere.app.fragments.HomeFragment;
 import com.notesphere.app.fragments.ProfileFragment;
 import com.notesphere.app.fragments.SubjectsFragment;
-import com.notesphere.app.fragments.UploadFragment;
+import com.notesphere.app.utils.SharedPrefManager;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -22,6 +24,8 @@ public class MainActivity extends AppCompatActivity {
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
+        refreshFirebaseToken();
+
         loadFragment(new HomeFragment(), false);
 
         binding.bottomNavigation.setOnItemSelectedListener(item -> {
@@ -31,7 +35,6 @@ public class MainActivity extends AppCompatActivity {
             Fragment fragment = null;
             if      (id == R.id.nav_home)     fragment = new HomeFragment();
             else if (id == R.id.nav_subjects) fragment = new SubjectsFragment();
-            else if (id == R.id.nav_upload)   fragment = new UploadFragment();
             else if (id == R.id.nav_chat)     fragment = new ChatFragment();
             else if (id == R.id.nav_profile)  fragment = new ProfileFragment();
 
@@ -69,6 +72,19 @@ public class MainActivity extends AppCompatActivity {
             binding.bottomNavigation.setSelectedItemId(R.id.nav_home);
         } else {
             super.onBackPressed();
+        }
+    }
+
+    private void refreshFirebaseToken() {
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        if (user != null) {
+            user.getIdToken(true).addOnCompleteListener(task -> {
+                if (task.isSuccessful()) {
+                    String token = task.getResult().getToken();
+                    SharedPrefManager.getInstance(this).saveToken(token);
+                    android.util.Log.d("AUTH_DIAGNOSTIC", "Token Proactively Refreshed. Prefix: " + token.substring(0, Math.min(10, token.length())));
+                }
+            });
         }
     }
 }

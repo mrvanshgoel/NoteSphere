@@ -1,26 +1,26 @@
 package com.notesphere.app.fragments;
 
 import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.EditText;
+import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import com.bumptech.glide.Glide;
 import com.notesphere.app.R;
 import com.notesphere.app.activities.MainActivity;
-import com.notesphere.app.activities.SyllabusDashboardActivity;
-import android.content.Intent;
-import com.notesphere.app.models.Syllabus;
 import com.notesphere.app.api.ApiClient;
 import com.notesphere.app.databinding.FragmentHomeBinding;
-import com.notesphere.app.models.Material;
 import com.notesphere.app.models.Subject;
+import com.notesphere.app.models.Syllabus;
 import com.notesphere.app.utils.SharedPrefManager;
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import retrofit2.Call;
@@ -44,15 +44,10 @@ public class HomeFragment extends Fragment {
         setupAvatar();
         setupQuickActions();
         setupRecyclerView();
+        setupStudyGoal();
 
-        binding.swipeRefresh.setColorSchemeColors(
-            requireContext().getColor(R.color.ns_purple),
-            requireContext().getColor(R.color.ns_blue));
-        binding.swipeRefresh.setProgressBackgroundColorSchemeColor(
-            requireContext().getColor(R.color.ns_surface));
         binding.swipeRefresh.setOnRefreshListener(this::fetchData);
-
-        // Update streak on every visit
+        
         pref.updateStudyStreak();
         binding.tvStreakCount.setText(String.valueOf(pref.getStudyStreak()));
 
@@ -60,7 +55,12 @@ public class HomeFragment extends Fragment {
         return binding.getRoot();
     }
 
-    // ─── Greeting ──────────────────────────────────────────────────────────
+    @Override
+    public void onResume() {
+        super.onResume();
+        updateGoalUI();
+        binding.tvStreakCount.setText(String.valueOf(pref.getStudyStreak()));
+    }
 
     private void setupGreeting() {
         String name = pref.getUserName();
@@ -68,36 +68,70 @@ public class HomeFragment extends Fragment {
 
         int hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
         String greeting;
-        if (hour >= 5 && hour < 12)       greeting = getString(R.string.greeting_morning) + " 🌅";
-        else if (hour >= 12 && hour < 17) greeting = getString(R.string.greeting_afternoon) + " ☀️";
-        else if (hour >= 17 && hour < 21) greeting = getString(R.string.greeting_evening) + " 🌆";
-        else                               greeting = getString(R.string.greeting_night) + " 🌙";
+        if (hour >= 5 && hour < 12)       greeting = "Good Morning 🌅";
+        else if (hour >= 12 && hour < 17) greeting = "Good Afternoon ☀️";
+        else if (hour >= 17 && hour < 21) greeting = "Good Evening 🌆";
+        else                               greeting = "Good Night 🌙";
 
         binding.tvGreetingLabel.setText(greeting);
     }
 
-    // ─── Avatar ────────────────────────────────────────────────────────────
-
     private void setupAvatar() {
         String avatarUrl = pref.getAvatarUrl();
-        if (avatarUrl != null && !avatarUrl.isEmpty() && binding != null && isAdded()) {
+        if (avatarUrl != null && !avatarUrl.isEmpty() && binding != null) {
             Glide.with(this)
                 .load(avatarUrl)
                 .circleCrop()
                 .placeholder(R.drawable.ic_launcher_temp)
-                .error(R.drawable.ic_launcher_temp)
                 .into(binding.ivHomeAvatar);
         }
     }
 
-    // ─── Quick Actions ─────────────────────────────────────────────────────
-
     private void setupQuickActions() {
-        binding.cardQuickUpload.setOnClickListener(v -> navigateToTab(R.id.nav_upload));
+        binding.cardQuickUpload.setOnClickListener(v -> navigateToTab(R.id.nav_subjects));
         binding.btnStartChat.setOnClickListener(v -> navigateToTab(R.id.nav_chat));
         binding.cardSyllabusTracker.setOnClickListener(v -> {
             startActivity(new Intent(getContext(), com.notesphere.app.activities.SyllabusDashboardActivity.class));
         });
+    }
+
+    private void setupStudyGoal() {
+        updateGoalUI();
+        binding.tvGoalProgress.setOnClickListener(v -> showEditGoalDialog());
+        binding.tvGoalDescription.setOnClickListener(v -> showEditGoalDialog());
+    }
+
+    private void updateGoalUI() {
+        int goalHours = pref.getStudyGoal();
+        int sessions = pref.getAiSessions();
+        int targetSessions = goalHours * 2; // Assume 2 units per hour
+        
+        int progress = (targetSessions > 0) ? (sessions * 100) / targetSessions : 0;
+        if (progress > 100) progress = 100;
+
+        binding.tvGoalProgress.setText(sessions + "/" + targetSessions + " units");
+        binding.pbStudyGoal.setProgress(progress);
+        binding.tvGoalDescription.setText("Target: " + goalHours + " hrs/week (" + sessions + " units completed)");
+    }
+
+    private void showEditGoalDialog() {
+        EditText et = new EditText(getContext());
+        et.setHint("Hours per week (e.g. 10)");
+        et.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+        
+        new AlertDialog.Builder(requireContext())
+            .setTitle("Set Weekly Goal")
+            .setMessage("How many hours do you want to study this week?")
+            .setView(et)
+            .setPositiveButton("Save", (dialog, which) -> {
+                try {
+                    int hours = Integer.parseInt(et.getText().toString());
+                    pref.setStudyGoal(hours);
+                    updateGoalUI();
+                } catch (Exception e) {}
+            })
+            .setNegativeButton("Cancel", null)
+            .show();
     }
 
     private void navigateToTab(int navId) {
@@ -106,14 +140,10 @@ public class HomeFragment extends Fragment {
         }
     }
 
-    // ─── RecyclerView ──────────────────────────────────────────────────────
-
     private void setupRecyclerView() {
         binding.rvRecent.setLayoutManager(
             new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false));
     }
-
-    // ─── Data Fetching ─────────────────────────────────────────────────────
 
     private void fetchData() {
         Context context = getContext();
@@ -134,6 +164,7 @@ public class HomeFragment extends Fragment {
                 showShimmer(false);
 
                 if (response.isSuccessful() && response.body() != null) {
+                    binding.layoutOfflineBanner.setVisibility(View.GONE);
                     List<Subject> subjects = response.body();
                     binding.tvSubjectCount.setText(String.valueOf(subjects.size()));
 
@@ -141,8 +172,6 @@ public class HomeFragment extends Fragment {
                     for (Subject s : subjects) totalMaterials += s.getMaterialCount();
                     binding.tvMaterialCount.setText(String.valueOf(totalMaterials));
 
-                    if (totalMaterials == 0) showEmptyState(true);
-                    
                     fetchSyllabusProgress(token);
                 }
             }
@@ -153,6 +182,7 @@ public class HomeFragment extends Fragment {
                 if (call.isCanceled()) return;
                 binding.swipeRefresh.setRefreshing(false);
                 showShimmer(false);
+                binding.layoutOfflineBanner.setVisibility(View.VISIBLE);
             }
         });
     }
@@ -170,7 +200,6 @@ public class HomeFragment extends Fragment {
                     binding.tvSyllabusStatus.setText("Tracking " + s.getTitle());
                 }
             }
-
             @Override
             public void onFailure(Call<List<Syllabus>> call, Throwable t) {}
         });
@@ -187,11 +216,6 @@ public class HomeFragment extends Fragment {
             binding.shimmerRecent.setVisibility(View.GONE);
             binding.rvRecent.setVisibility(View.VISIBLE);
         }
-    }
-
-    private void showEmptyState(boolean show) {
-        if (binding == null) return;
-        binding.layoutEmptyHome.setVisibility(show ? View.VISIBLE : View.GONE);
     }
 
     @Override

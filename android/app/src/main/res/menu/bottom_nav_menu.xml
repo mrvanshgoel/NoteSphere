@@ -8,10 +8,7 @@
         android:id="@+id/nav_subjects"
         android:icon="@android:drawable/ic_menu_sort_by_size"
         android:title="Subjects" />
-    <item
-        android:id="@+id/nav_upload"
-        android:icon="@android:drawable/ic_menu_upload"
-        android:title="Upload" />
+
     <item
         android:id="@+id/nav_chat"
         android:icon="@android:drawable/ic_menu_send"

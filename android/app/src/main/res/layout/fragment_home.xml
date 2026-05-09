@@ -14,7 +14,37 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="16dp">
+            android:padding="16dp"
+            android:paddingBottom="120dp"
+            android:clipToPadding="false">
+
+            <!-- Offline Banner -->
+            <LinearLayout
+                android:id="@+id/layoutOfflineBanner"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:background="@drawable/bg_pill_surface"
+                android:gravity="center"
+                android:orientation="horizontal"
+                android:paddingHorizontal="16dp"
+                android:paddingVertical="8dp"
+                android:visibility="gone">
+
+                <ImageView
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:src="@android:drawable/stat_sys_warning"
+                    app:tint="@color/ns_text_secondary" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:text="Offline Mode • Viewing cached data"
+                    android:textColor="@color/ns_text_secondary"
+                    android:textSize="12sp" />
+            </LinearLayout>
 
             <!-- Header Row: Avatar + Greeting -->
             <LinearLayout
@@ -143,6 +173,59 @@
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
             </LinearLayout>
+
+            <!-- Weekly Study Goal -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                app:cardBackgroundColor="@color/ns_surface"
+                app:cardCornerRadius="16dp"
+                app:strokeColor="#1A6C63FF"
+                app:strokeWidth="1dp">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="20dp"
+                    android:orientation="vertical">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Weekly Study Goal"
+                            style="@style/Notesphere.Text.Section" />
+                        <TextView
+                            android:id="@+id/tvGoalProgress"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="0/5 hrs"
+                            android:textColor="@color/ns_cyan"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+                    <com.google.android.material.progressindicator.LinearProgressIndicator
+                        android:id="@+id/pbStudyGoal"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:progress="0"
+                        app:indicatorColor="@color/ns_cyan"
+                        app:trackColor="#1AFFFFFF"
+                        app:trackThickness="6dp"
+                        app:trackCornerRadius="3dp" />
+                    <TextView
+                        android:id="@+id/tvGoalDescription"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="Tap to set your weekly target."
+                        style="@style/Notesphere.Text.Caption" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
 
             <!-- Syllabus Progress Card -->
             <com.google.android.material.card.MaterialCardView

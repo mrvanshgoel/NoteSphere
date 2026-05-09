@@ -78,8 +78,11 @@ public class UploadFragment extends Fragment {
     );
 
     private void extractFileName(Uri uri) {
+        Context context = getContext();
+        if (context == null || uri == null) return;
+        
         selectedFileName = "file_" + System.currentTimeMillis();
-        try (android.database.Cursor cursor = requireContext().getContentResolver().query(uri, null, null, null, null)) {
+        try (android.database.Cursor cursor = context.getContentResolver().query(uri, null, null, null, null)) {
             if (cursor != null && cursor.moveToFirst()) {
                 int nameIndex = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME);
                 if (nameIndex != -1) {
@@ -89,7 +92,9 @@ public class UploadFragment extends Fragment {
         } catch (Exception e) {
             android.util.Log.e("UPLOAD", "Error extracting filename", e);
         }
-        binding.tvFileName.setText("Selected: " + selectedFileName);
+        if (binding != null) {
+            binding.tvFileName.setText("Selected: " + selectedFileName);
+        }
     }
 
     private void fetchSubjects() {
@@ -110,6 +115,8 @@ public class UploadFragment extends Fragment {
                 if (!isAdded() || innerContext == null || binding == null) return;
                 
                 if (response.isSuccessful() && response.body() != null) {
+                    binding.layoutOfflineBanner.setVisibility(View.GONE);
+                    binding.btnUpload.setEnabled(true);
                     subjectsList = response.body();
                     List<String> names = new ArrayList<>();
                     for (Subject s : subjectsList) names.add(s.getName());
@@ -124,9 +131,11 @@ public class UploadFragment extends Fragment {
 
             @Override
             public void onFailure(Call<List<Subject>> call, Throwable t) {
-                if (!isAdded() || getContext() == null) return;
+                if (!isAdded() || getContext() == null || binding == null) return;
                 if (call.isCanceled()) return;
                 android.util.Log.e("UPLOAD", "Fetch subjects failed", t);
+                binding.layoutOfflineBanner.setVisibility(View.VISIBLE);
+                binding.btnUpload.setEnabled(false);
             }
         });
     }

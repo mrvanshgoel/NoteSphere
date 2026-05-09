@@ -35,8 +35,8 @@ public class DoubtSolverActivity extends AppCompatActivity {
         materialId = getIntent().getStringExtra("material_id");
         materialTitle = getIntent().getStringExtra("material_title");
 
-        binding.tvMaterialName.setText("Discussing: " + materialTitle);
-        binding.btnBack.setOnClickListener(v -> finish());
+        binding.tvMaterialName.setText(materialTitle);
+        binding.toolbar.setNavigationOnClickListener(v -> finish());
 
         adapter = new ChatAdapter(messages);
         binding.rvChat.setLayoutManager(new LinearLayoutManager(this));
@@ -80,7 +80,9 @@ public class DoubtSolverActivity extends AppCompatActivity {
                     adapter.notifyItemInserted(messages.size() - 1);
                     binding.rvChat.smoothScrollToPosition(messages.size() - 1);
                 } else {
-                    Toast.makeText(DoubtSolverActivity.this, "AI failed to respond", Toast.LENGTH_SHORT).show();
+                    messages.add(new ChatMessage("Sorry, I couldn't generate a response. Please try asking again.", false));
+                    adapter.notifyItemInserted(messages.size() - 1);
+                    binding.rvChat.smoothScrollToPosition(messages.size() - 1);
                 }
             }
 
@@ -88,7 +90,9 @@ public class DoubtSolverActivity extends AppCompatActivity {
             public void onFailure(Call<AiResponse> call, Throwable t) {
                 if (isFinishing() || isDestroyed()) return;
                 binding.loadingAnimation.setVisibility(View.GONE);
-                Toast.makeText(DoubtSolverActivity.this, "Connection Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                messages.add(new ChatMessage("Network error: " + t.getMessage(), false));
+                adapter.notifyItemInserted(messages.size() - 1);
+                binding.rvChat.smoothScrollToPosition(messages.size() - 1);
             }
         });
     }

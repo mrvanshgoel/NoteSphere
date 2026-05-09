@@ -3,18 +3,14 @@ package com.notesphere.app.models;
 import java.util.List;
 
 public class ChatRequest {
-    private List<ApiMessage> messages;
-    private String systemPrompt;
+    private String message;
+    private List<ApiMessage> history;
 
-    public ChatRequest(List<ApiMessage> messages) {
-        this.messages = messages;
+    public ChatRequest(String message, List<ApiMessage> history) {
+        this.message = message;
+        this.history = history;
     }
 
-    public ChatRequest(List<ApiMessage> messages, String systemPrompt) {
-        this.messages = messages;
-        this.systemPrompt = systemPrompt;
-    }
-
-    public List<ApiMessage> getMessages() { return messages; }
-    public String getSystemPrompt() { return systemPrompt; }
+    public String getMessage() { return message; }
+    public List<ApiMessage> getHistory() { return history; }
 }
