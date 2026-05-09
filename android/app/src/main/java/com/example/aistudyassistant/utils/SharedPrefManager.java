@@ -40,6 +40,18 @@ public class SharedPrefManager {
         editor.apply();
     }
 
+    public void saveAvatarUrl(String url) {
+        SharedPreferences sharedPreferences = context.getSharedPreferences(SHARED_PREF_NAME, Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.putString(Constants.USER_AVATAR_KEY, url);
+        editor.apply();
+    }
+
+    public String getAvatarUrl() {
+        SharedPreferences sharedPreferences = context.getSharedPreferences(SHARED_PREF_NAME, Context.MODE_PRIVATE);
+        return sharedPreferences.getString(Constants.USER_AVATAR_KEY, "");
+    }
+
     public String getUserAvatar() {
         SharedPreferences sharedPreferences = context.getSharedPreferences(SHARED_PREF_NAME, Context.MODE_PRIVATE);
         return sharedPreferences.getString(Constants.USER_AVATAR_KEY, null);

@@ -59,6 +59,7 @@ public class LoginActivity extends AppCompatActivity {
                     String avatar = user.getAvatarUrl();
                     
                     pref.saveUserInfo(name, email, avatar);
+                    pref.saveAvatarUrl(avatar);
 
                     startActivity(new Intent(LoginActivity.this, MainActivity.class));
                     finish();

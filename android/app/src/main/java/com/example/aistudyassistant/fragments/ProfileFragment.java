@@ -89,12 +89,18 @@ public class ProfileFragment extends Fragment {
         binding.etName.setText(pref.getUserName());
         binding.etEmail.setText(pref.getUserEmail());
 
-        String avatarUrl = pref.getUserAvatar();
+        String avatarUrl = pref.getAvatarUrl();
         if (avatarUrl != null && !avatarUrl.isEmpty()) {
+            com.bumptech.glide.request.RequestOptions options = new com.bumptech.glide.request.RequestOptions()
+                .circleCrop()
+                .placeholder(R.mipmap.ic_launcher_round)
+                .error(R.mipmap.ic_launcher_round)
+                .diskCacheStrategy(com.bumptech.glide.load.engine.DiskCacheStrategy.NONE)
+                .skipMemoryCache(true);
+
             Glide.with(this)
                     .load(avatarUrl)
-                    .placeholder(R.drawable.ic_launcher_temp)
-                    .circleCrop()
+                    .apply(options)
                     .into(binding.ivProfile);
         }
     }
@@ -181,9 +187,24 @@ public class ProfileFragment extends Fragment {
                     if (binding == null || !isAdded()) return;
                     if (response.isSuccessful() && response.body() != null) {
                         String newUrl = response.body().getAvatarUrl();
-                        pref.saveUserInfo(pref.getUserName(), pref.getUserEmail(), newUrl);
-                        Glide.with(ProfileFragment.this).load(newUrl).circleCrop().into(binding.ivProfile);
-                        Toast.makeText(getContext(), "Avatar updated!", Toast.LENGTH_SHORT).show();
+                        pref.saveAvatarUrl(newUrl);
+                        
+                        if (getActivity() != null) {
+                            getActivity().runOnUiThread(() -> {
+                                com.bumptech.glide.request.RequestOptions options = new com.bumptech.glide.request.RequestOptions()
+                                    .circleCrop()
+                                    .placeholder(R.mipmap.ic_launcher_round)
+                                    .error(R.mipmap.ic_launcher_round)
+                                    .diskCacheStrategy(com.bumptech.glide.load.engine.DiskCacheStrategy.NONE)
+                                    .skipMemoryCache(true);
+
+                                Glide.with(ProfileFragment.this)
+                                    .load(newUrl)
+                                    .apply(options)
+                                    .into(binding.ivProfile);
+                                Toast.makeText(getContext(), "Avatar updated!", Toast.LENGTH_SHORT).show();
+                            });
+                        }
                     } else {
                         Toast.makeText(getContext(), "Upload failed", Toast.LENGTH_SHORT).show();
                     }
@@ -217,9 +238,28 @@ public class ProfileFragment extends Fragment {
                 }
             }
 
-            @Override
-            public void onFailure(Call<List<Subject>> call, Throwable t) {}
-        });
+    @Override
+    public void onResume() {
+        super.onResume();
+        if (binding == null) return;
+        
+        String savedUrl = pref.getAvatarUrl();
+        if (savedUrl != null && !savedUrl.isEmpty()) {
+            com.bumptech.glide.request.RequestOptions options = new com.bumptech.glide.request.RequestOptions()
+                .circleCrop()
+                .placeholder(R.mipmap.ic_launcher_round)
+                .error(R.mipmap.ic_launcher_round)
+                .diskCacheStrategy(com.bumptech.glide.load.engine.DiskCacheStrategy.NONE)
+                .skipMemoryCache(true);
+
+            Glide.with(this)
+                .load(savedUrl)
+                .apply(options)
+                .into(binding.ivProfile);
+        }
+        
+        // Refresh counts and profile data in background
+        fetchStats();
     }
 
     @Override

@@ -52,13 +52,18 @@ public class AccountSettingsActivity extends AppCompatActivity {
         binding.etName.setText(pref.getUserName());
         binding.etEmail.setText(pref.getUserEmail());
 
-        String avatarUrl = pref.getUserAvatar();
+        String avatarUrl = pref.getAvatarUrl();
         if (avatarUrl != null && !avatarUrl.isEmpty()) {
+            com.bumptech.glide.request.RequestOptions options = new com.bumptech.glide.request.RequestOptions()
+                .circleCrop()
+                .placeholder(R.mipmap.ic_launcher_round)
+                .error(R.mipmap.ic_launcher_round)
+                .diskCacheStrategy(com.bumptech.glide.load.engine.DiskCacheStrategy.NONE)
+                .skipMemoryCache(true);
+
             Glide.with(this)
                     .load(avatarUrl)
-                    .placeholder(R.drawable.ic_launcher_temp)
-                    .error(R.drawable.ic_launcher_temp)
-                    .circleCrop()
+                    .apply(options)
                     .into(binding.ivProfile);
         }
     }
@@ -95,9 +100,22 @@ public class AccountSettingsActivity extends AppCompatActivity {
                     binding.progressBar.setVisibility(android.view.View.GONE);
                     if (response.isSuccessful() && response.body() != null) {
                         String url = response.body().getAvatarUrl();
-                        pref.saveUserInfo(pref.getUserName(), pref.getUserEmail(), url);
-                        refreshUI();
-                        Toast.makeText(AccountSettingsActivity.this, "Profile picture updated!", Toast.LENGTH_SHORT).show();
+                        pref.saveAvatarUrl(url);
+                        
+                        runOnUiThread(() -> {
+                            com.bumptech.glide.request.RequestOptions options = new com.bumptech.glide.request.RequestOptions()
+                                .circleCrop()
+                                .placeholder(R.mipmap.ic_launcher_round)
+                                .error(R.mipmap.ic_launcher_round)
+                                .diskCacheStrategy(com.bumptech.glide.load.engine.DiskCacheStrategy.NONE)
+                                .skipMemoryCache(true);
+
+                            Glide.with(AccountSettingsActivity.this)
+                                .load(url)
+                                .apply(options)
+                                .into(binding.ivProfile);
+                            Toast.makeText(AccountSettingsActivity.this, "Profile picture updated!", Toast.LENGTH_SHORT).show();
+                        });
                     } else {
                         Toast.makeText(AccountSettingsActivity.this, "Upload failed", Toast.LENGTH_SHORT).show();
                     }
