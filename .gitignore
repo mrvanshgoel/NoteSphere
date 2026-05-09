@@ -15,3 +15,8 @@ captures/
 *.apk
 *.aar
 *.jar
+build/
+android/app/build/
+android/.gradle/
+bin/
+gen/
