@@ -38,6 +38,9 @@ const initializeStorage = async () => {
       if (error && error.message.includes('not found')) {
         console.log(`Creating missing bucket: ${b}`);
         await supabase.storage.createBucket(b, { public: true });
+      } else {
+        // Ensure it is public even if it exists
+        await supabase.storage.updateBucket(b, { public: true });
       }
     }
   } catch (err) {
@@ -200,7 +203,9 @@ app.post('/api/auth/upload-avatar', verifyToken, upload.single('avatar'), async 
 
     const fileExt = file.originalname.split('.').pop();
     const fileName = `${req.user.id}-${Date.now()}.${fileExt}`;
-    const filePath = `avatars/${fileName}`;
+    const filePath = fileName; // Simplified path
+
+    console.log(`Uploading avatar to bucket 'avatars' as: ${filePath}`);
 
     const { error: uploadError } = await supabase.storage
       .from('avatars')
