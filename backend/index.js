@@ -499,8 +499,10 @@ app.post('/api/ai/notes', verifyToken, async (req, res) => {
   try {
     const { text } = req.body;
     const result = await gemini.generateContent({
-      contents: [{ role: 'user', parts: [{ text: `You are an expert academic note-taker. Create COMPLETE, 
-DETAILED study notes from the following material.
+      contents: [{
+        role: 'user',
+        parts: [{
+          text: `You are an expert academic note-taker. Create COMPLETE, DETAILED study notes from the following material.
 Requirements:
 - Cover EVERY topic mentioned, skip NOTHING
 - Use clear headings (##) for each section
@@ -510,7 +512,9 @@ Requirements:
 - Minimum 800 words
 - Structure: Overview → Main Topics → Key Definitions → Summary
 
-Material: ${text}` }]} ,
+Material: ${text}`
+        }]
+      }],
       generationConfig: { maxOutputTokens: 4096 }
     });
     res.json({ content: result.response.text() });
