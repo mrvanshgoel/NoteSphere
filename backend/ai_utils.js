@@ -8,25 +8,39 @@ const { getModel, generateWithFallback } = require('./ai_model_manager');
 async function extractTextFromBuffer(buffer, mimeType) {
     if (mimeType === 'application/pdf') {
         try {
-            // Highly robust pdf-parse calling convention
-            let parseFunc;
-            if (typeof pdfParse === 'function') {
-                parseFunc = pdfParse;
-            } else if (pdfParse && typeof pdfParse.default === 'function') {
-                parseFunc = pdfParse.default;
-            } else if (pdfParse && typeof pdfParse.pdf === 'function') {
-                parseFunc = pdfParse.pdf;
-            } else {
-                // Last resort: try to find any function in the export
-                parseFunc = Object.values(pdfParse).find(v => typeof v === 'function');
-            }
-
-            if (!parseFunc) throw new Error("Could not find a valid pdf-parse function in module exports");
+            console.log(`[AI] Extracting text from PDF using Gemini`);
+            const base64Pdf = buffer.toString('base64');
+            const prompt = "Extract all text from this PDF document as accurately as possible. If it's a study material, maintain the structure and hierarchy. Return ONLY the extracted text.";
             
-            const data = await parseFunc(buffer);
-            return data.text;
+            const model = getModel(); 
+            const result = await model.generateContent([
+                prompt,
+                { inlineData: { data: base64Pdf, mimeType: 'application/pdf' } }
+            ]);
+            
+            const text = result.response.text();
+            if (!text || text.length < 10) {
+                // Fallback to pdf-parse ONLY if Gemini returns nothing (rare)
+                console.warn("[AI] Gemini extraction yielded little text, attempting pdf-parse fallback");
+                const parse = typeof pdfParse === 'function' ? pdfParse : pdfParse.default;
+                if (typeof parse === 'function') {
+                    const data = await parse(buffer);
+                    return data.text;
+                }
+            }
+            return text;
         } catch (error) {
             console.error("PDF Extraction Error:", error.message);
+            // Emergency fallback to pdf-parse if Gemini fails (e.g. quota)
+            try {
+                const parse = typeof pdfParse === 'function' ? pdfParse : pdfParse.default;
+                if (typeof parse === 'function') {
+                    const data = await parse(buffer);
+                    return data.text;
+                }
+            } catch (e) {
+                console.error("Critical: PDF fallback also failed:", e.message);
+            }
             throw new Error("Failed to extract text from PDF: " + error.message);
         }
     } else if (mimeType.startsWith('image/')) {
