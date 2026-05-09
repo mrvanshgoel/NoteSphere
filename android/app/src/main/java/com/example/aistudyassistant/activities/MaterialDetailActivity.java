@@ -13,6 +13,15 @@ import com.example.aistudyassistant.databinding.ActivityMaterialDetailBinding;
 import com.example.aistudyassistant.models.AiRequest;
 import com.example.aistudyassistant.models.AiResponse;
 import com.example.aistudyassistant.utils.SharedPrefManager;
+import io.noties.markwon.Markwon;
+import android.graphics.pdf.PdfDocument;
+import android.os.Environment;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.Color;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -20,6 +29,8 @@ import retrofit2.Response;
 public class MaterialDetailActivity extends AppCompatActivity {
     private ActivityMaterialDetailBinding binding;
     private String materialId;
+    private String materialTitle;
+    private Markwon markwon;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -28,11 +39,11 @@ public class MaterialDetailActivity extends AppCompatActivity {
         setContentView(binding.getRoot());
 
         materialId = getIntent().getStringExtra("material_id");
-        String title = getIntent().getStringExtra("material_title");
+        materialTitle = getIntent().getStringExtra("material_title");
         String type = getIntent().getStringExtra("material_type");
         String date = getIntent().getStringExtra("material_date");
 
-        binding.tvTitle.setText(title);
+        binding.tvTitle.setText(materialTitle);
         binding.tvInfo.setText(type + " | " + date);
 
         binding.btnSummary.setOnClickListener(v -> callAiApi("summary"));
@@ -43,6 +54,9 @@ public class MaterialDetailActivity extends AppCompatActivity {
 
         binding.btnCopy.setOnClickListener(v -> copyToClipboard());
         binding.btnShare.setOnClickListener(v -> shareResult());
+        binding.btnSavePdf.setOnClickListener(v -> saveAsPdf());
+
+        markwon = Markwon.create(this);
     }
 
     private void generateP2PShare() {
@@ -97,7 +111,7 @@ public class MaterialDetailActivity extends AppCompatActivity {
                 binding.progressBar.setVisibility(View.GONE);
                 if (response.isSuccessful() && response.body() != null) {
                     binding.cardResult.setVisibility(View.VISIBLE);
-                    binding.tvContent.setText(response.body().getContent());
+                    markwon.setMarkdown(binding.tvContent, response.body().getContent());
                 } else {
                     Toast.makeText(MaterialDetailActivity.this, "AI Action failed", Toast.LENGTH_SHORT).show();
                 }
@@ -125,5 +139,51 @@ public class MaterialDetailActivity extends AppCompatActivity {
         intent.setType("text/plain");
         intent.putExtra(Intent.EXTRA_TEXT, text);
         startActivity(Intent.createChooser(intent, "Share AI Result"));
+    }
+
+    private void saveAsPdf() {
+        String content = binding.tvContent.getText().toString();
+        if (content.isEmpty()) return;
+
+        PdfDocument document = new PdfDocument();
+        PdfDocument.PageInfo pageInfo = new PdfDocument.PageInfo.Builder(595, 842, 1).create();
+        PdfDocument.Page page = document.startPage(pageInfo);
+
+        Canvas canvas = page.getCanvas();
+        Paint paint = new Paint();
+        paint.setColor(Color.BLACK);
+        paint.setTextSize(12f);
+
+        int x = 40, y = 50;
+        canvas.drawText(binding.tvResultTitle.getText().toString(), x, y, paint);
+        y += 30;
+
+        paint.setTextSize(10f);
+        String[] lines = content.split("\n");
+        for (String line : lines) {
+            if (y > 800) {
+                document.finishPage(page);
+                page = document.startPage(pageInfo);
+                canvas = page.getCanvas();
+                y = 50;
+            }
+            canvas.drawText(line, x, y, paint);
+            y += 15;
+        }
+
+        document.finishPage(page);
+
+        File downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+        String fileName = materialTitle.replaceAll("[^a-zA-Z0-9]", "_") + "_Notes.pdf";
+        File file = new File(downloadsDir, fileName);
+
+        try {
+            document.writeTo(new FileOutputStream(file));
+            Toast.makeText(this, "PDF saved to Downloads: " + fileName, Toast.LENGTH_LONG).show();
+        } catch (IOException e) {
+            Toast.makeText(this, "Error saving PDF: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
+
+        document.close();
     }
 }
