@@ -4,15 +4,15 @@ import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import com.example.aistudyassistant.databinding.ActivityShareBinding;
 import com.google.zxing.BarcodeFormat;
-import com.google.zxing.MultiFormatWriter;
 import com.google.zxing.WriterException;
 import com.google.zxing.common.BitMatrix;
-import com.journeyapps.barcodescanner.BarcodeEncoder;
+import com.google.zxing.qrcode.QRCodeWriter;
 
 public class ShareActivity extends AppCompatActivity {
     private ActivityShareBinding binding;
@@ -23,34 +23,42 @@ public class ShareActivity extends AppCompatActivity {
         binding = ActivityShareBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-        String url = getIntent().getStringExtra("share_url");
-        String name = getIntent().getStringExtra("file_name");
+        String shareUrl = getIntent().getStringExtra("share_url");
+        String shareCode = getIntent().getStringExtra("share_code");
+        String fileName = getIntent().getStringExtra("file_name");
 
-        binding.tvUrl.setText(url);
-        binding.tvFileName.setText(name);
+        binding.tvFileName.setText(fileName);
+        binding.tvShareCode.setText(shareCode);
 
-        generateQrCode(url);
+        // Generate QR Code
+        try {
+            Bitmap qrBitmap = generateQrCode(shareUrl);
+            binding.ivQrCode.setImageBitmap(qrBitmap);
+        } catch (WriterException e) {
+            Toast.makeText(this, "QR Generation failed", Toast.LENGTH_SHORT).show();
+        }
 
-        binding.btnCopy.setOnClickListener(v -> {
+        binding.btnCopyLink.setOnClickListener(v -> {
             ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
-            ClipData clip = ClipData.newPlainText("Share Link", url);
+            ClipData clip = ClipData.newPlainText("Share Link", shareUrl);
             clipboard.setPrimaryClip(clip);
             Toast.makeText(this, "Link copied to clipboard", Toast.LENGTH_SHORT).show();
         });
 
-        binding.btnDone.setOnClickListener(v -> finish());
+        binding.btnClose.setOnClickListener(v -> finish());
     }
 
-    private void generateQrCode(String data) {
-        MultiFormatWriter writer = new MultiFormatWriter();
-        try {
-            BitMatrix matrix = writer.encode(data, BarcodeFormat.QR_CODE, 512, 512);
-            BarcodeEncoder encoder = new BarcodeEncoder();
-            Bitmap bitmap = encoder.createBitmap(matrix);
-            binding.ivQrCode.setImageBitmap(bitmap);
-        } catch (WriterException e) {
-            e.printStackTrace();
-            Toast.makeText(this, "Failed to generate QR code", Toast.LENGTH_SHORT).show();
+    private Bitmap generateQrCode(String text) throws WriterException {
+        QRCodeWriter writer = new QRCodeWriter();
+        BitMatrix bitMatrix = writer.encode(text, BarcodeFormat.QR_CODE, 512, 512);
+        int width = bitMatrix.getWidth();
+        int height = bitMatrix.getHeight();
+        Bitmap bmp = Bitmap.createBitmap(width, height, Bitmap.Config.RGB_565);
+        for (int x = 0; x < width; x++) {
+            for (int y = 0; y < height; y++) {
+                bmp.setPixel(x, y, bitMatrix.get(x, y) ? Color.BLACK : Color.WHITE);
+            }
         }
+        return bmp;
     }
 }

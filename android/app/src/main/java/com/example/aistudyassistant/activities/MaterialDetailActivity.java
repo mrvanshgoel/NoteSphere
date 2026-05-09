@@ -71,6 +71,7 @@ public class MaterialDetailActivity extends AppCompatActivity {
                 if (response.isSuccessful() && response.body() != null) {
                     Intent intent = new Intent(MaterialDetailActivity.this, ShareActivity.class);
                     intent.putExtra("share_url", response.body().getShareUrl());
+                    intent.putExtra("share_code", response.body().getShareCode());
                     intent.putExtra("file_name", response.body().getName());
                     startActivity(intent);
                 } else {

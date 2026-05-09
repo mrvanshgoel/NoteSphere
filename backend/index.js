@@ -3,6 +3,8 @@ const cors = require('cors');
 const { createClient } = require('@supabase/supabase-js');
 const jwt = require('jsonwebtoken');
 const multer = require('multer');
+const { v4: uuidv4 } = require('uuid');
+const crypto = require('crypto');
 const { search } = require('duck-duck-scrape');
 const dotenv = require('dotenv');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
@@ -497,14 +499,71 @@ app.post('/api/ai/questions', verifyToken, async (req, res) => {
   }
 });
 
-app.post('/api/ai/notes', verifyToken, async (req, res) => {
+// 8. P2P SHARING SYSTEM
+const activeShares = new Map();
+
+app.post('/api/share/generate', verifyToken, async (req, res) => {
   try {
-    const { text } = req.body;
-    const result = await gemini.generateContent(`Create detailed study notes with key points, definitions and important concepts from: ${text}`);
-    res.json({ content: result.response.text() });
+    const { materialId, expiresHours = 24 } = req.body;
+    
+    const { data: material, error: fetchErr } = await supabase
+      .from('materials')
+      .select('*')
+      .eq('id', materialId)
+      .single();
+
+    if (fetchErr || !material) throw new Error('Material not found');
+
+    const { data: signedUrl, error: signErr } = await supabase.storage
+      .from('materials')
+      .createSignedUrl(material.file_path, expiresHours * 3600);
+
+    if (signErr) throw new Error('Failed to generate secure link');
+
+    const shareCode = crypto.randomBytes(3).toString('hex').toUpperCase();
+    
+    activeShares.set(shareCode, {
+      name: material.title,
+      url: signedUrl.signedUrl,
+      expiresAt: Date.now() + (expiresHours * 3600000)
+    });
+
+    res.json({
+      shareCode: shareCode,
+      shareUrl: `${req.protocol}://${req.get('host')}/share/${shareCode}`,
+      name: material.title
+    });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
+});
+
+app.get('/share/:code', (req, res) => {
+  const share = activeShares.get(req.params.code.toUpperCase());
+  if (!share || Date.now() > share.expiresAt) return res.status(404).send('Link Expired');
+
+  res.send(`
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Download \${share.name}</title>
+        <style>
+            body { background: #121212; color: white; font-family: sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+            .card { background: #1E1E1E; padding: 40px; border-radius: 20px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+            .btn { background: #6C63FF; color: white; padding: 15px 30px; border-radius: 10px; text-decoration: none; display: inline-block; margin-top: 20px; font-weight: bold; }
+        </style>
+    </head>
+    <body>
+        <div class="card">
+            <h2>\${share.name}</h2>
+            <p>Your study material is ready.</p>
+            <a href="\${share.url}" class="btn" download>Download PDF</a>
+        </div>
+    </body>
+    </html>
+  `);
 });
 
 app.listen(port, () => console.log(`Server running on port ${port}`));
