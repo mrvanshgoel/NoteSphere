@@ -454,7 +454,14 @@ app.post('/api/ai/chat', verifyToken, async (req, res) => {
       generationConfig: { maxOutputTokens: 2048, temperature: 0.7 },
     });
 
-    const prompt = `System Instructions: You are an expert academic professor. Provide extremely detailed, exhaustive, and structured study material. Do NOT skip any details. Use headings, bullet points, and deep explanations for every concept.
+    let professorInstructions = "You are an expert academic professor. Provide extremely detailed, exhaustive, and structured study material. Do NOT skip any details. Use headings, bullet points, and deep explanations for every concept.";
+    
+    // Check for "Explain" keyword
+    if (lastUserMessage.toLowerCase().startsWith('explain')) {
+      professorInstructions = "You are a Technical Logic Specialist. The user has used the keyword 'Explain'. Your task is to ONLY explain the technical logic, backend logs, and under-the-hood functionality related to their query. Be precise, technical, and focus on how the system works.";
+    }
+
+    const prompt = `System Instructions: ${professorInstructions}
     Current Time: ${currentDate}.
     User Question: ${lastUserMessage}`;
 
