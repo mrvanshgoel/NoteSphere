@@ -110,8 +110,11 @@ public class AccountSettingsActivity extends AppCompatActivity {
                                 .diskCacheStrategy(com.bumptech.glide.load.engine.DiskCacheStrategy.NONE)
                                 .skipMemoryCache(true);
 
+                            // Cache bust with timestamp
+                            String cacheBustUrl = url + "?t=" + System.currentTimeMillis();
+
                             Glide.with(AccountSettingsActivity.this)
-                                .load(url)
+                                .load(cacheBustUrl)
                                 .apply(options)
                                 .into(binding.ivProfile);
                             Toast.makeText(AccountSettingsActivity.this, "Profile picture updated!", Toast.LENGTH_SHORT).show();

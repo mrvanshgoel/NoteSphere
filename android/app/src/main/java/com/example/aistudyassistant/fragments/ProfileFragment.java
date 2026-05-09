@@ -161,7 +161,12 @@ public class ProfileFragment extends Fragment {
     }
 
     private void loadAvatarWithGlide(String url) {
-        if (binding == null || !isAdded()) return;
+        if (binding == null || !isAdded() || url == null || url.isEmpty()) return;
+        
+        // Fix: Force reload with timestamp cache bust
+        String cacheBustUrl = url + (url.contains("?") ? "&" : "?") + "t=" + System.currentTimeMillis();
+        android.util.Log.d("AVATAR", "Glide loading with cache bust: " + cacheBustUrl);
+
         com.bumptech.glide.request.RequestOptions options = new com.bumptech.glide.request.RequestOptions()
             .circleCrop()
             .placeholder(R.drawable.ic_launcher_temp)
@@ -170,7 +175,7 @@ public class ProfileFragment extends Fragment {
             .skipMemoryCache(true);
 
         Glide.with(this)
-                .load(url)
+                .load(cacheBustUrl)
                 .apply(options)
                 .into(binding.ivProfile);
     }
