@@ -5,11 +5,14 @@ dotenv.config();
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 const FALLBACK_ORDER = [
+  'gemini-3.1-flash-lite',
+  'gemini-2.5-flash',
   'gemini-2.0-flash',
   'gemini-2.0-flash-lite',
   'gemini-1.5-flash-latest',
   'gemini-1.5-flash',
-  'gemini-pro'
+  'gemini-pro',
+  'gemini-1.0-pro'
 ];
 
 let availableModels = [];
