@@ -376,74 +376,99 @@ app.post('/api/ai/questions', verifyToken, async (req, res) => {
     const completion = await groq.chat.completions.create({
       messages: [{ role: 'user', content: `Generate 10 practice questions with answers from this study material: ${text}` }],
       model: "llama-3.1-8b-instant",
+// 6. P2P SHARING ROUTE
+app.post('/api/share/generate', verifyToken, async (req, res) => {
+  try {
+    const { materialId } = req.body;
+    
+    // 1. Get material info
+    const { data: material, error: mError } = await supabase
+      .from('materials')
+      .select('*')
+      .eq('id', materialId)
+      .eq('user_id', req.user.id)
+      .single();
+
+    if (mError || !material) throw new Error('Material not found');
+
+    // 2. Generate a long-lived signed URL (7 days)
+    const { data: signData, error: sError } = await supabase.storage
+      .from('materials')
+      .createSignedUrl(material.file_url.split('/').pop(), 60 * 60 * 24 * 7);
+
+    if (sError) throw sError;
+
+    res.json({ 
+      shareUrl: signData.signedUrl,
+      name: material.title,
+      expiresIn: '7 days'
     });
-    res.json({ content: completion.choices[0].message.content });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
 });
+
+// 7. GEMINI AI ROUTES
 
 app.post('/api/ai/chat', verifyToken, async (req, res) => {
   try {
     const { messages, systemPrompt } = req.body;
     const lastUserMessage = messages[messages.length - 1]?.content || "";
     const currentDate = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
+
+    console.log('Gemini Chat request:', lastUserMessage);
+
+    // Prepare history for Gemini
+    const chat = gemini.startChat({
+      history: messages.slice(0, -1).map(m => ({
+        role: m.role === 'assistant' ? 'model' : 'user',
+        parts: [{ text: m.content }],
+      })),
+      generationConfig: { maxOutputTokens: 1000 },
+    });
+
+    const prompt = `System Instructions: ${systemPrompt || "You are an expert study assistant."}
+    Current Time: ${currentDate}.
+    If the user asks for real-time info, use your built-in search capabilities.
+    User Question: ${lastUserMessage}`;
+
+    const result = await chat.sendMessage(prompt);
+    const response = await result.response;
     
-    console.log('AI Chat request (India Time):', currentDate, '| Query:', lastUserMessage);
-
-    // 1. Determine if we need a web search
-    let searchResults = "";
-    const searchDecision = await groq.chat.completions.create({
-      messages: [
-        { 
-          role: 'system', 
-          content: `You are a search coordinator. Output "SEARCH" if the user query needs current events, weather, news, or real-time info. Otherwise output "NO".
-          User Query: "${lastUserMessage}"` 
-        }
-      ],
-      model: "llama-3.1-8b-instant",
-    });
-
-    const shouldSearch = searchDecision.choices[0].message.content.toUpperCase().includes("SEARCH");
-
-    if (shouldSearch) {
-      console.log('Performing web search for:', lastUserMessage);
-      try {
-        const searchResponse = await search(lastUserMessage, { safeSearch: true });
-        searchResults = searchResponse.results.slice(0, 3)
-          .map(r => `Source: ${r.url}\nTitle: ${r.title}\nContent: ${r.description}`)
-          .join('\n\n');
-      } catch (searchErr) {
-        console.error('Search library error:', searchErr);
-      }
-    }
-
-    // 2. Generate final response
-    const completion = await groq.chat.completions.create({
-      messages: [
-        { 
-          role: 'system', 
-          content: `You are an expert AI study assistant. 
-          Current Date and Time in India: ${currentDate}.
-          
-          ${systemPrompt || "Help students understand their study material and answer questions clearly."}
-          
-          ${searchResults ? "\n\nCRITICAL: Use these live search results to provide an up-to-date answer:\n" + searchResults : ""}
-          
-          If the user asks for today's date, use the provided current date above.` 
-        },
-        ...messages
-      ],
-      model: "llama-3.1-8b-instant",
-    });
-
-    res.json({ 
-      content: completion.choices[0].message.content, 
-      role: 'assistant' 
-    });
+    res.json({ content: response.text(), role: 'assistant' });
   } catch (err) {
-    console.error('AI CHAT EXCEPTION:', err);
-    res.status(500).json({ error: 'AI Error: ' + err.message });
+    console.error('GEMINI ERROR:', err);
+    res.status(500).json({ error: 'Gemini AI Error: ' + err.message });
+  }
+});
+
+app.post('/api/ai/summary', verifyToken, async (req, res) => {
+  try {
+    const { text } = req.body;
+    const result = await gemini.generateContent(`Summarize this study material comprehensively: ${text}`);
+    res.json({ content: result.response.text() });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.post('/api/ai/notes', verifyToken, async (req, res) => {
+  try {
+    const { text } = req.body;
+    const result = await gemini.generateContent(`Create detailed study notes with key points, definitions and important concepts from: ${text}`);
+    res.json({ content: result.response.text() });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.post('/api/ai/questions', verifyToken, async (req, res) => {
+  try {
+    const { text } = req.body;
+    const result = await gemini.generateContent(`Generate 10 practice questions with answers from this study material: ${text}`);
+    res.json({ content: result.response.text() });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
   }
 });
 

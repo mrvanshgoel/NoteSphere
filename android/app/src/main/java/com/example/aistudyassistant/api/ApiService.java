@@ -84,4 +84,7 @@ public interface ApiService {
 
     @POST("api/ai/chat")
     Call<AiResponse> chat(@Header("Authorization") String token, @Body ChatRequest body);
+
+    @POST("api/share/generate")
+    Call<ShareResponse> generateShareLink(@Header("Authorization") String token, @Body ShareRequest body);
 }

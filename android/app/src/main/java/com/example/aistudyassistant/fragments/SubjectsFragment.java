@@ -107,7 +107,16 @@ public class SubjectsFragment extends Fragment {
                     Toast.makeText(getContext(), "Subject added!", Toast.LENGTH_SHORT).show();
                     fetchSubjects();
                 } else {
-                    Toast.makeText(getContext(), "Failed to add subject: " + response.code(), Toast.LENGTH_SHORT).show();
+                    String errorMsg = "Failed to add subject";
+                    try {
+                        if (response.errorBody() != null) {
+                            errorMsg = response.errorBody().string();
+                        }
+                    } catch (Exception e) {
+                        if (response.code() == 401) errorMsg = "Session expired. Please login again.";
+                        else errorMsg += ": " + response.code();
+                    }
+                    Toast.makeText(getContext(), errorMsg, Toast.LENGTH_SHORT).show();
                 }
             }
 

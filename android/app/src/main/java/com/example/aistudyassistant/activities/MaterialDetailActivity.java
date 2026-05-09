@@ -39,8 +39,37 @@ public class MaterialDetailActivity extends AppCompatActivity {
         binding.btnNotes.setOnClickListener(v -> callAiApi("notes"));
         binding.btnQuestions.setOnClickListener(v -> callAiApi("questions"));
 
+        binding.btnP2PShare.setOnClickListener(v -> generateP2PShare());
+
         binding.btnCopy.setOnClickListener(v -> copyToClipboard());
         binding.btnShare.setOnClickListener(v -> shareResult());
+    }
+
+    private void generateP2PShare() {
+        binding.progressBar.setVisibility(View.VISIBLE);
+        String token = "Bearer " + SharedPrefManager.getInstance(this).getToken();
+        com.example.aistudyassistant.models.ShareRequest request = new com.example.aistudyassistant.models.ShareRequest(materialId);
+
+        ApiClient.getInstance().generateShareLink(token, request).enqueue(new Callback<com.example.aistudyassistant.models.ShareResponse>() {
+            @Override
+            public void onResponse(Call<com.example.aistudyassistant.models.ShareResponse> call, Response<com.example.aistudyassistant.models.ShareResponse> response) {
+                binding.progressBar.setVisibility(View.GONE);
+                if (response.isSuccessful() && response.body() != null) {
+                    Intent intent = new Intent(MaterialDetailActivity.this, ShareActivity.class);
+                    intent.putExtra("share_url", response.body().getShareUrl());
+                    intent.putExtra("file_name", response.body().getName());
+                    startActivity(intent);
+                } else {
+                    Toast.makeText(MaterialDetailActivity.this, "Sharing failed", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<com.example.aistudyassistant.models.ShareResponse> call, Throwable t) {
+                binding.progressBar.setVisibility(View.GONE);
+                Toast.makeText(MaterialDetailActivity.this, "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void callAiApi(String action) {

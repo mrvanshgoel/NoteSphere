@@ -28,6 +28,16 @@
             android:text="PDF | Oct 12, 2023"
             android:textColor="@color/text_secondary" />
 
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnP2PShare"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_marginTop="20dp"
+            android:text="P2P Quick Share"
+            app:cornerRadius="12dp"
+            app:icon="@android:drawable/ic_menu_share"
+            android:backgroundTint="#6C63FF"/>
+
         <GridLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

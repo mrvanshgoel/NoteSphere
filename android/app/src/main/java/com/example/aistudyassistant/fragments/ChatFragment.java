@@ -94,7 +94,14 @@ public class ChatFragment extends Fragment {
                     binding.rvChat.smoothScrollToPosition(messages.size() - 1);
                 } else {
                     String errorMsg = "AI Chat failed";
-                    if (response.code() == 401) errorMsg = "Session expired. Please login again.";
+                    try {
+                        if (response.errorBody() != null) {
+                            errorMsg = response.errorBody().string();
+                        }
+                    } catch (Exception e) {
+                        if (response.code() == 401) errorMsg = "Session expired. Please login again.";
+                        else errorMsg += ": " + response.code();
+                    }
                     Toast.makeText(getContext(), errorMsg, Toast.LENGTH_SHORT).show();
                 }
             }
