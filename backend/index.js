@@ -125,7 +125,7 @@ app.post('/api/auth/login', async (req, res) => {
         id: profile.id, 
         name: profile.name, 
         email: profile.email, 
-        avatar_url: profile.avatar_url 
+        avatarUrl: profile.avatar_url 
       } 
     });
   } catch (err) {
@@ -143,7 +143,12 @@ app.get('/api/auth/profile', verifyToken, async (req, res) => {
       .single();
 
     if (error) throw error;
-    res.json(profile);
+    res.json({
+        id: profile.id,
+        name: profile.name,
+        email: profile.email,
+        avatarUrl: profile.avatar_url
+    });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -160,7 +165,12 @@ app.put('/api/auth/profile', verifyToken, async (req, res) => {
       .single();
 
     if (error) throw error;
-    res.json(data);
+    res.json({
+        id: data.id,
+        name: data.name,
+        email: data.email,
+        avatarUrl: data.avatar_url
+    });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -208,7 +218,17 @@ app.get('/api/subjects', verifyToken, async (req, res) => {
       .select('*')
       .eq('user_id', req.user.id);
     if (error) throw error;
-    res.json(data);
+    
+    const mapped = data.map(s => ({
+        id: s.id,
+        name: s.name,
+        icon: s.icon,
+        color: s.color,
+        userId: s.user_id,
+        materialCount: s.material_count || 0
+    }));
+    
+    res.json(mapped);
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -217,6 +237,8 @@ app.get('/api/subjects', verifyToken, async (req, res) => {
 app.post('/api/subjects', verifyToken, async (req, res) => {
   try {
     const { name, color, icon } = req.body;
+    console.log(`Creating subject: ${name} for user: ${req.user.id}`);
+    
     const { data, error } = await supabase
       .from('subjects')
       .insert({ 
@@ -227,9 +249,24 @@ app.post('/api/subjects', verifyToken, async (req, res) => {
       })
       .select()
       .single();
-    if (error) throw error;
-    res.json(data);
+    
+    if (error) {
+        console.error("SUPABASE DB ERROR (Subjects):", error.message);
+        throw error;
+    }
+    
+    const mapped = {
+        id: data.id,
+        name: data.name,
+        icon: data.icon,
+        color: data.color,
+        userId: data.user_id,
+        materialCount: 0
+    };
+    
+    res.json(mapped);
   } catch (err) {
+    console.error("SUBJECT CREATION FAILED:", err.message);
     res.status(400).json({ error: err.message });
   }
 });
@@ -256,8 +293,20 @@ app.get('/api/materials/:subjectId', verifyToken, async (req, res) => {
       .select('*')
       .eq('subject_id', req.params.subjectId)
       .eq('user_id', req.user.id);
+    
     if (error) throw error;
-    res.json(data);
+    
+    // Map to Android Model Keys
+    const mapped = data.map(m => ({
+        id: m.id,
+        title: m.title,
+        fileUrl: m.file_url || (m.file_path ? supabase.storage.from('materials').getPublicUrl(m.file_path).data.publicUrl : ''),
+        fileType: m.file_type,
+        subjectId: m.subject_id,
+        createdAt: m.created_at
+    }));
+    
+    res.json(mapped);
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -267,22 +316,20 @@ app.post('/api/materials/upload', verifyToken, upload.single('file'), async (req
   try {
     const { subjectId } = req.body;
     const file = req.file;
-    const originalName = file.originalname;
-    const mimeType = file.mimetype;
-    
-    console.log(`Uploading file: ${originalName} for subject: ${subjectId}`);
-
-    if (!req.file) {
+    if (!file) {
         console.error("Upload Error: No file found in request.");
         return res.status(400).json({ error: "No file uploaded" });
     }
 
+    const originalName = file.originalname;
+    const mimeType = file.mimetype;
     const fileName = `${Date.now()}_${originalName}`;
-    console.log(`Uploading to Supabase Storage as: ${fileName}`);
+    
+    console.log(`Uploading file: ${originalName} to storage...`);
 
     const { data: storageData, error: storageError } = await supabase.storage
         .from('materials')
-        .upload(fileName, req.file.buffer, {
+        .upload(fileName, file.buffer, {
             contentType: mimeType,
             upsert: true
         });
@@ -292,7 +339,9 @@ app.post('/api/materials/upload', verifyToken, upload.single('file'), async (req
         return res.status(500).json({ error: "Storage upload failed: " + storageError.message });
     }
 
-    console.log("File uploaded to storage. Inserting into database...");
+    const { data: { publicUrl } } = supabase.storage.from('materials').getPublicUrl(fileName);
+
+    console.log("File uploaded. Inserting into database...");
 
     const { data: materialData, error: materialError } = await supabase
         .from('materials')
@@ -301,6 +350,7 @@ app.post('/api/materials/upload', verifyToken, upload.single('file'), async (req
             title: originalName,
             file_type: mimeType,
             file_path: fileName,
+            file_url: publicUrl,
             user_id: req.user.id
         }])
         .select()
@@ -308,13 +358,21 @@ app.post('/api/materials/upload', verifyToken, upload.single('file'), async (req
 
     if (materialError) {
         console.error("SUPABASE DB ERROR (Materials):", materialError.message);
-        // Cleanup storage if DB fails
-        await supabase.storage.from('materials').remove([fileName]);
         return res.status(500).json({ error: "Database insert failed: " + materialError.message });
     }
 
+    // Map to Android Model Keys for immediate UI update
+    const responseData = {
+        id: materialData.id,
+        title: materialData.title,
+        fileUrl: materialData.file_url,
+        fileType: materialData.file_type,
+        subjectId: materialData.subject_id,
+        createdAt: materialData.created_at
+    };
+
     console.log("Material created successfully.");
-    res.status(201).json(materialData);
+    res.status(201).json(responseData);
   } catch (err) {
     console.error("GENERAL UPLOAD ERROR:", err.message);
     res.status(500).json({ error: "Internal server error during upload" });
