@@ -10,6 +10,23 @@ const { getModel, callAIWithTimeout } = require('./aiService');
 
 dotenv.config();
 
+/**
+ * Formats a Firestore document for the client.
+ * Converts Timestamps to ISO strings to avoid GSON parsing errors on Android.
+ */
+function formatDoc(doc) {
+  if (!doc.exists) return null;
+  const data = doc.data();
+  const formatted = { id: doc.id, ...data };
+  
+  for (const key in formatted) {
+    if (formatted[key] && typeof formatted[key].toDate === 'function') {
+      formatted[key] = formatted[key].toDate().toISOString();
+    }
+  }
+  return formatted;
+}
+
 const app = express();
 const port = process.env.PORT || 5000;
 
@@ -64,6 +81,7 @@ console.log('Uploads directory verified at:', uploadsDir);
 // ═══════════════════════════════════════════════════════════
 app.use(cors({ origin: '*' }));
 app.use(express.json({ limit: '50mb' }));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Set up disk storage for uploads (temp storage)
 const storage = multer.diskStorage({
@@ -89,12 +107,14 @@ const verifyToken = async (req, res, next) => {
       return res.status(401).json({ error: 'No token provided' });
     }
     const token = authHeader.split(' ')[1];
+    console.log(`[Auth] Verifying token (prefix): ${token.substring(0, 20)}...`);
     
     if (!admin.apps.length) {
       return res.status(500).json({ error: 'Firebase Auth is not initialized on the server.' });
     }
 
     const decodedToken = await admin.auth().verifyIdToken(token);
+    console.log(`[Auth] Success. UID: ${decodedToken.uid}`);
     req.user = { id: decodedToken.uid, email: decodedToken.email };
     next();
   } catch (err) {
@@ -126,7 +146,7 @@ app.get('/api/auth/profile', verifyToken, async (req, res) => {
       await db.collection('profiles').doc(req.user.id).set(newProfile);
       return res.json(newProfile);
     }
-    res.json(doc.data());
+    res.json(formatDoc(doc));
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -142,9 +162,29 @@ app.put('/api/auth/profile', verifyToken, async (req, res) => {
     }, { merge: true });
     
     const updated = await db.collection('profiles').doc(req.user.id).get();
-    res.json(updated.data());
+    res.json(formatDoc(updated));
   } catch (err) {
     res.status(400).json({ error: err.message });
+  }
+});
+
+app.post('/api/auth/upload-avatar', verifyToken, upload.single('avatar'), async (req, res) => {
+  try {
+    const file = req.file;
+    if (!file) return res.status(400).json({ error: 'No image uploaded' });
+
+    // Store relative path
+    const avatarUrl = `${req.protocol}://${req.get('host')}/uploads/${file.filename}`;
+
+    await db.collection('profiles').doc(req.user.id).set({
+      avatar_url: avatarUrl,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+
+    res.json({ avatar_url: avatarUrl });
+  } catch (err) {
+    console.error('Avatar upload error:', err);
+    res.status(500).json({ error: err.message });
   }
 });
 
@@ -157,7 +197,7 @@ app.get('/api/subjects', verifyToken, async (req, res) => {
     const snapshot = await db.collection('subjects').where('userId', '==', req.user.id).get();
     const subjects = [];
     snapshot.forEach(doc => {
-      subjects.push({ id: doc.id, ...doc.data() });
+      subjects.push(formatDoc(doc));
     });
     res.json(subjects);
   } catch (err) {
@@ -179,7 +219,7 @@ app.post('/api/subjects', verifyToken, async (req, res) => {
     });
     
     const newDoc = await docRef.get();
-    res.json({ id: newDoc.id, ...newDoc.data() });
+    res.json(formatDoc(newDoc));
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -213,7 +253,7 @@ app.get('/api/materials/:subjectId', verifyToken, async (req, res) => {
       
     const materials = [];
     snapshot.forEach(doc => {
-      materials.push({ id: doc.id, ...doc.data() });
+      materials.push(formatDoc(doc));
     });
     res.json(materials);
   } catch (err) {
@@ -240,7 +280,7 @@ app.post('/api/materials/upload', verifyToken, upload.single('file'), async (req
     });
 
     const newDoc = await docRef.get();
-    res.status(201).json({ id: newDoc.id, ...newDoc.data() });
+    res.status(201).json(formatDoc(newDoc));
   } catch (err) {
     console.error('Upload error:', err);
     res.status(500).json({ error: err.message });
@@ -306,18 +346,39 @@ app.post('/api/ai/chat', verifyToken, async (req, res) => {
     const { message, history = [] } = req.body;
     if (!message) return res.status(400).json({ error: 'Message required' });
 
-    const model = getModel('flash');
-    const chat = model.startChat({
-      history: history.map(m => ({
+    console.log(`[AI Chat] Request: ${message}`);
+    const model = getModel();
+    const systemPrompt = "You are Notesphere AI, an advanced, concise, and helpful study assistant.";
+    
+    // Clean history to ensure it's valid for Gemini (alternating user/model)
+    const cleanedHistory = (history || [])
+      .filter(m => m.content && m.content.trim() !== '')
+      .map(m => ({
         role: m.role === 'assistant' ? 'model' : 'user',
         parts: [{ text: m.content }]
-      })),
+      }));
+    
+    // Ensure history doesn't start with model and doesn't have consecutive same roles
+    const validatedHistory = [];
+    cleanedHistory.forEach(msg => {
+      if (validatedHistory.length === 0) {
+        if (msg.role === 'user') validatedHistory.push(msg);
+      } else {
+        if (validatedHistory[validatedHistory.length - 1].role !== msg.role) {
+          validatedHistory.push(msg);
+        }
+      }
+    });
+
+    const chat = model.startChat({
+      history: validatedHistory,
       generationConfig: { maxOutputTokens: 1024, temperature: 0.7 }
     });
 
-    const systemPrompt = "You are Notesphere AI, an advanced, concise, and helpful study assistant.";
     const result = await callAIWithTimeout(() => chat.sendMessage(`${systemPrompt}\n\nUser: ${message}`));
-    res.json({ content: result.response.text(), role: 'assistant' });
+    const responseText = result.response.text();
+    console.log(`[AI Chat] Response: ${responseText.substring(0, 100)}...`);
+    res.json({ content: responseText, role: 'assistant' });
   } catch (err) {
     console.error('[AI Chat Error]', err.message);
     res.status(500).json({ error: 'AI chat failed', detail: err.message });
@@ -336,8 +397,8 @@ app.post('/api/ai/summarize', verifyToken, async (req, res) => {
     
     if (!text) return res.status(400).json({ error: 'No text or materialId provided' });
 
-    const isLarge = text.length > 5000;
-    const model = getModel(isLarge ? 'pro' : 'flash');
+    console.log(`[AI Summarize] Mode: ${mode}, Text Length: ${text.length}`);
+    const model = getModel();
 
     const prompts = {
       summary: `You are an expert academic summarizer. Create a comprehensive, structured summary of the following material. Include: key concepts, main ideas, important definitions, and a brief overview. Use markdown formatting.\n\nMaterial:\n${text}`,
@@ -348,7 +409,9 @@ app.post('/api/ai/summarize', verifyToken, async (req, res) => {
 
     const prompt = prompts[mode] || prompts.summary;
     const result = await callAIWithTimeout(() => model.generateContent(prompt), 45000);
-    res.json({ content: result.response.text(), mode });
+    const responseText = result.response.text();
+    console.log(`[AI Summarize] Success`);
+    res.json({ content: responseText, mode });
   } catch (err) {
     console.error('[AI Summarize Error]', err.message);
     res.status(500).json({ error: 'Summarization failed', detail: err.message });
@@ -365,7 +428,8 @@ app.post('/api/ai/quiz', verifyToken, async (req, res) => {
     }
     if (!text) return res.status(400).json({ error: 'No text or materialId provided' });
 
-    const model = getModel('flash');
+    console.log(`[AI Quiz] Request for material: ${materialId}`);
+    const model = getModel();
     const prompt = `You are an expert exam question generator. Generate exactly ${count} multiple-choice questions from the following material.
 
 Difficulty: ${difficulty}
@@ -418,7 +482,8 @@ app.post('/api/ai/doubt', verifyToken, async (req, res) => {
       }
     }
 
-    const model = getModel('flash');
+    console.log(`[AI Doubt] Question: ${question}`);
+    const model = getModel();
     const contextSection = context ? `\n\nReference Material:\n${context.substring(0, 8000)}` : '';
 
     const chat = model.startChat({
@@ -450,7 +515,7 @@ app.get('/api/syllabus/:userId', verifyToken, async (req, res) => {
   try {
     const snapshot = await db.collection('syllabi').where('userId', '==', req.params.userId).get();
     const syllabi = [];
-    snapshot.forEach(doc => syllabi.push({ id: doc.id, ...doc.data() }));
+    snapshot.forEach(doc => syllabi.push(formatDoc(doc)));
     res.json(syllabi);
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -472,7 +537,7 @@ app.post('/api/syllabus', verifyToken, async (req, res) => {
     });
     
     const newDoc = await docRef.get();
-    res.json({ id: newDoc.id, ...newDoc.data() });
+    res.json(formatDoc(newDoc));
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -490,7 +555,7 @@ app.put('/api/syllabus/:id', verifyToken, async (req, res) => {
     }, { merge: true });
     
     const updated = await db.collection('syllabi').doc(req.params.id).get();
-    res.json({ id: updated.id, ...updated.data() });
+    res.json(formatDoc(updated));
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -501,8 +566,16 @@ app.post('/api/share/generate', verifyToken, async (req, res) => {
 });
 
 // ═══════════════════════════════════════════════════════════
-// BOOTSTRAP
+// GLOBAL ERROR HANDLER
 // ═══════════════════════════════════════════════════════════
+app.use((err, req, res, next) => {
+  console.error('[Global Error]', err);
+  res.status(500).json({ 
+    error: 'Internal Server Error', 
+    detail: err.message || 'An unexpected error occurred'
+  });
+});
+
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
 });

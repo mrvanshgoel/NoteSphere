@@ -1,16 +1,15 @@
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
+const { GEMINI_MODEL } = require('./ai_config');
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 /**
- * Get the appropriate Gemini model based on the task type.
- * 'flash': gemini-1.5-flash (fast responses, chat, quiz, short tasks)
- * 'pro': gemini-1.5-pro (long PDFs, syllabus extraction, deep analysis)
+ * Get the standardized Gemini model.
+ * Standardized to: gemini-flash
  */
-function getModel(type = 'flash') {
-  const modelName = type === 'pro' ? 'gemini-1.5-pro' : 'gemini-1.5-flash';
-  console.log(`[AI] Using model: ${modelName} for task type: ${type}`);
-  return genAI.getGenerativeModel({ model: modelName });
+function getModel() {
+  console.log(`[AI] Initializing model: ${GEMINI_MODEL}`);
+  return genAI.getGenerativeModel({ model: GEMINI_MODEL });
 }
 
 /**
