@@ -8,7 +8,23 @@ import com.example.aistudyassistant.databinding.ItemChatAiBinding;
 import com.example.aistudyassistant.databinding.ItemChatUserBinding;
 import com.example.aistudyassistant.models.ChatMessage;
 import io.noties.markwon.Markwon;
+import android.content.ClipData;
+import android.content.ClipboardManager;
+import android.content.Context;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.pdf.PdfDocument;
+import android.os.Environment;
+import android.widget.Toast;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
+import java.util.UUID;
 
 public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private List<ChatMessage> messages;
@@ -52,6 +68,8 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         if (holder instanceof UserViewHolder) {
             UserViewHolder userHolder = (UserViewHolder) holder;
             userHolder.binding.tvMessage.setText(message.getMessage());
+            String time = new SimpleDateFormat("hh:mm a", Locale.getDefault()).format(new Date());
+            userHolder.binding.tvTime.setText(time);
             userHolder.binding.getRoot().setOnLongClickListener(v -> {
                 if (longClickListener != null) {
                     longClickListener.onLongClick(message.getMessage());
@@ -64,6 +82,21 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 markwon = Markwon.create(aiHolder.binding.getRoot().getContext());
             }
             markwon.setMarkdown(aiHolder.binding.tvMessage, message.getMessage());
+            
+            String time = new SimpleDateFormat("hh:mm a", Locale.getDefault()).format(new Date());
+            aiHolder.binding.tvTime.setText(time);
+
+            aiHolder.binding.btnCopy.setOnClickListener(v -> {
+                ClipboardManager clipboard = (ClipboardManager) v.getContext().getSystemService(Context.CLIPBOARD_SERVICE);
+                ClipData clip = ClipData.newPlainText("AI Response", message.getMessage());
+                clipboard.setPrimaryClip(clip);
+                Toast.makeText(v.getContext(), "Copied to clipboard", Toast.LENGTH_SHORT).show();
+            });
+
+            aiHolder.binding.btnPdf.setOnClickListener(v -> {
+                saveChatAsPdf(v.getContext(), message.getMessage());
+            });
+
             aiHolder.binding.getRoot().setOnLongClickListener(v -> {
                 if (longClickListener != null) {
                     longClickListener.onLongClick(message.getMessage());
@@ -71,6 +104,51 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 return true;
             });
         }
+    }
+
+    private void saveChatAsPdf(Context context, String content) {
+        PdfDocument document = new PdfDocument();
+        PdfDocument.PageInfo pageInfo = new PdfDocument.PageInfo.Builder(595, 842, 1).create();
+        PdfDocument.Page page = document.startPage(pageInfo);
+
+        Canvas canvas = page.getCanvas();
+        Paint paint = new Paint();
+        paint.setColor(Color.BLACK);
+        paint.setTextSize(14f);
+        paint.setFakeBoldText(true);
+
+        int x = 40, y = 50;
+        canvas.drawText("AI Study Assistant - Notes", x, y, paint);
+        y += 40;
+
+        paint.setFakeBoldText(false);
+        paint.setTextSize(10f);
+        
+        String[] lines = content.split("\n");
+        for (String line : lines) {
+            if (y > 800) {
+                document.finishPage(page);
+                page = document.startPage(pageInfo);
+                canvas = page.getCanvas();
+                y = 50;
+            }
+            canvas.drawText(line, x, y, paint);
+            y += 15;
+        }
+
+        document.finishPage(page);
+
+        File downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+        String fileName = "AI_Notes_" + UUID.randomUUID().toString().substring(0, 8) + ".pdf";
+        File file = new File(downloadsDir, fileName);
+
+        try {
+            document.writeTo(new FileOutputStream(file));
+            Toast.makeText(context, "Saved to Downloads: " + fileName, Toast.LENGTH_LONG).show();
+        } catch (IOException e) {
+            Toast.makeText(context, "Error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
+        document.close();
     }
 
     @Override

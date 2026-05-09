@@ -77,13 +77,13 @@ public class ChatFragment extends Fragment {
         ChatRequest request = new ChatRequest(new ArrayList<>(apiHistory));
 
         // Show typing indicator
-        binding.tvTyping.setVisibility(View.VISIBLE);
+        binding.loadingAnimation.setVisibility(View.VISIBLE);
 
         ApiClient.getInstance().chat(authHeader, request).enqueue(new Callback<AiResponse>() {
             @Override
             public void onResponse(Call<AiResponse> call, Response<AiResponse> response) {
                 if (!isAdded()) return;
-                binding.tvTyping.setVisibility(View.GONE);
+                binding.loadingAnimation.setVisibility(View.GONE);
 
                 if (response.isSuccessful() && response.body() != null) {
                     String content = response.body().getContent();
@@ -109,7 +109,7 @@ public class ChatFragment extends Fragment {
             @Override
             public void onFailure(Call<AiResponse> call, Throwable t) {
                 if (!isAdded()) return;
-                binding.tvTyping.setVisibility(View.GONE);
+                binding.loadingAnimation.setVisibility(View.GONE);
                 Toast.makeText(getContext(), "Connection Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });

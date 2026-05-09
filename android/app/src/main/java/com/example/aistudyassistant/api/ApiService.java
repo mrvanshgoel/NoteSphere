@@ -9,6 +9,8 @@ import com.example.aistudyassistant.models.RegisterRequest;
 import com.example.aistudyassistant.models.Subject;
 import com.example.aistudyassistant.models.User;
 import com.example.aistudyassistant.models.AvatarResponse;
+import com.example.aistudyassistant.models.ShareRequest;
+import com.example.aistudyassistant.models.ShareResponse;
 
 import java.util.List;
 
