@@ -385,16 +385,34 @@ app.post('/api/ai/questions', verifyToken, async (req, res) => {
 app.post('/api/ai/chat', verifyToken, async (req, res) => {
   try {
     const { messages, systemPrompt } = req.body;
+    console.log('AI Chat request for user:', req.user.id, 'Messages:', messages?.length);
+
+    if (!process.env.GROQ_API_KEY) {
+      console.error('GROQ_API_KEY is missing from environment!');
+      return res.status(500).json({ error: 'AI Service Key missing (GROQ_API_KEY)' });
+    }
+
     const completion = await groq.chat.completions.create({
       messages: [
-        { role: 'system', content: systemPrompt || "You are an expert AI study assistant like ChatGPT. Help students understand their study material, answer questions clearly, explain concepts, and make learning engaging. Be conversational, smart and helpful." },
+        { 
+          role: 'system', 
+          content: systemPrompt || "You are an expert AI study assistant. Help students understand their study material, answer questions clearly, explain concepts, and make learning engaging." 
+        },
         ...messages
       ],
-      model: "llama3-70b-8192",
+      model: "mixtral-8x7b-32768",
+    }).catch(err => {
+      console.error('GROQ API ERROR:', err.message);
+      throw err;
     });
-    res.json({ content: completion.choices[0].message.content, role: 'assistant' });
+
+    res.json({ 
+      content: completion.choices[0].message.content, 
+      role: 'assistant' 
+    });
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    console.error('AI CHAT EXCEPTION:', err);
+    res.status(500).json({ error: 'AI Error: ' + err.message });
   }
 });
 
