@@ -7,6 +7,7 @@ import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.constraintlayout.widget.ConstraintLayout;
@@ -34,14 +35,18 @@ public final class FragmentChatBinding implements ViewBinding {
   @NonNull
   public final RecyclerView rvChat;
 
+  @NonNull
+  public final TextView tvTyping;
+
   private FragmentChatBinding(@NonNull ConstraintLayout rootView, @NonNull ImageButton btnSend,
-      @NonNull EditText etMessage, @NonNull LinearLayout layoutInput,
-      @NonNull RecyclerView rvChat) {
+      @NonNull EditText etMessage, @NonNull LinearLayout layoutInput, @NonNull RecyclerView rvChat,
+      @NonNull TextView tvTyping) {
     this.rootView = rootView;
     this.btnSend = btnSend;
     this.etMessage = etMessage;
     this.layoutInput = layoutInput;
     this.rvChat = rvChat;
+    this.tvTyping = tvTyping;
   }
 
   @Override
@@ -95,8 +100,14 @@ public final class FragmentChatBinding implements ViewBinding {
         break missingId;
       }
 
+      id = R.id.tvTyping;
+      TextView tvTyping = ViewBindings.findChildViewById(rootView, id);
+      if (tvTyping == null) {
+        break missingId;
+      }
+
       return new FragmentChatBinding((ConstraintLayout) rootView, btnSend, etMessage, layoutInput,
-          rvChat);
+          rvChat, tvTyping);
     }
     String missingId = rootView.getResources().getResourceName(id);
     throw new NullPointerException("Missing required view with ID: ".concat(missingId));

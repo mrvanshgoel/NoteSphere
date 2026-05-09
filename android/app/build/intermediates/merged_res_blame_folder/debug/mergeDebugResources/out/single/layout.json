@@ -4,71 +4,63 @@
         "source": "com.example.aistudyassistant.app-main-48:/layout/activity_splash.xml"
     },
     {
-        "merged": "C:\\Users\\Shash\\.gradle\\daemon\\9.0.0\\com.example.aistudyassistant.app-mergeDebugResources-45:\\layout\\fragment_profile.xml",
-        "source": "C:\\Users\\Shash\\.gradle\\daemon\\9.0.0\\com.example.aistudyassistant.app-main-48:\\layout\\fragment_profile.xml"
-    },
-    {
         "merged": "com.example.aistudyassistant.app-mergeDebugResources-45:/layout/activity_login.xml",
         "source": "com.example.aistudyassistant.app-main-48:/layout/activity_login.xml"
     },
     {
-        "merged": "C:\\Users\\Shash\\.gradle\\daemon\\9.0.0\\com.example.aistudyassistant.app-mergeDebugResources-45:\\layout\\fragment_chat.xml",
-        "source": "C:\\Users\\Shash\\.gradle\\daemon\\9.0.0\\com.example.aistudyassistant.app-main-48:\\layout\\fragment_chat.xml"
+        "merged": "com.example.aistudyassistant.app-mergeDebugResources-45:/layout/fragment_subjects.xml",
+        "source": "com.example.aistudyassistant.app-main-48:/layout/fragment_subjects.xml"
     },
     {
-        "merged": "C:\\Users\\Shash\\.gradle\\daemon\\9.0.0\\com.example.aistudyassistant.app-mergeDebugResources-45:\\layout\\item_subject.xml",
-        "source": "C:\\Users\\Shash\\.gradle\\daemon\\9.0.0\\com.example.aistudyassistant.app-main-48:\\layout\\item_subject.xml"
+        "merged": "com.example.aistudyassistant.app-mergeDebugResources-45:/layout/item_chat_ai.xml",
+        "source": "com.example.aistudyassistant.app-main-48:/layout/item_chat_ai.xml"
     },
     {
-        "merged": "C:\\Users\\Shash\\.gradle\\daemon\\9.0.0\\com.example.aistudyassistant.app-mergeDebugResources-45:\\layout\\fragment_upload.xml",
-        "source": "C:\\Users\\Shash\\.gradle\\daemon\\9.0.0\\com.example.aistudyassistant.app-main-48:\\layout\\fragment_upload.xml"
+        "merged": "com.example.aistudyassistant.app-mergeDebugResources-45:/layout/dialog_change_email.xml",
+        "source": "com.example.aistudyassistant.app-main-48:/layout/dialog_change_email.xml"
     },
     {
-        "merged": "C:\\Users\\Shash\\.gradle\\daemon\\9.0.0\\com.example.aistudyassistant.app-mergeDebugResources-45:\\layout\\activity_material_detail.xml",
-        "source": "C:\\Users\\Shash\\.gradle\\daemon\\9.0.0\\com.example.aistudyassistant.app-main-48:\\layout\\activity_material_detail.xml"
+        "merged": "com.example.aistudyassistant.app-mergeDebugResources-45:/layout/fragment_upload.xml",
+        "source": "com.example.aistudyassistant.app-main-48:/layout/fragment_upload.xml"
     },
     {
-        "merged": "C:\\Users\\Shash\\.gradle\\daemon\\9.0.0\\com.example.aistudyassistant.app-mergeDebugResources-45:\\layout\\item_material.xml",
-        "source": "C:\\Users\\Shash\\.gradle\\daemon\\9.0.0\\com.example.aistudyassistant.app-main-48:\\layout\\item_material.xml"
-    },
-    {
-        "merged": "C:\\Users\\Shash\\.gradle\\daemon\\9.0.0\\com.example.aistudyassistant.app-mergeDebugResources-45:\\layout\\item_chat_user.xml",
-        "source": "C:\\Users\\Shash\\.gradle\\daemon\\9.0.0\\com.example.aistudyassistant.app-main-48:\\layout\\item_chat_user.xml"
+        "merged": "com.example.aistudyassistant.app-mergeDebugResources-45:/layout/item_material.xml",
+        "source": "com.example.aistudyassistant.app-main-48:/layout/item_material.xml"
     },
     {
         "merged": "com.example.aistudyassistant.app-mergeDebugResources-45:/layout/activity_register.xml",
         "source": "com.example.aistudyassistant.app-main-48:/layout/activity_register.xml"
     },
     {
-        "merged": "C:\\Users\\Shash\\.gradle\\daemon\\9.0.0\\com.example.aistudyassistant.app-mergeDebugResources-45:\\layout\\activity_login.xml",
-        "source": "C:\\Users\\Shash\\.gradle\\daemon\\9.0.0\\com.example.aistudyassistant.app-main-48:\\layout\\activity_login.xml"
+        "merged": "com.example.aistudyassistant.app-mergeDebugResources-45:/layout/item_subject.xml",
+        "source": "com.example.aistudyassistant.app-main-48:/layout/item_subject.xml"
+    },
+    {
+        "merged": "com.example.aistudyassistant.app-mergeDebugResources-45:/layout/activity_main.xml",
+        "source": "com.example.aistudyassistant.app-main-48:/layout/activity_main.xml"
     },
     {
         "merged": "com.example.aistudyassistant.app-mergeDebugResources-45:/layout/fragment_profile.xml",
         "source": "com.example.aistudyassistant.app-main-48:/layout/fragment_profile.xml"
     },
     {
-        "merged": "C:\\Users\\Shash\\.gradle\\daemon\\9.0.0\\com.example.aistudyassistant.app-mergeDebugResources-45:\\layout\\activity_register.xml",
-        "source": "C:\\Users\\Shash\\.gradle\\daemon\\9.0.0\\com.example.aistudyassistant.app-main-48:\\layout\\activity_register.xml"
+        "merged": "com.example.aistudyassistant.app-mergeDebugResources-45:/layout/fragment_home.xml",
+        "source": "com.example.aistudyassistant.app-main-48:/layout/fragment_home.xml"
     },
     {
-        "merged": "C:\\Users\\Shash\\.gradle\\daemon\\9.0.0\\com.example.aistudyassistant.app-mergeDebugResources-45:\\layout\\activity_main.xml",
-        "source": "C:\\Users\\Shash\\.gradle\\daemon\\9.0.0\\com.example.aistudyassistant.app-main-48:\\layout\\activity_main.xml"
+        "merged": "com.example.aistudyassistant.app-mergeDebugResources-45:/layout/item_chat_user.xml",
+        "source": "com.example.aistudyassistant.app-main-48:/layout/item_chat_user.xml"
     },
     {
-        "merged": "C:\\Users\\Shash\\.gradle\\daemon\\9.0.0\\com.example.aistudyassistant.app-mergeDebugResources-45:\\layout\\activity_splash.xml",
-        "source": "C:\\Users\\Shash\\.gradle\\daemon\\9.0.0\\com.example.aistudyassistant.app-main-48:\\layout\\activity_splash.xml"
+        "merged": "com.example.aistudyassistant.app-mergeDebugResources-45:/layout/fragment_chat.xml",
+        "source": "com.example.aistudyassistant.app-main-48:/layout/fragment_chat.xml"
     },
     {
-        "merged": "C:\\Users\\Shash\\.gradle\\daemon\\9.0.0\\com.example.aistudyassistant.app-mergeDebugResources-45:\\layout\\fragment_home.xml",
-        "source": "C:\\Users\\Shash\\.gradle\\daemon\\9.0.0\\com.example.aistudyassistant.app-main-48:\\layout\\fragment_home.xml"
+        "merged": "com.example.aistudyassistant.app-mergeDebugResources-45:/layout/activity_material_detail.xml",
+        "source": "com.example.aistudyassistant.app-main-48:/layout/activity_material_detail.xml"
     },
     {
-        "merged": "C:\\Users\\Shash\\.gradle\\daemon\\9.0.0\\com.example.aistudyassistant.app-mergeDebugResources-45:\\layout\\fragment_subjects.xml",
-        "source": "C:\\Users\\Shash\\.gradle\\daemon\\9.0.0\\com.example.aistudyassistant.app-main-48:\\layout\\fragment_subjects.xml"
-    },
-    {
-        "merged": "C:\\Users\\Shash\\.gradle\\daemon\\9.0.0\\com.example.aistudyassistant.app-mergeDebugResources-45:\\layout\\item_chat_ai.xml",
-        "source": "C:\\Users\\Shash\\.gradle\\daemon\\9.0.0\\com.example.aistudyassistant.app-main-48:\\layout\\item_chat_ai.xml"
+        "merged": "com.example.aistudyassistant.app-mergeDebugResources-45:/layout/activity_account_settings.xml",
+        "source": "com.example.aistudyassistant.app-main-48:/layout/activity_account_settings.xml"
     }
 ]

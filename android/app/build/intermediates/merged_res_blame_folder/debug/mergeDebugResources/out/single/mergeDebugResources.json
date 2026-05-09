@@ -1,102 +1,94 @@
 [
     {
-        "merged": "C:\\Users\\Shash\\.gradle\\daemon\\9.0.0\\com.example.aistudyassistant.app-debug-46:\\layout_item_chat_user.xml.flat",
-        "source": "C:\\Users\\Shash\\.gradle\\daemon\\9.0.0\\com.example.aistudyassistant.app-main-48:\\layout\\item_chat_user.xml"
+        "merged": "com.example.aistudyassistant.app-debug-46:/layout_item_subject.xml.flat",
+        "source": "com.example.aistudyassistant.app-main-48:/layout/item_subject.xml"
     },
     {
         "merged": "com.example.aistudyassistant.app-debug-46:/layout_activity_login.xml.flat",
         "source": "com.example.aistudyassistant.app-main-48:/layout/activity_login.xml"
     },
     {
-        "merged": "C:\\Users\\Shash\\.gradle\\daemon\\9.0.0\\com.example.aistudyassistant.app-debug-46:\\layout_activity_splash.xml.flat",
-        "source": "C:\\Users\\Shash\\.gradle\\daemon\\9.0.0\\com.example.aistudyassistant.app-main-48:\\layout\\activity_splash.xml"
-    },
-    {
-        "merged": "C:\\Users\\Shash\\.gradle\\daemon\\9.0.0\\com.example.aistudyassistant.app-debug-46:\\drawable_ic_launcher_temp.xml.flat",
-        "source": "C:\\Users\\Shash\\.gradle\\daemon\\9.0.0\\com.example.aistudyassistant.app-main-48:\\drawable\\ic_launcher_temp.xml"
-    },
-    {
-        "merged": "C:\\Users\\Shash\\.gradle\\daemon\\9.0.0\\com.example.aistudyassistant.app-debug-46:\\layout_item_subject.xml.flat",
-        "source": "C:\\Users\\Shash\\.gradle\\daemon\\9.0.0\\com.example.aistudyassistant.app-main-48:\\layout\\item_subject.xml"
-    },
-    {
-        "merged": "C:\\Users\\Shash\\.gradle\\daemon\\9.0.0\\com.example.aistudyassistant.app-debug-46:\\layout_fragment_subjects.xml.flat",
-        "source": "C:\\Users\\Shash\\.gradle\\daemon\\9.0.0\\com.example.aistudyassistant.app-main-48:\\layout\\fragment_subjects.xml"
-    },
-    {
-        "merged": "C:\\Users\\Shash\\.gradle\\daemon\\9.0.0\\com.example.aistudyassistant.app-debug-46:\\layout_activity_main.xml.flat",
-        "source": "C:\\Users\\Shash\\.gradle\\daemon\\9.0.0\\com.example.aistudyassistant.app-main-48:\\layout\\activity_main.xml"
-    },
-    {
-        "merged": "C:\\Users\\Shash\\.gradle\\daemon\\9.0.0\\com.example.aistudyassistant.app-debug-46:\\layout_fragment_upload.xml.flat",
-        "source": "C:\\Users\\Shash\\.gradle\\daemon\\9.0.0\\com.example.aistudyassistant.app-main-48:\\layout\\fragment_upload.xml"
-    },
-    {
-        "merged": "C:\\Users\\Shash\\.gradle\\daemon\\9.0.0\\com.example.aistudyassistant.app-debug-46:\\layout_activity_material_detail.xml.flat",
-        "source": "C:\\Users\\Shash\\.gradle\\daemon\\9.0.0\\com.example.aistudyassistant.app-main-48:\\layout\\activity_material_detail.xml"
-    },
-    {
-        "merged": "C:\\Users\\Shash\\.gradle\\daemon\\9.0.0\\com.example.aistudyassistant.app-debug-46:\\drawable_badge_bg.xml.flat",
-        "source": "C:\\Users\\Shash\\.gradle\\daemon\\9.0.0\\com.example.aistudyassistant.app-main-48:\\drawable\\badge_bg.xml"
-    },
-    {
-        "merged": "C:\\Users\\Shash\\.gradle\\daemon\\9.0.0\\com.example.aistudyassistant.app-debug-46:\\layout_fragment_profile.xml.flat",
-        "source": "C:\\Users\\Shash\\.gradle\\daemon\\9.0.0\\com.example.aistudyassistant.app-main-48:\\layout\\fragment_profile.xml"
-    },
-    {
-        "merged": "C:\\Users\\Shash\\.gradle\\daemon\\9.0.0\\com.example.aistudyassistant.app-debug-46:\\layout_activity_register.xml.flat",
-        "source": "C:\\Users\\Shash\\.gradle\\daemon\\9.0.0\\com.example.aistudyassistant.app-main-48:\\layout\\activity_register.xml"
-    },
-    {
         "merged": "com.example.aistudyassistant.app-debug-46:/layout_activity_splash.xml.flat",
         "source": "com.example.aistudyassistant.app-main-48:/layout/activity_splash.xml"
     },
     {
-        "merged": "C:\\Users\\Shash\\.gradle\\daemon\\9.0.0\\com.example.aistudyassistant.app-debug-46:\\layout_activity_login.xml.flat",
-        "source": "C:\\Users\\Shash\\.gradle\\daemon\\9.0.0\\com.example.aistudyassistant.app-main-48:\\layout\\activity_login.xml"
+        "merged": "com.example.aistudyassistant.app-debug-46:/layout_fragment_chat.xml.flat",
+        "source": "com.example.aistudyassistant.app-main-48:/layout/fragment_chat.xml"
     },
     {
-        "merged": "C:\\Users\\Shash\\.gradle\\daemon\\9.0.0\\com.example.aistudyassistant.app-debug-46:\\layout_fragment_chat.xml.flat",
-        "source": "C:\\Users\\Shash\\.gradle\\daemon\\9.0.0\\com.example.aistudyassistant.app-main-48:\\layout\\fragment_chat.xml"
+        "merged": "com.example.aistudyassistant.app-debug-46:/layout_dialog_change_email.xml.flat",
+        "source": "com.example.aistudyassistant.app-main-48:/layout/dialog_change_email.xml"
     },
     {
-        "merged": "C:\\Users\\Shash\\.gradle\\daemon\\9.0.0\\com.example.aistudyassistant.app-debug-46:\\menu_bottom_nav_menu.xml.flat",
-        "source": "C:\\Users\\Shash\\.gradle\\daemon\\9.0.0\\com.example.aistudyassistant.app-main-48:\\menu\\bottom_nav_menu.xml"
+        "merged": "com.example.aistudyassistant.app-debug-46:/layout_item_material.xml.flat",
+        "source": "com.example.aistudyassistant.app-main-48:/layout/item_material.xml"
     },
     {
-        "merged": "C:\\Users\\Shash\\.gradle\\daemon\\9.0.0\\com.example.aistudyassistant.app-debug-46:\\drawable_user_bubble_bg.xml.flat",
-        "source": "C:\\Users\\Shash\\.gradle\\daemon\\9.0.0\\com.example.aistudyassistant.app-main-48:\\drawable\\user_bubble_bg.xml"
+        "merged": "com.example.aistudyassistant.app-debug-46:/drawable_badge_bg.xml.flat",
+        "source": "com.example.aistudyassistant.app-main-48:/drawable/badge_bg.xml"
     },
     {
-        "merged": "C:\\Users\\Shash\\.gradle\\daemon\\9.0.0\\com.example.aistudyassistant.app-debug-46:\\drawable_ai_bubble_bg.xml.flat",
-        "source": "C:\\Users\\Shash\\.gradle\\daemon\\9.0.0\\com.example.aistudyassistant.app-main-48:\\drawable\\ai_bubble_bg.xml"
+        "merged": "com.example.aistudyassistant.app-debug-46:/layout_item_chat_ai.xml.flat",
+        "source": "com.example.aistudyassistant.app-main-48:/layout/item_chat_ai.xml"
+    },
+    {
+        "merged": "com.example.aistudyassistant.app-debug-46:/drawable_circle_bg.xml.flat",
+        "source": "com.example.aistudyassistant.app-main-48:/drawable/circle_bg.xml"
+    },
+    {
+        "merged": "com.example.aistudyassistant.app-debug-46:/drawable_ai_bubble_bg.xml.flat",
+        "source": "com.example.aistudyassistant.app-main-48:/drawable/ai_bubble_bg.xml"
+    },
+    {
+        "merged": "com.example.aistudyassistant.app-debug-46:/layout_item_chat_user.xml.flat",
+        "source": "com.example.aistudyassistant.app-main-48:/layout/item_chat_user.xml"
+    },
+    {
+        "merged": "com.example.aistudyassistant.app-debug-46:/drawable_ic_launcher_temp.xml.flat",
+        "source": "com.example.aistudyassistant.app-main-48:/drawable/ic_launcher_temp.xml"
+    },
+    {
+        "merged": "com.example.aistudyassistant.app-debug-46:/drawable_user_bubble_bg.xml.flat",
+        "source": "com.example.aistudyassistant.app-main-48:/drawable/user_bubble_bg.xml"
+    },
+    {
+        "merged": "com.example.aistudyassistant.app-debug-46:/layout_activity_main.xml.flat",
+        "source": "com.example.aistudyassistant.app-main-48:/layout/activity_main.xml"
+    },
+    {
+        "merged": "com.example.aistudyassistant.app-debug-46:/layout_fragment_upload.xml.flat",
+        "source": "com.example.aistudyassistant.app-main-48:/layout/fragment_upload.xml"
     },
     {
         "merged": "com.example.aistudyassistant.app-debug-46:/layout_fragment_profile.xml.flat",
         "source": "com.example.aistudyassistant.app-main-48:/layout/fragment_profile.xml"
     },
     {
-        "merged": "C:\\Users\\Shash\\.gradle\\daemon\\9.0.0\\com.example.aistudyassistant.app-debug-46:\\drawable_circle_bg.xml.flat",
-        "source": "C:\\Users\\Shash\\.gradle\\daemon\\9.0.0\\com.example.aistudyassistant.app-main-48:\\drawable\\circle_bg.xml"
-    },
-    {
         "merged": "com.example.aistudyassistant.app-debug-46:/layout_activity_register.xml.flat",
         "source": "com.example.aistudyassistant.app-main-48:/layout/activity_register.xml"
     },
     {
-        "merged": "C:\\Users\\Shash\\.gradle\\daemon\\9.0.0\\com.example.aistudyassistant.app-debug-46:\\layout_item_chat_ai.xml.flat",
-        "source": "C:\\Users\\Shash\\.gradle\\daemon\\9.0.0\\com.example.aistudyassistant.app-main-48:\\layout\\item_chat_ai.xml"
-    },
-    {
-        "merged": "C:\\Users\\Shash\\.gradle\\daemon\\9.0.0\\com.example.aistudyassistant.app-debug-46:\\layout_fragment_home.xml.flat",
-        "source": "C:\\Users\\Shash\\.gradle\\daemon\\9.0.0\\com.example.aistudyassistant.app-main-48:\\layout\\fragment_home.xml"
+        "merged": "com.example.aistudyassistant.app-debug-46:/layout_activity_material_detail.xml.flat",
+        "source": "com.example.aistudyassistant.app-main-48:/layout/activity_material_detail.xml"
     },
     {
         "merged": "com.example.aistudyassistant.app-debug-46:/drawable_premium_gradient_bg.xml.flat",
         "source": "com.example.aistudyassistant.app-main-48:/drawable/premium_gradient_bg.xml"
     },
     {
-        "merged": "C:\\Users\\Shash\\.gradle\\daemon\\9.0.0\\com.example.aistudyassistant.app-debug-46:\\layout_item_material.xml.flat",
-        "source": "C:\\Users\\Shash\\.gradle\\daemon\\9.0.0\\com.example.aistudyassistant.app-main-48:\\layout\\item_material.xml"
+        "merged": "com.example.aistudyassistant.app-debug-46:/menu_bottom_nav_menu.xml.flat",
+        "source": "com.example.aistudyassistant.app-main-48:/menu/bottom_nav_menu.xml"
+    },
+    {
+        "merged": "com.example.aistudyassistant.app-debug-46:/layout_fragment_subjects.xml.flat",
+        "source": "com.example.aistudyassistant.app-main-48:/layout/fragment_subjects.xml"
+    },
+    {
+        "merged": "com.example.aistudyassistant.app-debug-46:/layout_fragment_home.xml.flat",
+        "source": "com.example.aistudyassistant.app-main-48:/layout/fragment_home.xml"
+    },
+    {
+        "merged": "com.example.aistudyassistant.app-debug-46:/layout_activity_account_settings.xml.flat",
+        "source": "com.example.aistudyassistant.app-main-48:/layout/activity_account_settings.xml"
     }
 ]

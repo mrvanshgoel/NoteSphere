@@ -56,8 +56,7 @@ public class LoginActivity extends AppCompatActivity {
                     
                     String name = user.getName();
                     String email = user.getEmail();
-                    String avatar = (user.getUser() != null && user.getUser().getUserMetadata() != null) 
-                            ? user.getUser().getUserMetadata().getAvatarUrl() : null;
+                    String avatar = user.getAvatarUrl();
                     
                     pref.saveUserInfo(name, email, avatar);
 

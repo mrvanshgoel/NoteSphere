@@ -60,8 +60,7 @@ public class RegisterActivity extends AppCompatActivity {
                     
                     String userName = user.getName();
                     String userEmail = user.getEmail();
-                    String avatar = (user.getUser() != null && user.getUser().getUserMetadata() != null) 
-                            ? user.getUser().getUserMetadata().getAvatarUrl() : null;
+                    String avatar = user.getAvatarUrl();
                     
                     pref.saveUserInfo(userName, userEmail, avatar);
 

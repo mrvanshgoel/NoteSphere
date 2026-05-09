@@ -3257,8 +3257,8 @@ id bounce
 id bounceBoth
 id bounceEnd
 id bounceStart
+id btnChangeEmail
 id btnCopy
-id btnEditProfile
 id btnLogin
 id btnLogout
 id btnNotes
@@ -3266,6 +3266,7 @@ id btnPickFile
 id btnQuestions
 id btnQuickUpload
 id btnRegister
+id btnSave
 id btnSend
 id btnShare
 id btnSummary
@@ -3274,6 +3275,7 @@ id buttonPanel
 id cache_measures
 id callMeasure
 id cancel_button
+id cardAvatar
 id cardLogin
 id cardRegister
 id cardResult
@@ -3360,11 +3362,13 @@ id etConfirmPassword
 id etEmail
 id etMessage
 id etName
+id etNewEmail
 id etPassword
 id exitUntilCollapsed
 id expand_activities_button
 id expanded_menu
 id fabAdd
+id fabEditAvatar
 id fade
 id fill
 id fill_horizontal
@@ -3670,6 +3674,7 @@ id title
 id titleDividerNoCustom
 id title_template
 id toggle
+id toolbar
 id top
 id topPanel
 id touch_outside
@@ -3687,7 +3692,6 @@ id triangle
 id tvContent
 id tvCount
 id tvDate
-id tvEmail
 id tvEmpty
 id tvFileName
 id tvForgotPassword
@@ -3702,6 +3706,7 @@ id tvSubjectCount
 id tvSubtitle
 id tvTitle
 id tvTypeIcon
+id tvTyping
 id tvWelcome
 id unchecked
 id uniform
@@ -3842,6 +3847,7 @@ layout abc_search_dropdown_item_icons_2line
 layout abc_search_view
 layout abc_select_dialog_material
 layout abc_tooltip
+layout activity_account_settings
 layout activity_login
 layout activity_main
 layout activity_material_detail
@@ -3863,6 +3869,7 @@ layout design_navigation_menu
 layout design_navigation_menu_item
 layout design_text_input_end_icon
 layout design_text_input_start_icon
+layout dialog_change_email
 layout fragment_chat
 layout fragment_home
 layout fragment_profile

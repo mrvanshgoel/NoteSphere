@@ -43,6 +43,7 @@
         <activity android:name="com.example.aistudyassistant.activities.RegisterActivity" />
         <activity android:name="com.example.aistudyassistant.activities.MainActivity" />
         <activity android:name="com.example.aistudyassistant.activities.MaterialDetailActivity" />
+        <activity android:name="com.example.aistudyassistant.activities.AccountSettingsActivity" />
 
         <provider
             android:name="androidx.startup.InitializationProvider"

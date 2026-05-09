@@ -5,7 +5,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -13,52 +13,69 @@ import androidx.viewbinding.ViewBinding;
 import androidx.viewbinding.ViewBindings;
 import com.example.aistudyassistant.R;
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.card.MaterialCardView;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.android.material.textfield.TextInputEditText;
 import java.lang.NullPointerException;
 import java.lang.Override;
 import java.lang.String;
 
 public final class FragmentProfileBinding implements ViewBinding {
   @NonNull
-  private final LinearLayout rootView;
+  private final ScrollView rootView;
 
   @NonNull
-  public final MaterialButton btnEditProfile;
+  public final MaterialButton btnChangeEmail;
 
   @NonNull
   public final MaterialButton btnLogout;
 
   @NonNull
-  public final ImageView ivProfile;
+  public final MaterialButton btnSave;
 
   @NonNull
-  public final TextView tvEmail;
+  public final MaterialCardView cardAvatar;
+
+  @NonNull
+  public final TextInputEditText etEmail;
+
+  @NonNull
+  public final TextInputEditText etName;
+
+  @NonNull
+  public final FloatingActionButton fabEditAvatar;
+
+  @NonNull
+  public final ImageView ivProfile;
 
   @NonNull
   public final TextView tvMaterialCount;
 
   @NonNull
-  public final TextView tvName;
-
-  @NonNull
   public final TextView tvSubjectCount;
 
-  private FragmentProfileBinding(@NonNull LinearLayout rootView,
-      @NonNull MaterialButton btnEditProfile, @NonNull MaterialButton btnLogout,
-      @NonNull ImageView ivProfile, @NonNull TextView tvEmail, @NonNull TextView tvMaterialCount,
-      @NonNull TextView tvName, @NonNull TextView tvSubjectCount) {
+  private FragmentProfileBinding(@NonNull ScrollView rootView,
+      @NonNull MaterialButton btnChangeEmail, @NonNull MaterialButton btnLogout,
+      @NonNull MaterialButton btnSave, @NonNull MaterialCardView cardAvatar,
+      @NonNull TextInputEditText etEmail, @NonNull TextInputEditText etName,
+      @NonNull FloatingActionButton fabEditAvatar, @NonNull ImageView ivProfile,
+      @NonNull TextView tvMaterialCount, @NonNull TextView tvSubjectCount) {
     this.rootView = rootView;
-    this.btnEditProfile = btnEditProfile;
+    this.btnChangeEmail = btnChangeEmail;
     this.btnLogout = btnLogout;
+    this.btnSave = btnSave;
+    this.cardAvatar = cardAvatar;
+    this.etEmail = etEmail;
+    this.etName = etName;
+    this.fabEditAvatar = fabEditAvatar;
     this.ivProfile = ivProfile;
-    this.tvEmail = tvEmail;
     this.tvMaterialCount = tvMaterialCount;
-    this.tvName = tvName;
     this.tvSubjectCount = tvSubjectCount;
   }
 
   @Override
   @NonNull
-  public LinearLayout getRoot() {
+  public ScrollView getRoot() {
     return rootView;
   }
 
@@ -83,9 +100,9 @@ public final class FragmentProfileBinding implements ViewBinding {
     // This is done to optimize the compiled bytecode for size and performance.
     int id;
     missingId: {
-      id = R.id.btnEditProfile;
-      MaterialButton btnEditProfile = ViewBindings.findChildViewById(rootView, id);
-      if (btnEditProfile == null) {
+      id = R.id.btnChangeEmail;
+      MaterialButton btnChangeEmail = ViewBindings.findChildViewById(rootView, id);
+      if (btnChangeEmail == null) {
         break missingId;
       }
 
@@ -95,15 +112,39 @@ public final class FragmentProfileBinding implements ViewBinding {
         break missingId;
       }
 
-      id = R.id.ivProfile;
-      ImageView ivProfile = ViewBindings.findChildViewById(rootView, id);
-      if (ivProfile == null) {
+      id = R.id.btnSave;
+      MaterialButton btnSave = ViewBindings.findChildViewById(rootView, id);
+      if (btnSave == null) {
         break missingId;
       }
 
-      id = R.id.tvEmail;
-      TextView tvEmail = ViewBindings.findChildViewById(rootView, id);
-      if (tvEmail == null) {
+      id = R.id.cardAvatar;
+      MaterialCardView cardAvatar = ViewBindings.findChildViewById(rootView, id);
+      if (cardAvatar == null) {
+        break missingId;
+      }
+
+      id = R.id.etEmail;
+      TextInputEditText etEmail = ViewBindings.findChildViewById(rootView, id);
+      if (etEmail == null) {
+        break missingId;
+      }
+
+      id = R.id.etName;
+      TextInputEditText etName = ViewBindings.findChildViewById(rootView, id);
+      if (etName == null) {
+        break missingId;
+      }
+
+      id = R.id.fabEditAvatar;
+      FloatingActionButton fabEditAvatar = ViewBindings.findChildViewById(rootView, id);
+      if (fabEditAvatar == null) {
+        break missingId;
+      }
+
+      id = R.id.ivProfile;
+      ImageView ivProfile = ViewBindings.findChildViewById(rootView, id);
+      if (ivProfile == null) {
         break missingId;
       }
 
@@ -113,20 +154,14 @@ public final class FragmentProfileBinding implements ViewBinding {
         break missingId;
       }
 
-      id = R.id.tvName;
-      TextView tvName = ViewBindings.findChildViewById(rootView, id);
-      if (tvName == null) {
-        break missingId;
-      }
-
       id = R.id.tvSubjectCount;
       TextView tvSubjectCount = ViewBindings.findChildViewById(rootView, id);
       if (tvSubjectCount == null) {
         break missingId;
       }
 
-      return new FragmentProfileBinding((LinearLayout) rootView, btnEditProfile, btnLogout,
-          ivProfile, tvEmail, tvMaterialCount, tvName, tvSubjectCount);
+      return new FragmentProfileBinding((ScrollView) rootView, btnChangeEmail, btnLogout, btnSave,
+          cardAvatar, etEmail, etName, fabEditAvatar, ivProfile, tvMaterialCount, tvSubjectCount);
     }
     String missingId = rootView.getResources().getResourceName(id);
     throw new NullPointerException("Missing required view with ID: ".concat(missingId));
