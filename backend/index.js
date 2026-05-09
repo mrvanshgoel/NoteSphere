@@ -14,14 +14,16 @@ const port = process.env.PORT || 5000;
 // Initialize Supabase
 const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!supabaseUrl) {
-  console.error("ERROR: SUPABASE_URL is missing from environment variables!");
+  console.error("ERROR: SUPABASE_URL is missing!");
 }
 
+// Use Service Role Key if available for administrative actions/robustness
 const supabase = createClient(
   supabaseUrl,
-  supabaseKey
+  serviceRoleKey || supabaseKey
 );
 
 // Initialize Groq
@@ -44,13 +46,15 @@ const verifyToken = async (req, res, next) => {
     const { data: { user }, error } = await supabase.auth.getUser(token);
 
     if (error || !user) {
-      return res.status(401).json({ error: 'Invalid or expired token' });
+      console.error('Auth verification failed:', error?.message);
+      return res.status(401).json({ error: 'Invalid or expired token. Please login again.' });
     }
 
     req.user = user;
     next();
   } catch (err) {
-    res.status(500).json({ error: 'Authentication error' });
+    console.error('VerifyToken exception:', err);
+    res.status(401).json({ error: 'Authentication failed' });
   }
 };
 
