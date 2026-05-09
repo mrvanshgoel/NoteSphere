@@ -256,6 +256,20 @@ app.post('/api/auth/upload-avatar', verifyToken, upload.single('avatar'), async 
   }
 });
 
+app.delete('/api/auth/avatar', verifyToken, async (req, res) => {
+  try {
+    const { error } = await supabaseAdmin
+      .from('profiles')
+      .update({ avatar_url: null, updated_at: new Date() })
+      .eq('id', req.user.id);
+
+    if (error) throw error;
+    res.json({ success: true, message: 'Avatar removed' });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
 // 4. SUBJECTS ROUTES
 app.get('/api/subjects', verifyToken, async (req, res) => {
   try {

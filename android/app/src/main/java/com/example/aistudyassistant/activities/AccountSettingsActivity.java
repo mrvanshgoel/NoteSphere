@@ -44,7 +44,37 @@ public class AccountSettingsActivity extends AppCompatActivity {
 
         refreshUI();
         binding.ivProfile.setOnClickListener(v -> pickImage());
+        binding.tvRemoveAvatar.setOnClickListener(v -> removeAvatar());
         binding.btnSave.setOnClickListener(v -> saveSettings());
+    }
+
+    private void removeAvatar() {
+        binding.progressBar.setVisibility(android.view.View.VISIBLE);
+        String token = "Bearer " + pref.getToken();
+        
+        ApiClient.getInstance().deleteAvatar(token).enqueue(new Callback<Void>() {
+            @Override
+            public void onResponse(Call<Void> call, Response<Void> response) {
+                if (isFinishing() || isDestroyed() || binding == null) return;
+                binding.progressBar.setVisibility(android.view.View.GONE);
+                if (response.isSuccessful()) {
+                    pref.saveAvatarUrl(null);
+                    runOnUiThread(() -> {
+                        binding.ivProfile.setImageResource(R.drawable.ic_launcher_temp);
+                        Toast.makeText(AccountSettingsActivity.this, "Avatar removed", Toast.LENGTH_SHORT).show();
+                    });
+                } else {
+                    Toast.makeText(AccountSettingsActivity.this, "Failed to remove avatar", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<Void> call, Throwable t) {
+                if (isFinishing() || isDestroyed() || binding == null) return;
+                binding.progressBar.setVisibility(android.view.View.GONE);
+                Toast.makeText(AccountSettingsActivity.this, "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void refreshUI() {

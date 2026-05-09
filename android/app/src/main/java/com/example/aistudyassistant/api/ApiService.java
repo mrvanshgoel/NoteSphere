@@ -48,6 +48,9 @@ public interface ApiService {
             @Part MultipartBody.Part avatar
     );
 
+    @DELETE("api/auth/avatar")
+    Call<Void> deleteAvatar(@Header("Authorization") String token);
+
     // Subjects
     @GET("api/subjects")
     Call<List<Subject>> getSubjects(@Header("Authorization") String token);
