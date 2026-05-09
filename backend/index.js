@@ -370,12 +370,13 @@ app.post('/api/ai/notes', verifyToken, async (req, res) => {
   }
 });
 
-app.post('/api/ai/questions', verifyToken, async (req, res) => {
-  try {
-    const { text } = req.body;
-    const completion = await groq.chat.completions.create({
-      messages: [{ role: 'user', content: `Generate 10 practice questions with answers from this study material: ${text}` }],
-      model: "llama-3.1-8b-instant",
+    const completion = await gemini.generateContent(`Generate 10 practice questions with answers from this study material: ${text}`);
+    res.json({ content: completion.response.text() });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
 // 6. P2P SHARING ROUTE
 app.post('/api/share/generate', verifyToken, async (req, res) => {
   try {
@@ -392,15 +393,17 @@ app.post('/api/share/generate', verifyToken, async (req, res) => {
     if (mError || !material) throw new Error('Material not found');
 
     // 2. Generate a long-lived signed URL (7 days)
+    // Extract file path from URL or use stored path
+    const filePath = material.url.split('/').pop();
     const { data: signData, error: sError } = await supabase.storage
       .from('materials')
-      .createSignedUrl(material.file_url.split('/').pop(), 60 * 60 * 24 * 7);
+      .createSignedUrl(filePath, 60 * 60 * 24 * 7);
 
     if (sError) throw sError;
 
     res.json({ 
       shareUrl: signData.signedUrl,
-      name: material.title,
+      name: material.name,
       expiresIn: '7 days'
     });
   } catch (err) {
@@ -409,7 +412,6 @@ app.post('/api/share/generate', verifyToken, async (req, res) => {
 });
 
 // 7. GEMINI AI ROUTES
-
 app.post('/api/ai/chat', verifyToken, async (req, res) => {
   try {
     const { messages, systemPrompt } = req.body;
@@ -418,7 +420,6 @@ app.post('/api/ai/chat', verifyToken, async (req, res) => {
 
     console.log('Gemini Chat request:', lastUserMessage);
 
-    // Prepare history for Gemini
     const chat = gemini.startChat({
       history: messages.slice(0, -1).map(m => ({
         role: m.role === 'assistant' ? 'model' : 'user',
@@ -429,7 +430,6 @@ app.post('/api/ai/chat', verifyToken, async (req, res) => {
 
     const prompt = `System Instructions: ${systemPrompt || "You are an expert study assistant."}
     Current Time: ${currentDate}.
-    If the user asks for real-time info, use your built-in search capabilities.
     User Question: ${lastUserMessage}`;
 
     const result = await chat.sendMessage(prompt);
@@ -456,16 +456,6 @@ app.post('/api/ai/notes', verifyToken, async (req, res) => {
   try {
     const { text } = req.body;
     const result = await gemini.generateContent(`Create detailed study notes with key points, definitions and important concepts from: ${text}`);
-    res.json({ content: result.response.text() });
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-});
-
-app.post('/api/ai/questions', verifyToken, async (req, res) => {
-  try {
-    const { text } = req.body;
-    const result = await gemini.generateContent(`Generate 10 practice questions with answers from this study material: ${text}`);
     res.json({ content: result.response.text() });
   } catch (err) {
     res.status(400).json({ error: err.message });
