@@ -136,8 +136,13 @@ function getActiveModelInfo() {
   };
 }
 
+function getModel() {
+  return genAI.getGenerativeModel({ model: activeModelName || 'gemini-1.5-flash' });
+}
+
 module.exports = {
   discoverModels,
   generateWithFallback,
-  getActiveModelInfo
+  getActiveModelInfo,
+  getModel
 };

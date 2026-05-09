@@ -1,25 +1,45 @@
 
 const pdfParse = require('pdf-parse');
-const { GoogleGenerativeAI } = require('@google/generative-ai');
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const { getModel, generateWithFallback } = require('./ai_model_manager');
 
 /**
- * Extracts text from a file buffer (currently supports PDF).
- * Can be extended for PPT/DOCX later.
+ * Extracts text from a file buffer (supports PDF, Images, Text).
  */
 async function extractTextFromBuffer(buffer, mimeType) {
     if (mimeType === 'application/pdf') {
         try {
-            const data = await pdfParse(buffer);
+            // Some environments require pdfParse.default or just pdfParse
+            const parse = typeof pdfParse === 'function' ? pdfParse : pdfParse.default;
+            if (typeof parse !== 'function') throw new Error("pdf-parse is not a function");
+            
+            const data = await parse(buffer);
             return data.text;
         } catch (error) {
-            console.error("PDF Extraction Error:", error);
-            throw new Error("Failed to extract text from PDF");
+            console.error("PDF Extraction Error:", error.message);
+            throw new Error("Failed to extract text from PDF: " + error.message);
+        }
+    } else if (mimeType.startsWith('image/')) {
+        try {
+            console.log(`[OCR] Extracting text from image: ${mimeType}`);
+            // For images, we use Gemini's vision capabilities
+            const base64Image = buffer.toString('base64');
+            const prompt = "Extract all text from this image as accurately as possible. If it's a study material, maintain the structure. Return ONLY the extracted text.";
+            
+            const model = getModel(); // get the active model (must be a vision capable model like flash)
+            const result = await model.generateContent([
+                prompt,
+                { inlineData: { data: base64Image, mimeType } }
+            ]);
+            
+            return result.response.text();
+        } catch (error) {
+            console.error("Image OCR Error:", error.message);
+            throw new Error("Failed to extract text from image: " + error.message);
         }
     } else if (mimeType.startsWith('text/')) {
         return buffer.toString('utf-8');
     }
-    // Fallback or throw error for unsupported types
+    
     throw new Error(`Text extraction not supported for ${mimeType}`);
 }
 
