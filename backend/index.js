@@ -245,8 +245,76 @@ app.delete('/api/folders/:id', verifyToken, async (req, res) => {
 });
 
 // ═══════════════════════════════════════════════════════════
-// SUBJECTS (Keep existing ones, but add delete rename)
+// SUBJECTS
 // ═══════════════════════════════════════════════════════════
+
+app.get('/api/subjects', verifyToken, async (req, res) => {
+  console.log(`[Subjects GET] Fetching for UID: ${req.user.id}`);
+  try {
+    const snapshot = await db.collection('subjects')
+      .where('userId', '==', req.user.id)
+      .orderBy('createdAt', 'desc')
+      .get();
+    const subjects = [];
+    snapshot.forEach(doc => subjects.push(formatDoc(doc)));
+    console.log(`[Subjects GET] Found ${subjects.length} subjects (ordered).`);
+    res.json(subjects);
+  } catch (err) {
+    // Fallback without ordering if composite index is missing
+    console.warn(`[Subjects GET] Ordered query failed (index missing?): ${err.message}. Retrying without orderBy.`);
+    try {
+      const snapshot = await db.collection('subjects')
+        .where('userId', '==', req.user.id)
+        .get();
+      const subjects = [];
+      snapshot.forEach(doc => subjects.push(formatDoc(doc)));
+      // Sort in memory so ordering is consistent even without the index
+      subjects.sort((a, b) => {
+        const tA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const tB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return tB - tA;
+      });
+      console.log(`[Subjects GET] Fallback returned ${subjects.length} subjects.`);
+      res.json(subjects);
+    } catch (innerErr) {
+      console.error(`[Subjects GET] Both queries failed:`, innerErr.message);
+      res.status(400).json({ error: innerErr.message });
+    }
+  }
+});
+
+app.post('/api/subjects', verifyToken, async (req, res) => {
+  try {
+    const { name, color, icon } = req.body;
+    if (!name) return res.status(400).json({ error: 'Subject name is required' });
+    const docRef = await db.collection('subjects').add({
+      name,
+      color: color || '#6C63FF',
+      icon: icon || '📚',
+      userId: req.user.id,
+      createdAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+    const newDoc = await docRef.get();
+    res.status(201).json(formatDoc(newDoc));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/subjects/:id', verifyToken, async (req, res) => {
+  try {
+    const subjectId = req.params.id;
+    // Verify ownership
+    const doc = await db.collection('subjects').doc(subjectId).get();
+    if (!doc.exists) return res.status(404).json({ error: 'Subject not found' });
+    if (doc.data().userId !== req.user.id) return res.status(403).json({ error: 'Forbidden' });
+
+    await db.collection('subjects').doc(subjectId).delete();
+    res.json({ success: true });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
 
 app.put('/api/subjects/:id', verifyToken, async (req, res) => {
   try {
@@ -383,52 +451,65 @@ app.post('/api/ai/chat', verifyToken, async (req, res) => {
     const { message, history = [], chatId, materialId } = req.body;
     if (!message) return res.status(400).json({ error: 'Message required' });
 
-    console.log(`[AI Chat] Request: ${message} (ChatId: ${chatId})`);
+    console.log(`[AI Chat] Request: ${message} (ChatId: ${chatId || 'NEW'})`);
     
     let context = "";
     if (materialId) {
       try {
         context = await getMaterialText(materialId, req.user.id);
-        console.log(`[AI Chat] Using context from material: ${materialId}`);
       } catch (e) {
         console.warn('Failed to fetch context for chat:', e.message);
       }
     }
 
-    const developerInfo = `
-Developer Info:
-- Name: Vansh Goel
-- Age: 19 (Born May 30, 2006)
-- Background: Pursuing BCA (Hons. with Research) in Multimedia & Animation from Galgotias University.
-- Origin: Meerut, Uttar Pradesh, India.
-- Profile: Tech & creative enthusiast, graphic designer, UI/UX freelancer.
-`;
-
     const systemPrompt = `You are Notesphere AI, a deeply integrated Study Operating System assistant. 
 Your goal is to be a student's 'Second Brain', inspired by systems like NotebookLM.
 Be proactive, smart, and academic yet encouraging. 
 
-${developerInfo}
+Developer Info:
+- Name: Vansh Goel
+- Background: BCA (Hons.) student at Galgotias University.
 
-When asked about your origin or creator, mention Vansh Goel with pride.
 Always prioritize providing context-aware answers based on the student's study materials.`;
+    
     const contextSection = context ? `\n\n[CONTEXT FROM ATTACHED FILE]:\n${context.substring(0, 10000)}` : "";
     
-    // Clean history
-    const validatedHistory = (history || [])
+    let validatedHistory = (history || [])
       .filter(m => m.content && m.content.trim() !== '')
       .map(m => ({
         role: m.role === 'assistant' ? 'model' : 'user',
         parts: [{ text: m.content }]
       }));
 
+    while (validatedHistory.length > 0 && validatedHistory[0].role === 'model') {
+      validatedHistory.shift();
+    }
+
     const result = await generateWithFallback(`${systemPrompt}${contextSection}\n\nUser: ${message}`, validatedHistory);
     const responseText = result.text;
     
-    // Auto-save chat if chatId is provided or this is a new session
-    let savedChatId = chatId;
-    if (savedChatId) {
-      const chatRef = db.collection('chats').doc(savedChatId);
+    let finalChatId = chatId;
+    
+    // If no chatId, this is the first message -> Create the session now
+    if (!finalChatId) {
+      // Generate intelligent title from first message
+      let title = message.trim();
+      if (title.length > 35) title = title.substring(0, 32) + "...";
+      
+      const docRef = await db.collection('chats').add({
+        userId: req.user.id,
+        title,
+        messages: [
+          { role: 'user', content: message, timestamp: new Date().toISOString() },
+          { role: 'assistant', content: responseText, timestamp: new Date().toISOString(), model: result.modelUsed }
+        ],
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+      finalChatId = docRef.id;
+    } else {
+      // Update existing
+      const chatRef = db.collection('chats').doc(finalChatId);
       await chatRef.update({
         messages: admin.firestore.FieldValue.arrayUnion(
           { role: 'user', content: message, timestamp: new Date().toISOString() },
@@ -442,7 +523,7 @@ Always prioritize providing context-aware answers based on the student's study m
       content: responseText, 
       role: 'assistant', 
       model: result.modelUsed,
-      chatId: savedChatId
+      chatId: finalChatId
     });
   } catch (err) {
     console.error('[AI Chat Error]', err.message);
@@ -456,27 +537,37 @@ Always prioritize providing context-aware answers based on the student's study m
 
 app.get('/api/ai/chats', verifyToken, async (req, res) => {
   try {
-    let chats = [];
+    let rawChats = [];
     try {
       const snapshot = await db.collection('chats')
         .where('userId', '==', req.user.id)
         .orderBy('updatedAt', 'desc')
         .get();
-      snapshot.forEach(doc => chats.push(formatDoc(doc)));
+      snapshot.forEach(doc => rawChats.push(formatDoc(doc)));
     } catch (indexError) {
-      console.warn('[Firestore] Chat history index might be missing, falling back to client-side sort:', indexError.message);
       const snapshot = await db.collection('chats')
         .where('userId', '==', req.user.id)
         .get();
-      snapshot.forEach(doc => chats.push(formatDoc(doc)));
-      // Robust manual sort fallback
-      chats.sort((a, b) => {
+      snapshot.forEach(doc => rawChats.push(formatDoc(doc)));
+      rawChats.sort((a, b) => {
         const timeA = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
         const timeB = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
         return timeB - timeA;
       });
     }
-    res.json(chats);
+
+    // Filter out invalid/empty chats and add preview
+    const filteredChats = rawChats
+      .filter(chat => chat.messages && chat.messages.length > 0)
+      .map(chat => {
+        const lastMsg = chat.messages[chat.messages.length - 1];
+        return {
+          ...chat,
+          preview: lastMsg ? lastMsg.content.substring(0, 60) + (lastMsg.content.length > 60 ? "..." : "") : ""
+        };
+      });
+
+    res.json(filteredChats);
   } catch (err) {
     console.error('[Chat History Error]', err);
     res.status(400).json({ error: err.message });

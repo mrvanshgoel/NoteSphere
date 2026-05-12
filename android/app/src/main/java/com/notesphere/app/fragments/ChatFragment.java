@@ -68,22 +68,12 @@ public class ChatFragment extends Fragment {
         messages.clear();
         apiHistory.clear();
         adapter.notifyDataSetChanged();
-        binding.tvChatTitle.setText("New Chat");
+        binding.tvChatTitle.setText("Chat");
+        binding.tvActiveModel.setText("Gemini");
         binding.btnAttachFile.setColorFilter(null);
         
-        // Create a placeholder session on the backend
-        ChatSession newSession = new ChatSession("New Chat");
-        ApiClient.getInstance().createChatSession(newSession).enqueue(new Callback<ChatSession>() {
-            @Override
-            public void onResponse(Call<ChatSession> call, Response<ChatSession> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    currentChatId = response.body().getId();
-                    android.util.Log.d("CHAT", "New Chat Session Created: " + currentChatId);
-                }
-            }
-            @Override
-            public void onFailure(Call<ChatSession> call, Throwable t) {}
-        });
+        // Premium Empty State: "Start a new study conversation"
+        // (Handled by RecyclerView being empty)
     }
 
     private void showChatHistory() {
@@ -93,18 +83,44 @@ public class ChatFragment extends Fragment {
 
         RecyclerView rv = sheetView.findViewById(R.id.rvChatHistory);
         rv.setLayoutManager(new LinearLayoutManager(requireContext()));
+        
+        View layoutEmpty = sheetView.findViewById(R.id.layoutEmptyHistory); // Assuming we add this or handle it
 
         ApiClient.getInstance().getChatSessions().enqueue(new Callback<List<ChatSession>>() {
             @Override
             public void onResponse(Call<List<ChatSession>> call, Response<List<ChatSession>> response) {
                 if (response.isSuccessful() && response.body() != null) {
-                    ChatHistoryAdapter historyAdapter = new ChatHistoryAdapter(response.body(), session -> {
+                    List<ChatSession> sessions = response.body();
+                    if (sessions.isEmpty()) {
+                        layoutEmpty.setVisibility(View.VISIBLE);
+                        rv.setVisibility(View.GONE);
+                        return;
+                    }
+                    layoutEmpty.setVisibility(View.GONE);
+                    rv.setVisibility(View.VISIBLE);
+
+                    ChatHistoryAdapter historyAdapter = new ChatHistoryAdapter(sessions, session -> {
                         loadChat(session);
                         dialog.dismiss();
-                    }, session -> {
-                        deleteChat(session, dialog);
                     });
                     rv.setAdapter(historyAdapter);
+                    
+                    // Swipe to Delete
+                    new androidx.recyclerview.widget.ItemTouchHelper(new androidx.recyclerview.widget.ItemTouchHelper.SimpleCallback(0, androidx.recyclerview.widget.ItemTouchHelper.LEFT) {
+                        @Override
+                        public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, @NonNull RecyclerView.ViewHolder target) {
+                            return false;
+                        }
+
+                        @Override
+                        public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
+                            int pos = viewHolder.getAbsoluteAdapterPosition();
+                            ChatSession session = historyAdapter.getSessionAt(pos);
+                            if (session != null) {
+                                deleteChat(session, null); // Delete without closing dialog yet
+                            }
+                        }
+                    }).attachToRecyclerView(rv);
                 }
             }
             @Override
@@ -135,13 +151,14 @@ public class ChatFragment extends Fragment {
         if (!messages.isEmpty()) binding.rvChat.smoothScrollToPosition(messages.size() - 1);
     }
 
-    private void deleteChat(ChatSession session, BottomSheetDialog dialog) {
+    private void deleteChat(ChatSession session, @Nullable BottomSheetDialog dialog) {
         ApiClient.getInstance().deleteChatSession(session.getId()).enqueue(new Callback<Void>() {
             @Override
             public void onResponse(Call<Void> call, Response<Void> response) {
                 if (response.isSuccessful()) {
                     if (session.getId().equals(currentChatId)) startNewChat();
-                    showChatHistory(); // refresh
+                    if (dialog != null) dialog.dismiss();
+                    else Toast.makeText(getContext(), "Chat deleted", Toast.LENGTH_SHORT).show();
                 }
             }
             @Override
@@ -177,9 +194,15 @@ public class ChatFragment extends Fragment {
                 binding.loadingAnimation.setVisibility(View.GONE);
 
                 if (response.isSuccessful() && response.body() != null) {
-                    String content = response.body().getContent();
-                    String modelUsed = response.body().getModel();
+                    AiResponse aiResponse = response.body();
+                    String content = aiResponse.getContent();
+                    String modelUsed = aiResponse.getModel();
                     
+                    // First message of a new chat? Backend returns new chatId
+                    if (currentChatId == null && aiResponse.getChatId() != null) {
+                        currentChatId = aiResponse.getChatId();
+                    }
+
                     messages.add(new ChatMessage(content, false));
                     apiHistory.add(new ApiMessage("assistant", content));
                     adapter.notifyItemInserted(messages.size() - 1);

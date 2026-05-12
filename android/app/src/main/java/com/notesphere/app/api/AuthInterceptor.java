@@ -32,7 +32,7 @@ public class AuthInterceptor implements Interceptor {
         try {
             // Synchronously get the token. getIdToken(true) forces a refresh if needed.
             // Note: intercept() runs on a background thread, so this is safe.
-            Task<GetTokenResult> task = user.getIdToken(false);
+            Task<GetTokenResult> task = user.getIdToken(true);
             GetTokenResult result = Tasks.await(task);
             String token = result.getToken();
 

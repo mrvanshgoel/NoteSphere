@@ -5,38 +5,84 @@
     android:layout_height="wrap_content"
     android:background="@drawable/bg_sheet"
     android:orientation="vertical"
-    android:padding="20dp">
+    android:padding="24dp">
 
+    <!-- Subtle Drag Handle -->
     <View
-        android:layout_width="40dp"
-        android:layout_height="4dp"
+        android:layout_width="32dp"
+        android:layout_height="3dp"
         android:layout_gravity="center"
-        android:background="#33FFFFFF"
-        android:layout_marginBottom="20dp"/>
+        android:background="#20FFFFFF"
+        android:layout_marginBottom="24dp"/>
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Recent Chats"
-        android:textColor="@color/ns_text_primary"
-        android:textSize="20sp"
-        android:textStyle="bold"
-        android:layout_marginBottom="16dp"/>
-
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btnNewChatSheet"
-        style="@style/Widget.Material3.Button.TonalButton"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Start New Chat"
-        app:icon="@android:drawable/ic_menu_add"
-        android:layout_marginBottom="16dp"/>
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="20dp">
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rvChatHistory"
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Recent History"
+            android:textColor="@color/ns_text_primary"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnNewChatSheet"
+            style="@style/Widget.Material3.Button.IconButton"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            app:icon="@android:drawable/ic_menu_add"
+            app:iconTint="@color/ns_cyan" />
+    </LinearLayout>
+
+    <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="400dp"
-        android:clipToPadding="false"
-        android:paddingBottom="20dp"/>
+        android:layout_height="450dp">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvChatHistory"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:paddingBottom="24dp"/>
+
+        <LinearLayout
+            android:id="@+id/layoutEmptyHistory"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="📜"
+                android:textSize="48sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="No chats yet"
+                android:textColor="@color/ns_text_primary"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Start a new study conversation"
+                android:textColor="@color/ns_text_secondary"
+                android:textSize="13sp" />
+        </LinearLayout>
+    </FrameLayout>
 
 </LinearLayout>

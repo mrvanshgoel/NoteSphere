@@ -1,11 +1,15 @@
 package com.notesphere.app.models;
 
+import com.google.gson.annotations.SerializedName;
+
 public class Subject {
     private String id;
     private String name;
     private String icon;
     private String color;
+    @SerializedName("userId")
     private String user_id;
+    @SerializedName("materialCount")
     private int material_count;
 
     public Subject() {}

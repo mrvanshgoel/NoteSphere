@@ -9,6 +9,7 @@ public class ChatSession {
     private List<ChatMessage> messages;
     private String createdAt;
     private String updatedAt;
+    private String preview;
 
     public ChatSession() {}
 
@@ -33,4 +34,7 @@ public class ChatSession {
 
     public String getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(String updatedAt) { this.updatedAt = updatedAt; }
+
+    public String getPreview() { return preview; }
+    public void setPreview(String preview) { this.preview = preview; }
 }
