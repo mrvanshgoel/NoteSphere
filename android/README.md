@@ -26,5 +26,5 @@ This is a native Android application built with Java, following the Material Des
 4. Run on an emulator or physical device (Min SDK 24).
 
 ## API Backend
-The app connects to: `https://vansh-project.onrender.com/`
+The app connects to: `https://notesphere-cr9w.onrender.com/`
 Make sure the backend is running for full functionality.
