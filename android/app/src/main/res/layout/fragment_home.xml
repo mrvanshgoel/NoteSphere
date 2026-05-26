@@ -224,50 +224,44 @@
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp"
                 app:cardBackgroundColor="@color/ns_surface"
-                app:cardCornerRadius="16dp"
-                app:strokeColor="#1A6C63FF"
-                app:strokeWidth="1dp">
+                app:cardCornerRadius="16dp">
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:padding="20dp"
-                    android:orientation="vertical">
+                    android:orientation="vertical"
+                    android:padding="16dp">
+                    <TextView
+                        android:text="Weekly Goal Overview"
+                        style="@style/Notesphere.Text.Section"
+                        android:layout_marginBottom="12dp" />
+                    
+                    <LinearLayout
+                        android:id="@+id/layoutWeeklyCalendar"
+                        android:layout_width="match_parent"
+                        android:layout_height="120dp"
+                        android:orientation="horizontal"
+                        android:weightSum="7"
+                        android:layout_marginBottom="12dp" />
+
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="horizontal"
                         android:gravity="center_vertical">
                         <TextView
+                            android:id="@+id/tvWeeklyTotal"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:text="Weekly Study Goal"
-                            style="@style/Notesphere.Text.Section" />
-                        <TextView
-                            android:id="@+id/tvGoalProgress"
+                            android:text="Total: 0h"
+                            android:textStyle="bold"
+                            android:textColor="@color/ns_cyan" />
+                        <com.google.android.material.chip.ChipGroup
+                            android:id="@+id/chipGroupGoals"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="0/5 hrs"
-                            android:textColor="@color/ns_cyan"
-                            android:textStyle="bold" />
+                            app:singleLine="true" />
                     </LinearLayout>
-                    <com.google.android.material.progressindicator.LinearProgressIndicator
-                        android:id="@+id/pbStudyGoal"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:progress="0"
-                        app:indicatorColor="@color/ns_cyan"
-                        app:trackColor="#1AFFFFFF"
-                        app:trackThickness="6dp"
-                        app:trackCornerRadius="3dp" />
-                    <TextView
-                        android:id="@+id/tvGoalDescription"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:text="Tap to set your weekly target."
-                        style="@style/Notesphere.Text.Caption" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 

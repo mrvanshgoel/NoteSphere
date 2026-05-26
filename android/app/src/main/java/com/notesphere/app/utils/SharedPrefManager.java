@@ -15,6 +15,8 @@ public class SharedPrefManager {
     private static final String KEY_STORAGE_PATH = "storage_path";
     private static final String KEY_STUDY_GOAL = "study_goal_hours";
     private static final String KEY_AI_SESSIONS = "ai_sessions_count";
+    // Per-day study hours — stored as "hours_YYYY-MM-DD"
+    private static final String KEY_HOURS_PREFIX = "study_hours_";
 
     private static SharedPrefManager instance;
     private final Context context;
@@ -159,5 +161,58 @@ public class SharedPrefManager {
 
     public void incrementAiSessions() {
         prefs().edit().putInt(KEY_AI_SESSIONS, getAiSessions() + 1).apply();
+    }
+
+    // ─── Per-Day Study Hours (Calendar Goal) ─────────────────────────────────
+
+    /**
+     * Get the study hours logged for a specific date.
+     * @param dateKey Date in "yyyy-MM-dd" format
+     */
+    public float getDayStudyHours(String dateKey) {
+        return prefs().getFloat(KEY_HOURS_PREFIX + dateKey, 0f);
+    }
+
+    /**
+     * Set/overwrite the study hours for a specific date.
+     * @param dateKey Date in "yyyy-MM-dd" format
+     * @param hours   Hours studied (0–24)
+     */
+    public void setDayStudyHours(String dateKey, float hours) {
+        prefs().edit().putFloat(KEY_HOURS_PREFIX + dateKey, hours).apply();
+    }
+
+    /**
+     * Returns total study hours logged this week (Mon–Sun, current locale week).
+     */
+    public float getWeeklyStudyHours() {
+        java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd",
+                java.util.Locale.getDefault());
+        java.util.Calendar cal = java.util.Calendar.getInstance();
+        // Go to Monday of this week
+        cal.set(java.util.Calendar.DAY_OF_WEEK, java.util.Calendar.MONDAY);
+        float total = 0f;
+        for (int i = 0; i < 7; i++) {
+            String key = sdf.format(cal.getTime());
+            total += getDayStudyHours(key);
+            cal.add(java.util.Calendar.DATE, 1);
+        }
+        return total;
+    }
+
+    /**
+     * Returns date keys for Mon–Sun of the current week.
+     */
+    public String[] getCurrentWeekDateKeys() {
+        java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd",
+                java.util.Locale.getDefault());
+        java.util.Calendar cal = java.util.Calendar.getInstance();
+        cal.set(java.util.Calendar.DAY_OF_WEEK, java.util.Calendar.MONDAY);
+        String[] keys = new String[7];
+        for (int i = 0; i < 7; i++) {
+            keys[i] = sdf.format(cal.getTime());
+            cal.add(java.util.Calendar.DATE, 1);
+        }
+        return keys;
     }
 }

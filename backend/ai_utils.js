@@ -1,121 +1,134 @@
+/**
+ * ai_utils.js — File Extraction & Text Utilities
+ *
+ * Uses aiRouter.generateWithFile() for multimodal extraction (PDF, Images)
+ * so all calls benefit from OCR routing table, health tracking, and fallbacks.
+ */
 
 const pdfParse = require('pdf-parse');
-const { getModel, generateWithFallback } = require('./ai_model_manager');
+const { aiRouter } = require('./ai_router');
+
+// ─────────────────────────────────────────────────────────────
+// TEXT EXTRACTION
+// ─────────────────────────────────────────────────────────────
 
 /**
- * Extracts text from a file buffer (supports PDF, Images, Text).
+ * Extracts text from a file buffer.
+ * Supports PDF (Gemini vision + pdf-parse fallback), Images (OCR), plain text.
+ *
+ * @param {Buffer} buffer
+ * @param {string} mimeType
+ * @returns {Promise<string>}
  */
 async function extractTextFromBuffer(buffer, mimeType) {
-    if (mimeType === 'application/pdf') {
-        try {
-            console.log(`[AI] Extracting text from PDF using Gemini`);
-            const base64Pdf = buffer.toString('base64');
-            const prompt = "Extract all text from this PDF document as accurately as possible. If it's a study material, maintain the structure and hierarchy. Return ONLY the extracted text.";
-            
-            const model = getModel(); 
-            const result = await model.generateContent([
-                prompt,
-                { inlineData: { data: base64Pdf, mimeType: 'application/pdf' } }
-            ]);
-            
-            const text = result.response.text();
-            if (!text || text.length < 10) {
-                // Fallback to pdf-parse ONLY if Gemini returns nothing (rare)
-                console.warn("[AI] Gemini extraction yielded little text, attempting pdf-parse fallback");
-                const parse = typeof pdfParse === 'function' ? pdfParse : pdfParse.default;
-                if (typeof parse === 'function') {
-                    const data = await parse(buffer);
-                    return data.text;
-                }
-            }
-            return text;
-        } catch (error) {
-            console.error("PDF Extraction Error:", error.message);
-            // Emergency fallback to pdf-parse if Gemini fails (e.g. quota)
-            try {
-                const parse = typeof pdfParse === 'function' ? pdfParse : pdfParse.default;
-                if (typeof parse === 'function') {
-                    const data = await parse(buffer);
-                    return data.text;
-                }
-            } catch (e) {
-                console.error("Critical: PDF fallback also failed:", e.message);
-            }
-            throw new Error("Failed to extract text from PDF: " + error.message);
+  // ── PDF ──────────────────────────────────────────────────
+  if (mimeType === 'application/pdf') {
+    try {
+      console.log('[AI Utils] Extracting text from PDF via Gemini OCR (OCR task)');
+      const prompt = 'Extract all text from this PDF document as accurately as possible. Maintain the structure and hierarchy of the study material. Return ONLY the extracted text, no commentary.';
+      const result = await aiRouter.generateWithFile(prompt, buffer, 'application/pdf');
+      const text = result.text;
+
+      if (!text || text.trim().length < 10) {
+        throw new Error('Gemini PDF extraction yielded insufficient text');
+      }
+
+      console.log(`[AI Utils] PDF extraction complete. Model: ${result.modelUsed} | Chars: ${text.length}`);
+      return text;
+
+    } catch (error) {
+      console.warn('[AI Utils] Gemini PDF extraction failed, attempting pdf-parse fallback:', error.message);
+      try {
+        const parse = typeof pdfParse === 'function' ? pdfParse : pdfParse.default;
+        if (typeof parse === 'function') {
+          const data = await parse(buffer);
+          if (data.text && data.text.trim().length > 10) {
+            console.log('[AI Utils] pdf-parse fallback succeeded.');
+            return data.text;
+          }
         }
-    } else if (mimeType.startsWith('image/')) {
-        try {
-            console.log(`[OCR] Extracting text from image: ${mimeType}`);
-            // For images, we use Gemini's vision capabilities
-            const base64Image = buffer.toString('base64');
-            const prompt = "Extract all text from this image as accurately as possible. If it's a study material, maintain the structure. Return ONLY the extracted text.";
-            
-            const model = getModel(); // get the active model (must be a vision capable model like flash)
-            const result = await model.generateContent([
-                prompt,
-                { inlineData: { data: base64Image, mimeType } }
-            ]);
-            
-            return result.response.text();
-        } catch (error) {
-            console.error("Image OCR Error:", error.message);
-            throw new Error("Failed to extract text from image: " + error.message);
-        }
-    } else if (mimeType.startsWith('text/')) {
-        return buffer.toString('utf-8');
+      } catch (fallbackErr) {
+        console.error('[AI Utils] Critical: pdf-parse fallback also failed:', fallbackErr.message);
+      }
+      throw new Error('Failed to extract text from PDF: ' + error.message);
     }
-    
-    throw new Error(`Text extraction not supported for ${mimeType}`);
+  }
+
+  // ── IMAGES ───────────────────────────────────────────────
+  if (mimeType.startsWith('image/')) {
+    try {
+      console.log(`[AI Utils] Running OCR on image: ${mimeType}`);
+      const prompt = 'Extract all text from this image as accurately as possible. If it is a study material (notes, diagram labels, equations), maintain its structure. Return ONLY the extracted text.';
+      const result = await aiRouter.generateWithFile(prompt, buffer, mimeType);
+
+      console.log(`[AI Utils] Image OCR complete. Model: ${result.modelUsed} | Chars: ${result.text.length}`);
+      return result.text;
+    } catch (error) {
+      console.error('[AI Utils] Image OCR failed:', error.message);
+      throw new Error('Failed to extract text from image: ' + error.message);
+    }
+  }
+
+  // ── PLAIN TEXT ───────────────────────────────────────────
+  if (mimeType.startsWith('text/')) {
+    return buffer.toString('utf-8');
+  }
+
+  throw new Error(`Text extraction not supported for MIME type: ${mimeType}`);
 }
 
+// ─────────────────────────────────────────────────────────────
+// TEXT CHUNKING
+// ─────────────────────────────────────────────────────────────
+
 /**
- * Splits text into overlapping chunks.
+ * Split text into overlapping chunks for RAG / context windows.
+ *
+ * @param {string} text
+ * @param {number} maxChunkSize  — chars per chunk (default 1000)
+ * @param {number} overlap       — overlap chars between chunks (default 200)
+ * @returns {string[]}
  */
 function chunkText(text, maxChunkSize = 1000, overlap = 200) {
-    if (!text || text.trim().length === 0) return [];
+  if (!text || text.trim().length === 0) return [];
 
-    // Clean text: remove excessive newlines and spaces
-    const cleanText = text.replace(/\s+/g, ' ').trim();
+  const cleanText = text.replace(/\s+/g, ' ').trim();
+  const chunks = [];
+  let startIndex = 0;
 
-    const chunks = [];
-    let startIndex = 0;
+  while (startIndex < cleanText.length) {
+    let endIndex = startIndex + maxChunkSize;
 
-    while (startIndex < cleanText.length) {
-        let endIndex = startIndex + maxChunkSize;
-
-        // Don't cut off words - find nearest space
-        if (endIndex < cleanText.length) {
-            const lastSpaceIndex = cleanText.lastIndexOf(' ', endIndex);
-            if (lastSpaceIndex > startIndex + overlap) { // ensure we make progress
-                endIndex = lastSpaceIndex;
-            }
-        }
-
-        chunks.push(cleanText.substring(startIndex, endIndex).trim());
-
-        // Move start index, but overlap with previous chunk
-        startIndex = endIndex - overlap;
+    if (endIndex < cleanText.length) {
+      const lastSpace = cleanText.lastIndexOf(' ', endIndex);
+      if (lastSpace > startIndex + overlap) endIndex = lastSpace;
     }
 
-    return chunks;
+    chunks.push(cleanText.substring(startIndex, endIndex).trim());
+    startIndex = endIndex - overlap;
+  }
+
+  return chunks;
 }
 
+// ─────────────────────────────────────────────────────────────
+// TOKEN ESTIMATION
+// ─────────────────────────────────────────────────────────────
+
 /**
- * Generates an embedding for a piece of text using Gemini's text-embedding-004 model.
+ * Rough token estimate from a string (1 token ≈ 4 chars).
+ * Used by AIRouter AUTO mode to choose DOCUMENT vs CHAT routing.
+ *
+ * @param {string} text
+ * @returns {number}
  */
-async function generateEmbedding(text) {
-    try {
-        const model = genAI.getGenerativeModel({ model: "text-embedding-004" });
-        const result = await model.embedContent(text);
-        return result.embedding.values;
-    } catch (error) {
-        console.error("Embedding Error:", error);
-        throw new Error("Failed to generate embedding");
-    }
+function estimateTokens(text) {
+  if (!text) return 0;
+  return Math.ceil(text.length / 4);
 }
 
 module.exports = {
-    extractTextFromBuffer,
-    chunkText,
-    generateEmbedding
+  extractTextFromBuffer,
+  chunkText,
+  estimateTokens,
 };

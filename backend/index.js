@@ -5,8 +5,38 @@ const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
 const dotenv = require('dotenv');
-const { extractTextFromBuffer } = require('./ai_utils');
-const { discoverModels, generateWithFallback, getActiveModelInfo } = require('./ai_model_manager');
+const { extractTextFromBuffer, estimateTokens } = require('./ai_utils');
+const { discoverModels, getActiveModelInfo } = require('./ai_model_manager');
+const { aiRouter } = require('./ai_router');
+
+// ═══════════════════════════════════════════════════════════
+// CONTEXTUAL MEMORY — INTRO DETECTION
+// ═══════════════════════════════════════════════════════════
+
+/** Keywords that signal the user wants a platform/developer introduction. */
+const INTRO_TRIGGERS = [
+  'who are you', 'introduce yourself', 'what is notesphere', 'what are you',
+  'who made you', 'who created you', 'who built you', 'about notesphere',
+  'tell me about this app', 'tell me about yourself', 'about this platform',
+  'your creator', 'who is your developer',
+];
+
+/** Notesphere platform context — injected ONLY when the user explicitly asks. */
+const NOTESPHERE_INTRO = `
+Notesphere AI is a premium Study Operating System built by Vansh Goel (BCA Hons., Galgotias University).
+It functions as a student's "Second Brain" — inspired by NotebookLM — with context-aware AI chat,
+PDF/image analysis, quiz generation, flashcards, syllabus tracking, and study analytics.
+The AI layer uses intelligent multi-model routing across the Gemini family for fast, reliable responses.
+`;
+
+/**
+ * Returns true if the message is explicitly asking about the platform or developer.
+ * Prevents intro context from polluting every response.
+ */
+function isIntroQuery(message) {
+  const lower = message.toLowerCase();
+  return INTRO_TRIGGERS.some(trigger => lower.includes(trigger));
+}
 
 dotenv.config();
 
@@ -128,12 +158,13 @@ const verifyToken = async (req, res, next) => {
 // ═══════════════════════════════════════════════════════════
 app.get('/', (req, res) => res.json({
   status: 'ok',
-  message: 'Notesphere API is running (Firebase Native)',
-  version: '2.5.0',
-  aiModel: getActiveModelInfo().activeModel
+  message: 'Notesphere API is running (Firebase Native + AI Router v3)',
+  version: '3.0.0',
+  availableModels: Array.from(aiRouter.availableModels),
 }));
 app.get('/health', (req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
-app.get('/api/debug/models', (req, res) => res.json(getActiveModelInfo()));
+app.get('/api/debug/models', (req, res) => res.json(aiRouter.getRouterInfo()));
+app.get('/api/debug/health', (req, res) => res.json(aiRouter.getHealthReport()));
 
 // ═══════════════════════════════════════════════════════════
 // AUTH/PROFILE ROUTES
@@ -179,10 +210,27 @@ app.post('/api/auth/upload-avatar', verifyToken, upload.single('avatar'), async 
     const file = req.file;
     if (!file) return res.status(400).json({ error: 'No image uploaded' });
 
-    // Handle Render/Proxy protocol
-    const protocol = req.headers['x-forwarded-proto'] || req.protocol;
-    const avatarUrl = `${protocol}://${req.get('host')}/uploads/${file.filename}`;
-    console.log(`[Avatar] Uploaded: ${avatarUrl} for UID: ${req.user.id}`);
+    // Validate it's an image
+    if (!file.mimetype.startsWith('image/')) {
+      if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
+      return res.status(400).json({ error: 'Only image files are allowed' });
+    }
+
+    // Enforce 2MB limit for Firestore storage
+    if (file.size > 2 * 1024 * 1024) {
+      if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
+      return res.status(400).json({ error: 'Image too large. Max size is 2MB.' });
+    }
+
+    // Convert to base64 data URL — stored directly in Firestore (survives Render deploys)
+    const imageBuffer = fs.readFileSync(file.path);
+    const base64Image = imageBuffer.toString('base64');
+    const avatarUrl   = `data:${file.mimetype};base64,${base64Image}`;
+
+    // Clean up temp file
+    if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
+
+    console.log(`[Avatar] Stored as base64 (${Math.round(base64Image.length / 1024)}KB) for UID: ${req.user.id}`);
 
     await db.collection('profiles').doc(req.user.id).set({
       avatar_url: avatarUrl,
@@ -191,7 +239,9 @@ app.post('/api/auth/upload-avatar', verifyToken, upload.single('avatar'), async 
 
     res.json({ avatar_url: avatarUrl, avatarUrl: avatarUrl });
   } catch (err) {
-    console.error('Avatar upload error:', err);
+    console.error('[Avatar] Upload error:', err);
+    // Clean up temp file on error
+    if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
     res.status(500).json({ error: err.message });
   }
 });
@@ -448,83 +498,98 @@ async function getMaterialText(materialId, userId) {
 
 app.post('/api/ai/chat', verifyToken, async (req, res) => {
   try {
-    const { message, history = [], chatId, materialId } = req.body;
+    const { message, history = [], chatId, materialId, modelMode = 'auto' } = req.body;
     if (!message) return res.status(400).json({ error: 'Message required' });
 
-    console.log(`[AI Chat] Request: ${message} (ChatId: ${chatId || 'NEW'})`);
+    console.log(`[AI Chat] Request: "${message.substring(0, 60)}" | ChatId: ${chatId || 'NEW'} | Mode: ${modelMode}`);
     
-    let context = "";
+    // ── Context assembly ──────────────────────────────────────
+    let materialContext = '';
+    let hasAttachment   = false;
     if (materialId) {
       try {
-        context = await getMaterialText(materialId, req.user.id);
+        materialContext = await getMaterialText(materialId, req.user.id);
+        hasAttachment   = true;
       } catch (e) {
-        console.warn('Failed to fetch context for chat:', e.message);
+        console.warn('[AI Chat] Failed to fetch material context:', e.message);
       }
     }
 
-    const systemPrompt = `You are Notesphere AI, a deeply integrated Study Operating System assistant. 
-Your goal is to be a student's 'Second Brain', inspired by systems like NotebookLM.
-Be proactive, smart, and academic yet encouraging. 
+    // ── Contextual memory gate ────────────────────────────────
+    // Inject Notesphere intro ONLY when the user explicitly asks about it.
+    // Never inject it into normal study queries.
+    const platformContext = isIntroQuery(message) ? `\n\n[PLATFORM INFO]:${NOTESPHERE_INTRO}` : '';
 
-Developer Info:
-- Name: Vansh Goel
-- Background: BCA (Hons.) student at Galgotias University.
+    const baseSystemPrompt = `You are Notesphere AI — an intelligent Study Operating System assistant.
+Your primary goal is to help students learn, understand, and master their study materials.
+Be concise, clear, and educational. Use markdown formatting for structure.
+Prioritize structured explanations, bullet summaries, and exam-oriented guidance.`;
 
-Always prioritize providing context-aware answers based on the student's study materials.`;
-    
-    const contextSection = context ? `\n\n[CONTEXT FROM ATTACHED FILE]:\n${context.substring(0, 10000)}` : "";
-    
+    const contextSection   = materialContext ? `\n\n[DOCUMENT CONTEXT]:\n${materialContext.substring(0, 10000)}` : '';
+    const fullPrompt       = `${baseSystemPrompt}${platformContext}${contextSection}\n\nUser: ${message}`;
+
+    // ── History validation ────────────────────────────────────
     let validatedHistory = (history || [])
       .filter(m => m.content && m.content.trim() !== '')
-      .map(m => ({
-        role: m.role === 'assistant' ? 'model' : 'user',
-        parts: [{ text: m.content }]
-      }));
-
+      .map(m => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] }));
     while (validatedHistory.length > 0 && validatedHistory[0].role === 'model') {
       validatedHistory.shift();
     }
 
-    const result = await generateWithFallback(`${systemPrompt}${contextSection}\n\nUser: ${message}`, validatedHistory);
-    const responseText = result.text;
-    
-    let finalChatId = chatId;
-    
-    // If no chatId, this is the first message -> Create the session now
-    if (!finalChatId) {
-      // Generate intelligent title from first message
-      let title = message.trim();
-      if (title.length > 35) title = title.substring(0, 32) + "...";
-      
-      const docRef = await db.collection('chats').add({
-        userId: req.user.id,
-        title,
-        messages: [
-          { role: 'user', content: message, timestamp: new Date().toISOString() },
-          { role: 'assistant', content: responseText, timestamp: new Date().toISOString(), model: result.modelUsed }
-        ],
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        updatedAt: admin.firestore.FieldValue.serverTimestamp()
-      });
-      finalChatId = docRef.id;
-    } else {
-      // Update existing
-      const chatRef = db.collection('chats').doc(finalChatId);
-      await chatRef.update({
-        messages: admin.firestore.FieldValue.arrayUnion(
-          { role: 'user', content: message, timestamp: new Date().toISOString() },
-          { role: 'assistant', content: responseText, timestamp: new Date().toISOString(), model: result.modelUsed }
-        ),
-        updatedAt: admin.firestore.FieldValue.serverTimestamp()
-      });
-    }
-
-    res.json({ 
-      content: responseText, 
-      role: 'assistant', 
-      model: result.modelUsed,
-      chatId: finalChatId
+    // ── AI generation via router ──────────────────────────────
+    const estimatedTokens = estimateTokens(fullPrompt);
+    const result = await aiRouter.generate(fullPrompt, validatedHistory, {
+      task: 'CHAT',
+      modelMode,
+      estimatedTokens,
+      hasAttachment,
     });
+    const responseText = result.text;
+
+    // ── Send response IMMEDIATELY (before any DB write) ───────
+    let finalChatId = chatId || null;
+    // Optimistic chatId — generate a placeholder so client gets it right away
+    // Firestore will confirm it asynchronously.
+    res.json({
+      content:       responseText,
+      role:          'assistant',
+      model:         result.modelUsed,
+      latencyMs:     result.latencyMs,
+      fallbacksUsed: result.fallbacksUsed,
+      chatId:        finalChatId, // will be populated by async write below for new chats
+    });
+
+    // ── Async Firestore persistence (does NOT block response) ──
+    setImmediate(async () => {
+      try {
+        if (!finalChatId) {
+          let title = message.trim();
+          if (title.length > 35) title = title.substring(0, 32) + '...';
+          await db.collection('chats').add({
+            userId:    req.user.id,
+            title,
+            messages:  [
+              { role: 'user',      content: message,      timestamp: new Date().toISOString() },
+              { role: 'assistant', content: responseText, timestamp: new Date().toISOString(), model: result.modelUsed },
+            ],
+            modelMode,
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          });
+        } else {
+          await db.collection('chats').doc(finalChatId).update({
+            messages: admin.firestore.FieldValue.arrayUnion(
+              { role: 'user',      content: message,      timestamp: new Date().toISOString() },
+              { role: 'assistant', content: responseText, timestamp: new Date().toISOString(), model: result.modelUsed },
+            ),
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          });
+        }
+      } catch (dbErr) {
+        console.error('[AI Chat] Async Firestore persistence failed (non-critical):', dbErr.message);
+      }
+    });
+
   } catch (err) {
     console.error('[AI Chat Error]', err.message);
     res.status(500).json({ error: 'AI chat failed', detail: err.message });
@@ -616,28 +681,32 @@ app.delete('/api/ai/chats/:chatId', verifyToken, async (req, res) => {
 
 app.post('/api/ai/summarize', verifyToken, async (req, res) => {
   try {
-    const { materialId, text: providedText, mode = 'summary' } = req.body;
+    const { materialId, text: providedText, mode = 'summary', modelMode = 'document' } = req.body;
     
-    // Auto-extract from backend temp storage if text is missing
     let text = providedText;
     if (!text && materialId) {
       text = await getMaterialText(materialId, req.user.id);
     }
-    
     if (!text) return res.status(400).json({ error: 'No text or materialId provided' });
 
-    const prompts = {
-      summary: `You are an expert academic summarizer. Create a comprehensive, structured summary of the following material. Include: key concepts, main ideas, important definitions, and a brief overview. Use markdown formatting.\n\nMaterial:\n${text}`,
-      notes: `You are an expert academic note-taker. Create detailed, exam-ready study notes from the following material. Use ## headings, **bold** for key terms, bullet points for facts, and examples. Aim for completeness.\n\nMaterial:\n${text}`,
-      concepts: `Extract and explain the KEY CONCEPTS from the following academic material. For each concept: name, definition, importance, and example. Format as a structured list.\n\nMaterial:\n${text}`,
-      viva: `Generate 15 important viva/interview questions with comprehensive model answers based on this material. Format: Q: [question]\nA: [answer]\n\nMaterial:\n${text}`
+    const PROMPTS = {
+      summary:  `You are an expert academic summarizer. Create a comprehensive, structured summary with: ## Key Concepts, ## Main Ideas, ## Important Definitions, and a ## Quick Overview. Use markdown formatting.\n\nMaterial:\n${text}`,
+      notes:    `You are an expert academic note-taker. Create detailed, exam-ready study notes. Use ## headings, **bold** for key terms, - bullet points for facts. Include formulas and examples. Aim for completeness.\n\nMaterial:\n${text}`,
+      concepts: `Extract and explain the KEY CONCEPTS from this academic material. For each concept provide: name, clear definition, why it matters, and a practical example. Format as a structured markdown list.\n\nMaterial:\n${text}`,
+      viva:     `Generate 15 important viva/interview questions with comprehensive model answers based on this material. Tag each question with difficulty (Easy/Medium/Hard). Format: **Q: [question]** (Difficulty)\nA: [detailed answer]\n\nMaterial:\n${text}`,
     };
 
-    const prompt = prompts[mode] || prompts.summary;
-    const result = await generateWithFallback(prompt);
-    const responseText = result.text;
-    console.log(`[AI Summarize] Success (Model: ${result.modelUsed})`);
-    res.json({ content: responseText, mode, model: result.modelUsed });
+    const prompt = PROMPTS[mode] || PROMPTS.summary;
+    const result = await aiRouter.generate(prompt, [], {
+      task:      'DOCUMENT',
+      modelMode,
+      maxTokens: 4096,
+      estimatedTokens: estimateTokens(text),
+      hasAttachment: true,
+    });
+
+    console.log(`[AI Summarize] Mode: ${mode} | Model: ${result.modelUsed} | Latency: ${result.latencyMs}ms`);
+    res.json({ content: result.text, mode, model: result.modelUsed, latencyMs: result.latencyMs });
   } catch (err) {
     console.error('[AI Summarize Error]', err.message);
     res.status(500).json({ error: 'Summarization failed', detail: err.message });
@@ -646,7 +715,7 @@ app.post('/api/ai/summarize', verifyToken, async (req, res) => {
 
 app.post('/api/ai/quiz', verifyToken, async (req, res) => {
   try {
-    const { materialId, text: providedText, count = 10, difficulty = 'medium' } = req.body;
+    const { materialId, text: providedText, count = 10, difficulty = 'medium', modelMode = 'document' } = req.body;
     
     let text = providedText;
     if (!text && materialId) {
@@ -654,38 +723,56 @@ app.post('/api/ai/quiz', verifyToken, async (req, res) => {
     }
     if (!text) return res.status(400).json({ error: 'No text or materialId provided' });
 
-    const prompt = `You are an expert exam question generator. Generate exactly ${count} multiple-choice questions from the following material.
+    const difficultyGuide = {
+      easy:   'Test basic recall and definitions. Questions should be straightforward.',
+      medium: 'Test understanding and application. Mix recall and reasoning.',
+      hard:   'Test deep understanding, edge cases, and analytical thinking.',
+    };
 
-Difficulty: ${difficulty}
+    const prompt = `You are an expert exam question generator for academic study materials.
+Generate exactly ${count} multiple-choice questions.
+
+Difficulty: ${difficulty.toUpperCase()} — ${difficultyGuide[difficulty] || difficultyGuide.medium}
+
 Rules:
-- Each question must have exactly 4 options (A, B, C, D)
-- Only one correct answer per question
-- Questions should test understanding, not just memorization
+- Each question must have exactly 4 options
+- Only ONE correct answer per question
+- Questions must test understanding, NOT just memorization
+- Include a topic tag for each question
+- Explanation must be educational (2-3 sentences)
 
-IMPORTANT: Respond with ONLY valid JSON in this exact format:
+Respond with ONLY valid JSON in this exact format, no markdown wrapper:
 {
   "questions": [
     {
-      "question": "Question text here?",
+      "question": "Question text?",
       "options": ["Option A", "Option B", "Option C", "Option D"],
       "correctIndex": 0,
-      "explanation": "Brief explanation of why this is correct"
+      "explanation": "Educational explanation of the correct answer.",
+      "topic": "Topic tag"
     }
   ]
 }
 
-Material:
-${text}`;
+Material:\n${text}`;
 
-    console.log(`[AI Quiz] Generating with fallback...`);
-    const result = await generateWithFallback(prompt);
-    const rawText = result.text.trim();
+    console.log(`[AI Quiz] Generating ${count} questions | Difficulty: ${difficulty} | Mode: ${modelMode}`);
+    const result = await aiRouter.generate(prompt, [], {
+      task:      'DOCUMENT',
+      modelMode,
+      maxTokens: 4096,
+      temperature: 0.5,
+      estimatedTokens: estimateTokens(text),
+      hasAttachment: true,
+    });
 
+    const rawText   = result.text.trim();
     const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error('Invalid AI response format');
+    if (!jsonMatch) throw new Error('AI returned invalid JSON format for quiz');
 
     const parsed = JSON.parse(jsonMatch[0]);
-    res.json({ ...parsed, model: result.modelUsed });
+    console.log(`[AI Quiz] Generated ${parsed.questions?.length || 0} questions | Model: ${result.modelUsed} | Latency: ${result.latencyMs}ms`);
+    res.json({ ...parsed, model: result.modelUsed, latencyMs: result.latencyMs });
   } catch (err) {
     console.error('[AI Quiz Error]', err.message);
     res.status(500).json({ error: 'Quiz generation failed', detail: err.message });
@@ -694,34 +781,41 @@ ${text}`;
 
 app.post('/api/ai/doubt', verifyToken, async (req, res) => {
   try {
-    const { materialId, question, context: providedContext, history = [] } = req.body;
+    const { materialId, question, context: providedContext, history = [], modelMode = 'fast' } = req.body;
     if (!question) return res.status(400).json({ error: 'No question provided' });
 
     let context = providedContext;
+    let hasAttachment = false;
     if (!context && materialId) {
       try {
         context = await getMaterialText(materialId, req.user.id);
+        hasAttachment = true;
       } catch (e) {
-        console.warn('Failed to fetch context for doubt:', e.message);
-        // Continue without context if fetching fails, though it might be less accurate
+        console.warn('[AI Doubt] Failed to fetch context:', e.message);
       }
     }
 
-    console.log(`[AI Doubt] Question: ${question}`);
+    console.log(`[AI Doubt] Question: "${question.substring(0, 60)}" | HasContext: ${!!context} | Mode: ${modelMode}`);
     const contextSection = context ? `\n\nReference Material:\n${context.substring(0, 8000)}` : '';
 
-    const prompt = `You are a knowledgeable study assistant helping a student understand their learning material. 
-Answer the following question clearly and helpfully. If the answer is in the provided material, cite it. Use markdown formatting for clarity.${contextSection}
+    const prompt = `You are a knowledgeable, concise study assistant.
+Answer the student's question clearly. Cite the provided material if relevant.
+Use markdown for clarity: **bold** key terms, use bullet points for multi-part answers, include examples.${contextSection}
 
 Student Question: ${question}`;
 
-    const validatedHistory = history.map(m => ({
-      role: m.role === 'assistant' ? 'model' : 'user',
-      parts: [{ text: m.content }]
-    }));
+    const validatedHistory = history
+      .filter(m => m.content && m.content.trim())
+      .map(m => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] }));
 
-    const result = await generateWithFallback(prompt, validatedHistory);
-    res.json({ content: result.text, role: 'assistant', model: result.modelUsed });
+    const result = await aiRouter.generate(prompt, validatedHistory, {
+      task:        'CHAT',
+      modelMode,
+      hasAttachment,
+      estimatedTokens: estimateTokens(prompt),
+    });
+
+    res.json({ content: result.text, role: 'assistant', model: result.modelUsed, latencyMs: result.latencyMs });
   } catch (err) {
     console.error('[AI Doubt Error]', err.message);
     res.status(500).json({ error: 'Could not process question', detail: err.message });
@@ -876,7 +970,7 @@ app.post('/api/study/track-quiz', verifyToken, async (req, res) => {
 
 app.post('/api/ai/flashcards', verifyToken, async (req, res) => {
   try {
-    const { materialId, text: providedText, count = 10 } = req.body;
+    const { materialId, text: providedText, count = 10, modelMode = 'document' } = req.body;
     
     let text = providedText;
     if (!text && materialId) {
@@ -884,26 +978,39 @@ app.post('/api/ai/flashcards', verifyToken, async (req, res) => {
     }
     if (!text) return res.status(400).json({ error: 'No text provided' });
 
-    const prompt = `Generate exactly ${count} educational flashcards from the following material.
-Each flashcard must have a "question" (or term) and an "answer" (or definition).
-Format as JSON:
+    const prompt = `Generate exactly ${count} high-quality educational flashcards from the following study material.
+Each flashcard must:
+- Have a clear, concise question or term on the front
+- Have a complete, accurate answer or definition on the back
+- Cover the most important concepts from the material
+
+Respond with ONLY valid JSON (no markdown wrapper):
 {
   "flashcards": [
-    {"question": "...", "answer": "..."}
+    { "question": "Term or question?", "answer": "Definition or answer." }
   ]
 }
 
-Material:
-${text}`;
+Material:\n${text}`;
 
-    const result = await generateWithFallback(prompt);
-    const rawText = result.text.trim();
+    const result = await aiRouter.generate(prompt, [], {
+      task:            'DOCUMENT',
+      modelMode,
+      maxTokens:       3000,
+      temperature:     0.4,
+      estimatedTokens: estimateTokens(text),
+      hasAttachment:   true,
+    });
+
+    const rawText   = result.text.trim();
     const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error('Invalid AI response format');
+    if (!jsonMatch) throw new Error('AI returned invalid JSON format for flashcards');
 
     const parsed = JSON.parse(jsonMatch[0]);
-    res.json(parsed);
+    console.log(`[AI Flashcards] Generated ${parsed.flashcards?.length || 0} cards | Model: ${result.modelUsed} | Latency: ${result.latencyMs}ms`);
+    res.json({ ...parsed, model: result.modelUsed });
   } catch (err) {
+    console.error('[AI Flashcards Error]', err.message);
     res.status(500).json({ error: 'Flashcard generation failed', detail: err.message });
   }
 });

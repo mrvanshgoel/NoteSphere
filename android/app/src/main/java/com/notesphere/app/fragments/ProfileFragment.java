@@ -3,9 +3,12 @@ package com.notesphere.app.fragments;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
+import android.util.Base64;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -17,6 +20,8 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
+import com.bumptech.glide.request.RequestOptions;
 import com.notesphere.app.R;
 import com.notesphere.app.activities.LoginActivity;
 import com.notesphere.app.api.ApiClient;
@@ -26,6 +31,7 @@ import com.notesphere.app.models.User;
 import com.notesphere.app.utils.SharedPrefManager;
 import com.google.android.material.textfield.TextInputEditText;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
@@ -129,21 +135,37 @@ public class ProfileFragment extends Fragment {
 
     private void loadAvatarWithGlide(String url) {
         if (binding == null || !isAdded() || url == null || url.isEmpty()) return;
-        
-        // Force reload with timestamp cache bust
-        String cacheBustUrl = url + (url.contains("?") ? "&" : "?") + "t=" + System.currentTimeMillis();
 
-        com.bumptech.glide.request.RequestOptions options = new com.bumptech.glide.request.RequestOptions()
+        RequestOptions options = new RequestOptions()
             .circleCrop()
             .placeholder(R.drawable.ic_launcher_temp)
             .error(R.drawable.ic_launcher_temp)
-            .diskCacheStrategy(com.bumptech.glide.load.engine.DiskCacheStrategy.NONE)
+            .diskCacheStrategy(DiskCacheStrategy.NONE)
             .skipMemoryCache(true);
 
-        Glide.with(this)
+        if (url.startsWith("data:image")) {
+            // Base64 data URI — Glide doesn't support this natively, decode to Bitmap
+            try {
+                String base64Data = url.substring(url.indexOf(',') + 1);
+                byte[] decoded = Base64.decode(base64Data, Base64.DEFAULT);
+                Bitmap bitmap = BitmapFactory.decodeByteArray(decoded, 0, decoded.length);
+                if (bitmap != null) {
+                    Glide.with(this)
+                        .load(bitmap)
+                        .apply(options)
+                        .into(binding.ivProfile);
+                }
+            } catch (Exception e) {
+                android.util.Log.e("AVATAR", "Base64 decode failed: " + e.getMessage());
+            }
+        } else {
+            // Regular URL — add cache-bust param
+            String cacheBustUrl = url + (url.contains("?") ? "&" : "?") + "t=" + System.currentTimeMillis();
+            Glide.with(this)
                 .load(cacheBustUrl)
                 .apply(options)
                 .into(binding.ivProfile);
+        }
     }
 
     private void showChangeEmailDialog() {
@@ -212,23 +234,40 @@ public class ProfileFragment extends Fragment {
         Context context = getContext();
         if (context == null) return;
 
-        try {
-            File file = new File(context.getCacheDir(), "avatar_" + System.currentTimeMillis() + ".jpg");
-            InputStream inputStream = context.getContentResolver().openInputStream(uri);
-            FileOutputStream outputStream = new FileOutputStream(file);
-            byte[] buffer = new byte[8192];
-            int read;
-            while ((read = inputStream.read(buffer)) != -1) {
-                outputStream.write(buffer, 0, read);
-            }
-            outputStream.flush();
-            outputStream.close();
-            inputStream.close();
+        // Show uploading feedback
+        if (binding != null) {
+            binding.fabEditAvatar.setEnabled(false);
+        }
+        Toast.makeText(context, "Uploading avatar...", Toast.LENGTH_SHORT).show();
 
-            String mimeType = context.getContentResolver().getType(uri);
-            if (mimeType == null) mimeType = "image/*";
-            
-            RequestBody requestFile = RequestBody.create(MediaType.parse(mimeType), file);
+        try {
+            // ─── Decode & compress to JPEG under 1.5MB ───────────────────────────
+            InputStream inputStream = context.getContentResolver().openInputStream(uri);
+            Bitmap original = BitmapFactory.decodeStream(inputStream);
+            if (original == null) throw new Exception("Could not decode image");
+
+            // Scale down if too large (max 512x512)
+            Bitmap scaled = original;
+            if (original.getWidth() > 512 || original.getHeight() > 512) {
+                float scale = 512f / Math.max(original.getWidth(), original.getHeight());
+                scaled = Bitmap.createScaledBitmap(original,
+                        (int)(original.getWidth() * scale),
+                        (int)(original.getHeight() * scale), true);
+            }
+
+            // Compress to JPEG at 85% quality
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            scaled.compress(Bitmap.CompressFormat.JPEG, 85, baos);
+            byte[] imageBytes = baos.toByteArray();
+
+            // Write compressed bytes to temp file
+            File file = new File(context.getCacheDir(), "avatar_" + System.currentTimeMillis() + ".jpg");
+            FileOutputStream fos = new FileOutputStream(file);
+            fos.write(imageBytes);
+            fos.flush();
+            fos.close();
+
+            RequestBody requestFile = RequestBody.create(MediaType.parse("image/jpeg"), file);
             MultipartBody.Part body = MultipartBody.Part.createFormData("avatar", file.getName(), requestFile);
             if (activeCall != null) activeCall.cancel();
             Call<User.AvatarResponse> call = ApiClient.getInstance().uploadAvatar(body);
@@ -239,12 +278,13 @@ public class ProfileFragment extends Fragment {
                 public void onResponse(Call<User.AvatarResponse> call, Response<User.AvatarResponse> response) {
                     Context innerContext = getContext();
                     if (!isAdded() || innerContext == null || binding == null) return;
-                    
+                    binding.fabEditAvatar.setEnabled(true);
+
                     if (response.isSuccessful() && response.body() != null) {
                         String newUrl = response.body().getAvatarUrl();
                         pref.saveAvatarUrl(newUrl);
                         loadAvatarWithGlide(newUrl);
-                        Toast.makeText(innerContext, "Avatar updated!", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(innerContext, "✓ Avatar updated!", Toast.LENGTH_SHORT).show();
                         if (file.exists()) file.delete();
                     } else {
                         String errorMsg = parseError(response);
@@ -257,6 +297,7 @@ public class ProfileFragment extends Fragment {
                     Context innerContext = getContext();
                     if (!isAdded() || innerContext == null || binding == null) return;
                     if (call.isCanceled()) return;
+                    binding.fabEditAvatar.setEnabled(true);
                     String msg = "Network error: " + t.getMessage();
                     Toast.makeText(innerContext, msg, Toast.LENGTH_LONG).show();
                     android.util.Log.e("AVATAR", "Failure: " + msg, t);
@@ -264,7 +305,8 @@ public class ProfileFragment extends Fragment {
             });
 
         } catch (Exception e) {
-            Toast.makeText(context, "Error selecting image: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            if (binding != null) binding.fabEditAvatar.setEnabled(true);
+            Toast.makeText(context, "Error processing image: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
     }
 
