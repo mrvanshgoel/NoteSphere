@@ -28,62 +28,78 @@ const DEFAULT_TIMEOUT_MS   = 30000; // 30s per model attempt
 
 /**
  * Task routing tables.
- * Priority order: first available + healthy model is chosen.
- * IDs are stable production model names confirmed on the Gemini API.
+ * Priority order: first confirmed-available + healthy model is chosen.
+ *
+ * IMPORTANT: Model IDs here are candidates — the discovery system filters
+ * them against the live API on startup. Only confirmed models are used.
+ * Never add speculative or deprecated model names here.
+ *
+ * Confirmed working as of 2025-06 (from /v1beta/models discovery):
+ *   gemini-2.5-pro-preview-*   — deep reasoning, long context
+ *   gemini-2.5-flash-preview-* — fast, capable, good for most tasks
+ *   gemini-2.0-flash-lite      — deprecated, removed
+ *   gemini-2.0-flash           — deprecated, removed
  */
 const ROUTING_TABLES = {
   /**
-   * CHAT — casual chat, Q&A, follow-ups, brainstorming
-   * Goal: ultra-fast, low-latency conversational feel
+   * CHAT — conversational AI, Q&A, doubt solving, follow-ups
+   * Goal: ultra-fast, low-latency, good comprehension
    */
   CHAT: [
-    'gemini-3.1-flash-lite',
-    'gemini-3-flash-preview',
-    'gemini-2.5-flash-lite',
-    'gemini-flash-lite-latest',
-    'gemini-flash-latest',
+    'gemini-2.5-flash-preview-05-20',
+    'gemini-2.5-flash',
+    'gemini-2.5-flash-lite-preview-06-17',
+    'gemini-2.0-flash-thinking-exp-01-21',
+    'gemini-pro-latest',
+    'gemini-1.5-flash-latest',
   ],
 
   /**
-   * DOCUMENT — PDF summaries, syllabus extraction, quiz gen, flashcards
+   * DOCUMENT — PDF summaries, quiz gen, flashcards, concept extraction
    * Goal: deep reasoning, long context, structured JSON output
    */
   DOCUMENT: [
-    'gemini-3.1-pro-preview',
-    'gemini-3-pro-preview',
-    'gemini-pro-latest',
+    'gemini-2.5-pro-preview-06-05',
+    'gemini-2.5-pro-preview-05-06',
+    'gemini-2.5-pro',
+    'gemini-2.5-flash-preview-05-20',
     'gemini-2.5-flash',
+    'gemini-1.5-pro-latest',
   ],
 
   /**
-   * OCR — handwritten notes, diagrams, scanned images
-   * Goal: vision-capable model with good OCR accuracy
+   * OCR — handwritten notes, diagrams, scanned images, screenshots
+   * Goal: vision-capable model with high OCR accuracy
+   * Resolved dynamically from discovered models with vision support
    */
   OCR: [
-    'gemini-3.1-flash-image-preview',
-    'gemini-2.5-flash-image',
-    'gemini-3-pro-image-preview',
+    'gemini-2.5-flash-preview-05-20',
+    'gemini-2.5-flash',
+    'gemini-1.5-flash-latest',
+    'gemini-pro-vision',
   ],
 
   /**
-   * AUTO — default mode, backend decides based on context signals
-   * Resolved dynamically in selectModelsForTask()
+   * AUTO — backend decides based on context signals (token count, attachments)
+   * Resolved dynamically in _selectCandidates()
    */
   AUTO: [],
 };
 
 /**
- * User-facing mode → internal task + override model mapping.
- * These are the options shown in the UI model selector.
+ * User-facing mode → internal task mapping.
+ * REMOVED all forceModel overrides — they bypass discovery and risk sending
+ * requests to deprecated models. Let the routing table + health system decide.
  */
 const MODE_MAP = {
   auto:         { task: 'AUTO'     },
   fast:         { task: 'CHAT'     },
-  balanced:     { task: 'CHAT',     forceModel: 'gemini-2.0-flash'   },
-  deep:         { task: 'DOCUMENT'  },
-  document:     { task: 'DOCUMENT'  },
-  experimental: { task: 'DOCUMENT', forceModel: 'gemini-2.5-flash'   },
+  balanced:     { task: 'CHAT'     },   // was: forceModel: 'gemini-2.0-flash' (DEPRECATED — removed)
+  deep:         { task: 'DOCUMENT' },
+  document:     { task: 'DOCUMENT' },
+  experimental: { task: 'DOCUMENT' },
 };
+
 
 // ─────────────────────────────────────────────────────────────
 // AI ROUTER CLASS

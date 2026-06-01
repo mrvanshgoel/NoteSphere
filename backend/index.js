@@ -62,15 +62,20 @@ const port = process.env.PORT || 5000;
 
 // ═══════════════════════════════════════════════════════════
 // FIREBASE ADMIN INITIALIZATION
+// NOTE: Firebase Storage is NOT provisioned on this project.
+// File uploads use local disk storage (Option A).
 // ═══════════════════════════════════════════════════════════
+
 try {
   let credential;
-  
+
   if (process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL) {
     console.log('[Init] Using Firebase explicit environment variables');
-    // Handle Render newline escaping in private key
+    console.log(`[Init] Project ID : ${process.env.FIREBASE_PROJECT_ID}`);
+    console.log(`[Init] Client Email: ${process.env.FIREBASE_CLIENT_EMAIL}`);
+    // Handle Render/Heroku newline escaping in private key
     const privateKey = process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n');
-    
+
     credential = admin.credential.cert({
       projectId: process.env.FIREBASE_PROJECT_ID,
       clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
@@ -80,30 +85,24 @@ try {
     console.log('[Init] Using GOOGLE_APPLICATION_CREDENTIALS');
     credential = admin.credential.applicationDefault();
   } else {
-    // Development fallback if needed, but will warn
-    console.warn('[Init] WARNING: No Firebase credentials provided. Calls will fail.');
+    console.error('[Init] ❌ CRITICAL: No Firebase credentials provided.');
+    console.error('[Init]    Set FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY in .env');
   }
 
-    if (credential) {
-      admin.initializeApp({
-        credential,
-        storageBucket: process.env.FIREBASE_STORAGE_BUCKET || 'vansh-notesphere.appspot.com'
-      });
-      console.log('Firebase initialized successfully');
-    }
+  if (credential) {
+    admin.initializeApp({ credential });
+    console.log('[Init] Firebase Admin initialized successfully');
+  }
 } catch (error) {
-  console.error('Firebase initialization failed:', error);
+  console.error('[Init] ❌ Firebase initialization failed:', error.message);
 }
 
 const db = admin.apps.length ? admin.firestore() : null;
-const bucket = admin.apps.length ? admin.storage().bucket() : null;
+if (db) console.log('[Init] Firestore connected ✅');
 
-if (db) {
-  console.log('Firestore connected');
-}
-if (bucket) {
-  console.log('Firebase Storage connected');
-}
+// Storage: Local disk only (Firebase Storage not provisioned)
+// BASE_URL is used to build publicly accessible file URLs
+const BASE_URL = process.env.BASE_URL || `http://localhost:${process.env.PORT || 5000}`;
 
 // ═══════════════════════════════════════════════════════════
 // LOCAL TEMP STORAGE INITIALIZATION
@@ -115,42 +114,39 @@ if (!fs.existsSync(uploadsDir)) {
 console.log('Uploads directory verified at:', uploadsDir);
 
 // ═══════════════════════════════════════════════════════════
-// PHASE R8: DATA INTEGRITY CHECK (SYSTEM HEALTH REPORT)
+// SYSTEM HEALTH CHECK + STORAGE RESOLUTION
 // ═══════════════════════════════════════════════════════════
 async function checkHealth() {
-  console.log('\n==================================');
-  console.log('SYSTEM HEALTH REPORT');
-  console.log('====================\n');
-  
-  let isFirestoreOk = false;
-  let isAuthOk = false;
-  let isStorageOk = false;
+  console.log('\n╔══════════════════════════════════════╗');
+  console.log('║       NOTESPHERE SYSTEM HEALTH        ║');
+  console.log('╚══════════════════════════════════════╝\n');
 
+  // ── Firestore ──────────────────────────────────────────
+  let isFirestoreOk = false;
   try {
     if (db) { await db.listCollections(); isFirestoreOk = true; }
-  } catch(e) { /* non-critical if we just can't list them, but connection exists */ isFirestoreOk = true; }
-  
+  } catch (e) { isFirestoreOk = !!db; }
+  console.log(`  Firestore : ${isFirestoreOk ? '✅ OK' : '❌ FAIL'}`);
+
+  // ── Auth ───────────────────────────────────────────────
+  let isAuthOk = false;
   try {
     if (admin.apps.length) { await admin.auth().listUsers(1); isAuthOk = true; }
-  } catch(e) { isAuthOk = true; }
+  } catch (e) { isAuthOk = admin.apps.length > 0; }
+  console.log(`  Auth      : ${isAuthOk ? '✅ OK' : '❌ FAIL'}`);
 
-  try {
-    if (bucket) { await bucket.exists(); isStorageOk = true; }
-  } catch(e) { isStorageOk = true; }
+  // ── Storage ─────────────────────────────────────────────
+  const uploadsOk = fs.existsSync(uploadsDir);
+  console.log(`  Storage   : ${uploadsOk ? '✅ OK — local disk (' + uploadsDir + ')' : '❌ FAIL — uploads dir missing'}`);
+  console.log(`  Base URL  : ${BASE_URL}`);
 
-  console.log(`Firestore: ${isFirestoreOk ? 'OK' : 'FAIL'}`);
-  console.log(`Auth:      ${isAuthOk ? 'OK' : 'FAIL'}`);
-  console.log(`Storage:   ${isStorageOk ? 'OK' : 'FAIL'}`);
-  console.log(`Gemini:    ${process.env.GEMINI_API_KEY ? 'OK' : 'MISSING API KEY'}\n`);
-  
-  console.log(`Storage Bucket:`);
-  console.log(process.env.FIREBASE_STORAGE_BUCKET || 'vansh-notesphere.appspot.com');
-  console.log(`\nProject ID:`);
-  console.log(process.env.FIREBASE_PROJECT_ID || 'vansh-notesphere');
-  
-  console.log('\nActive Models (Router Discovery):');
-  console.log('Will be discovered momentarily...');
-  console.log('==================================\n');
+  // ── Gemini ─────────────────────────────────────────────
+  const geminiOk = !!process.env.GEMINI_API_KEY;
+  console.log(`  Gemini API: ${geminiOk ? '✅ OK' : '❌ MISSING — Set GEMINI_API_KEY in .env'}`);
+
+  console.log(`\n  Project ID    : ${process.env.FIREBASE_PROJECT_ID || '(not set)'}`);
+  console.log(`  Storage       : Local disk (Firebase Storage not provisioned)`);
+  console.log('\n═══════════════════════════════════════\n');
 }
 
 setImmediate(checkHealth);
@@ -329,27 +325,9 @@ app.post('/api/auth/upload-avatar', verifyToken, upload.single('avatar'), async 
       return res.status(400).json({ error: 'Only image files are allowed' });
     }
 
-    if (!bucket) {
-      if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
-      return res.status(500).json({ error: 'Firebase Storage is not available' });
-    }
-
-    const storagePathStr = `avatars/${req.user.id}_${Date.now()}.jpg`;
-    const bucketFile = bucket.file(storagePathStr);
-    const fileBuffer = fs.readFileSync(file.path);
-    
-    await bucketFile.save(fileBuffer, { contentType: file.mimetype });
-    
-    // Generate a long-lived download URL
-    const [avatarUrl] = await bucketFile.getSignedUrl({
-      action: 'read',
-      expires: '01-01-2099'
-    });
-
-    // Clean up temp file
-    if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
-
-    console.log(`[Avatar] Uploaded successfully to Firebase Storage for UID: ${req.user.id}`);
+    // Local disk storage — build a self-hosted URL
+    const avatarUrl = `${BASE_URL}/uploads/${file.filename}`;
+    console.log(`[Avatar] Stored locally for UID: ${req.user.id} → ${avatarUrl}`);
 
     await db.collection('profiles').doc(req.user.id).set({
       avatar_url: avatarUrl,
@@ -359,7 +337,6 @@ app.post('/api/auth/upload-avatar', verifyToken, upload.single('avatar'), async 
     res.json({ avatar_url: avatarUrl, avatarUrl: avatarUrl });
   } catch (err) {
     console.error('[Avatar] Upload error:', err);
-    // Clean up temp file on error
     if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
     res.status(500).json({ error: err.message });
   }
@@ -583,74 +560,56 @@ app.post('/api/materials/upload', verifyToken, upload.single('file'), async (req
     const file = req.file;
     if (!file) return res.status(400).json({ error: 'No file uploaded' });
 
-    const localFilePath = path.join('uploads', file.filename);
-    const fullLocalPath = path.join(__dirname, localFilePath);
-    
-    let finalUrl = localFilePath; // fallback to local if bucket fails
-    let storagePathStr = null;
+    const fullLocalPath = path.join(__dirname, 'uploads', file.filename);
 
-    // Upload to Firebase Storage if bucket exists
-    if (bucket) {
-      try {
-        storagePathStr = `materials/${req.user.id}/${Date.now()}_${file.originalname}`;
-        const bucketFile = bucket.file(storagePathStr);
-        const fileBuffer = fs.readFileSync(fullLocalPath);
-        
-        await bucketFile.save(fileBuffer, { contentType: file.mimetype });
-        
-        // Generate a long-lived download URL
-        const [url] = await bucketFile.getSignedUrl({
-          action: 'read',
-          expires: '01-01-2099' // effectively permanent
-        });
-        finalUrl = url;
-        console.log(`[Storage] Uploaded to Firebase: ${storagePathStr}`);
-      } catch (uploadErr) {
-        console.error('[Storage] Firebase upload failed, falling back to local:', uploadErr.message);
-      }
-    }
+    // ── Local disk storage — serve via /uploads static route ─────────────
+    // Firebase Storage is not provisioned on this project (Spark plan).
+    // Files are stored on the server disk and served as self-hosted URLs.
+    // IMPORTANT: On Render free tier, /uploads is ephemeral (wiped on redeploy).
+    // This is Option A (local storage). Migrate to cloud storage when ready.
+    const fileUrl = `${BASE_URL}/uploads/${file.filename}`;
+    console.log(`[Upload] Stored locally: ${file.filename} (${file.size} bytes)`);
+    console.log(`[Upload] Serving at: ${fileUrl}`);
 
-    // Proactive Text Extraction for AI stability - DO IT ASYNC so we don't timeout!
-    // We create the doc first with empty text, then update it later.
+    // ── Create Firestore document ─────────────────────────────────────────
     const docRef = await db.collection('materials').add({
       subjectId,
       folderId: folderId || null,
-      filePath: finalUrl,
-      storagePath: storagePathStr, // Keep track if we need to delete later
+      filePath: fileUrl,           // Self-hosted URL (local disk)
+      storageType: 'local',        // Track storage type for future migration
       fileType: file.mimetype,
       title: name || file.originalname,
       userId: req.user.id,
-      extractedText: "", // Will be populated async
+      extractedText: '',           // Populated async below
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
-    console.log(`[MATERIALS] Initialized material ${name || file.originalname} for UID ${req.user.id}`);
+    console.log(`[MATERIALS] ✅ Created material doc ${docRef.id} — "${name || file.originalname}"`);
 
     const newDoc = await docRef.get();
     res.status(201).json(formatDoc(newDoc));
 
-    // ASYNC EXTRACTION & CLEANUP
+    // ── Async text extraction ─────────────────────────────────────────────
+    // File stays on disk — it IS the persistent storage in this mode.
+    // Only delete if extraction is done AND we have the text saved.
     setImmediate(async () => {
       try {
         const buffer = fs.readFileSync(fullLocalPath);
         const extractedText = await extractTextFromBuffer(buffer, file.mimetype);
         await docRef.update({ extractedText });
-        console.log(`[AI] Async extraction successful for material ${docRef.id}`);
+        console.log(`[AI] ✅ Async extraction complete for material ${docRef.id} (${extractedText.length} chars)`);
       } catch (e) {
-        console.warn(`[AI] Async extraction failed for ${docRef.id}:`, e.message);
-      } finally {
-        // Delete local temp file to save disk space
-        if (fs.existsSync(fullLocalPath)) {
-          fs.unlinkSync(fullLocalPath);
-        }
+        console.warn(`[AI] ⚠ Async extraction failed for ${docRef.id}:`, e.message);
       }
+      // NOTE: Do NOT delete file — it is the storage in local mode.
     });
 
   } catch (err) {
-    console.error('Upload error:', err);
+    console.error('[Upload] Unhandled error:', err);
     res.status(500).json({ error: err.message });
   }
 });
+
 
 app.put('/api/materials/:id', verifyToken, async (req, res) => {
   try {
@@ -765,34 +724,66 @@ Prioritize structured explanations, bullet summaries, and exam-oriented guidance
 
     // ── Async Firestore persistence (does NOT block response) ──
     setImmediate(async () => {
+      const userMsg = {
+        role: 'user',
+        content: message,
+        timestamp: new Date().toISOString(),
+      };
+      const aiMsg = {
+        role: 'assistant',
+        content: responseText,
+        timestamp: new Date().toISOString(),
+        model: result.modelUsed,
+      };
+
       try {
         if (!finalChatId) {
+          // NEW chat: create header doc + add both messages to subcollection (schema v2)
           let title = message.trim();
           if (title.length > 35) title = title.substring(0, 32) + '...';
-          await db.collection('chats').add({
-            userId:    req.user.id,
+          const chatRef = await db.collection('chats').add({
+            userId: req.user.id,
             title,
-            messages:  [
-              { role: 'user',      content: message,      timestamp: new Date().toISOString() },
-              { role: 'assistant', content: responseText, timestamp: new Date().toISOString(), model: result.modelUsed },
-            ],
             modelMode,
+            schemaVersion: 2,
+            messageCount: 2,
+            lastMessage: aiMsg.content.substring(0, 100),
             createdAt: admin.firestore.FieldValue.serverTimestamp(),
             updatedAt: admin.firestore.FieldValue.serverTimestamp(),
           });
+          const msgCol = chatRef.collection('messages');
+          await msgCol.add({ ...userMsg, seq: 0 });
+          await msgCol.add({ ...aiMsg,   seq: 1 });
+          console.log(`[AI Chat] New chat created (v2): ${chatRef.id}`);
         } else {
-          await db.collection('chats').doc(finalChatId).update({
-            messages: admin.firestore.FieldValue.arrayUnion(
-              { role: 'user',      content: message,      timestamp: new Date().toISOString() },
-              { role: 'assistant', content: responseText, timestamp: new Date().toISOString(), model: result.modelUsed },
-            ),
-            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-          });
+          // EXISTING chat: check schema version
+          const chatDoc = await db.collection('chats').doc(finalChatId).get();
+          const isV2 = chatDoc.exists && chatDoc.data().schemaVersion === 2;
+
+          if (isV2) {
+            // v2: append to subcollection
+            const msgCol = db.collection('chats').doc(finalChatId).collection('messages');
+            const currentCount = chatDoc.data().messageCount || 0;
+            await msgCol.add({ ...userMsg, seq: currentCount });
+            await msgCol.add({ ...aiMsg,   seq: currentCount + 1 });
+            await db.collection('chats').doc(finalChatId).update({
+              messageCount: admin.firestore.FieldValue.increment(2),
+              lastMessage: aiMsg.content.substring(0, 100),
+              updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            });
+          } else {
+            // v1 legacy: still use arrayUnion (do not break old chats)
+            await db.collection('chats').doc(finalChatId).update({
+              messages: admin.firestore.FieldValue.arrayUnion(userMsg, aiMsg),
+              updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            });
+          }
         }
       } catch (dbErr) {
         console.error('[AI Chat] Async Firestore persistence failed (non-critical):', dbErr.message);
       }
     });
+
 
   } catch (err) {
     console.error('[AI Chat Error]', err.message);
@@ -801,8 +792,28 @@ Prioritize structured explanations, bullet summaries, and exam-oriented guidance
 });
 
 // ═══════════════════════════════════════════════════════════
-// CHAT PERSISTENCE ROUTES
+// CHAT PERSISTENCE ROUTES (Schema v2 — subcollection messages)
+// Backward-compatible: old v1 array-based chats still served.
 // ═══════════════════════════════════════════════════════════
+
+/**
+ * Fetches messages for a chat, handling both schema versions:
+ *  v2 (schemaVersion: 2) — messages in subcollection
+ *  v1 (legacy)           — messages in array field on the chat document
+ */
+async function getChatMessages(chatId, chatData) {
+  if (chatData.schemaVersion === 2) {
+    const snap = await db.collection('chats').doc(chatId)
+      .collection('messages')
+      .orderBy('seq', 'asc')
+      .get();
+    const msgs = [];
+    snap.forEach(d => msgs.push({ id: d.id, ...d.data() }));
+    return msgs;
+  }
+  // v1 legacy: messages stored as array
+  return chatData.messages || [];
+}
 
 app.get('/api/ai/chats', verifyToken, async (req, res) => {
   try {
@@ -825,18 +836,24 @@ app.get('/api/ai/chats', verifyToken, async (req, res) => {
       });
     }
 
-    // Filter out invalid/empty chats and add preview
-    const filteredChats = rawChats
-      .filter(chat => chat.messages && chat.messages.length > 0)
-      .map(chat => {
-        const lastMsg = chat.messages[chat.messages.length - 1];
-        return {
-          ...chat,
-          preview: lastMsg ? lastMsg.content.substring(0, 60) + (lastMsg.content.length > 60 ? "..." : "") : ""
-        };
-      });
+    // Build previews. For v2 chats use lastMessage field; for v1 use message array.
+    const processedChats = rawChats.map(chat => {
+      const isV2 = chat.schemaVersion === 2;
+      if (isV2) {
+        // v2: preview is stored directly on the chat doc
+        return { ...chat, preview: chat.lastMessage || '' };
+      }
+      // v1 legacy
+      const msgs = chat.messages || [];
+      if (msgs.length === 0) return null; // filter out empty v1 chats
+      const last = msgs[msgs.length - 1];
+      return {
+        ...chat,
+        preview: last ? last.content.substring(0, 60) + (last.content.length > 60 ? '...' : '') : ''
+      };
+    }).filter(Boolean);
 
-    res.json(filteredChats);
+    res.json(processedChats);
   } catch (err) {
     console.error('[Chat History Error]', err);
     res.status(400).json({ error: err.message });
@@ -845,13 +862,15 @@ app.get('/api/ai/chats', verifyToken, async (req, res) => {
 
 app.post('/api/ai/chats', verifyToken, async (req, res) => {
   try {
-    const { title = "New Chat", messages = [] } = req.body;
+    const { title = 'New Chat' } = req.body;
     const docRef = await db.collection('chats').add({
       userId: req.user.id,
       title,
-      messages,
+      schemaVersion: 2,
+      messageCount: 0,
+      lastMessage: '',
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
     res.json({ id: docRef.id, title });
   } catch (err) {
@@ -864,7 +883,23 @@ app.get('/api/ai/chats/:chatId', verifyToken, async (req, res) => {
     const doc = await db.collection('chats').doc(req.params.chatId).get();
     if (!doc.exists) return res.status(404).json({ error: 'Chat not found' });
     if (doc.data().userId !== req.user.id) return res.status(403).json({ error: 'Forbidden' });
-    res.json(formatDoc(doc));
+    const messages = await getChatMessages(req.params.chatId, doc.data());
+    res.json({ ...formatDoc(doc), messages });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.put('/api/ai/chats/:id', verifyToken, async (req, res) => {
+  try {
+    const { title } = req.body;
+    if (title) {
+      await db.collection('chats').doc(req.params.id).update({
+        title,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+    }
+    res.json({ success: true });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -875,7 +910,16 @@ app.delete('/api/ai/chats/:chatId', verifyToken, async (req, res) => {
     const doc = await db.collection('chats').doc(req.params.chatId).get();
     if (!doc.exists) return res.status(404).json({ error: 'Chat not found' });
     if (doc.data().userId !== req.user.id) return res.status(403).json({ error: 'Forbidden' });
-    
+
+    // If v2, delete messages subcollection first
+    if (doc.data().schemaVersion === 2) {
+      const msgSnap = await db.collection('chats').doc(req.params.chatId)
+        .collection('messages').get();
+      const batch = db.batch();
+      msgSnap.forEach(d => batch.delete(d.ref));
+      await batch.commit();
+    }
+
     await db.collection('chats').doc(req.params.chatId).delete();
     res.json({ success: true });
   } catch (err) {
@@ -1029,7 +1073,8 @@ Student Question: ${question}`;
 // Legacy Syllabus routes removed in Phase R5 Cleanup
 
 app.post('/api/share/generate', verifyToken, async (req, res) => {
-  res.status(501).json({ error: 'Not Implemented without Cloud Storage' });
+  // Share link generation is deferred pending cloud storage provider selection.
+  res.status(501).json({ error: 'Share links are not yet available. Cloud storage provider is pending selection.' });
 });
 
 // ═══════════════════════════════════════════════════════════
