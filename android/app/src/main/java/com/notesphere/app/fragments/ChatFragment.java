@@ -56,10 +56,19 @@ public class ChatFragment extends Fragment {
         binding.btnChatHistory.setOnClickListener(v -> showChatHistory());
         binding.btnAttachFile.setOnClickListener(v -> showMaterialPicker());
 
+        setupModelSpinner();
+
         // Initial setup
         startNewChat();
         
         return binding.getRoot();
+    }
+
+    private void setupModelSpinner() {
+        String[] modes = {"Auto", "Fast", "Balanced", "Deep Reasoning", "Document Expert"};
+        android.widget.ArrayAdapter<String> adapter = new android.widget.ArrayAdapter<>(getContext(), android.R.layout.simple_spinner_item, modes);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        binding.spinnerModel.setAdapter(adapter);
     }
 
     private void startNewChat() {
@@ -69,7 +78,6 @@ public class ChatFragment extends Fragment {
         apiHistory.clear();
         adapter.notifyDataSetChanged();
         binding.tvChatTitle.setText("Chat");
-        binding.tvActiveModel.setText("Gemini");
         binding.btnAttachFile.setColorFilter(null);
         
         // Premium Empty State: "Start a new study conversation"
@@ -184,6 +192,15 @@ public class ChatFragment extends Fragment {
         request.setChatId(currentChatId);
         request.setMaterialId(attachedMaterialId);
 
+        String selectedMode = binding.spinnerModel.getSelectedItem().toString();
+        switch (selectedMode) {
+            case "Fast": request.setModelMode("fast"); break;
+            case "Balanced": request.setModelMode("balanced"); break;
+            case "Deep Reasoning": request.setModelMode("deep"); break;
+            case "Document Expert": request.setModelMode("document"); break;
+            default: request.setModelMode("auto"); break;
+        }
+
         binding.loadingAnimation.setVisibility(View.VISIBLE);
         binding.viewStatusDot.setBackgroundResource(R.drawable.bg_circle_green);
 
@@ -208,7 +225,6 @@ public class ChatFragment extends Fragment {
                     adapter.notifyItemInserted(messages.size() - 1);
                     binding.rvChat.smoothScrollToPosition(messages.size() - 1);
                     
-                    binding.tvActiveModel.setText(modelUsed != null ? modelUsed : "Gemini");
                     binding.viewStatusDot.setBackgroundResource(R.drawable.bg_circle_green);
                 } else {
                     binding.viewStatusDot.setBackgroundResource(R.drawable.bg_circle_red);

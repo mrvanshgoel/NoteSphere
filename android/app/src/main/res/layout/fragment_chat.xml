@@ -56,14 +56,13 @@
                         android:layout_height="6dp"
                         android:background="@drawable/bg_circle_green" />
 
-                    <TextView
-                        android:id="@+id/tvActiveModel"
+                    <Spinner
+                        android:id="@+id/spinnerModel"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="4dp"
-                        android:text="Gemini 2.0"
-                        android:textColor="@color/ns_text_secondary"
-                        android:textSize="10sp" />
+                        android:backgroundTint="@color/ns_text_secondary"
+                        android:minHeight="24dp" />
                 </LinearLayout>
             </LinearLayout>
 

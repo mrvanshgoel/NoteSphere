@@ -273,11 +273,10 @@ class AIRouter {
       if (confirmed.length > 0) return confirmed;
     }
 
-    // If availability filter empties the list, fall back to health-only filter
     if (healthy.length > 0) return healthy;
 
-    // Last resort: use entire candidate list even if demoted
-    return candidates;
+    // Strict exclusion: do not fallback to dead models
+    throw new Error('No healthy/available models found for this task. Please try again later.');
   }
 
   // ───────────────────────────────────────────────────────────

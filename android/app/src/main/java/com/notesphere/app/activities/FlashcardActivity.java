@@ -57,10 +57,27 @@ public class FlashcardActivity extends AppCompatActivity {
             @Override
             public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
                 if (response.isSuccessful() && response.body() != null) {
-                    JsonArray arr = response.body().getAsJsonArray("flashcards");
-                    for (int i = 0; i < arr.size(); i++) cards.add(arr.get(i).getAsJsonObject());
-                    adapter.notifyDataSetChanged();
-                    updateProgress(0);
+                    try {
+                        if (response.body().has("flashcards") && response.body().get("flashcards").isJsonArray()) {
+                            JsonArray arr = response.body().getAsJsonArray("flashcards");
+                            if (arr.size() == 0) {
+                                Toast.makeText(FlashcardActivity.this, "No flashcards generated. Try again.", Toast.LENGTH_SHORT).show();
+                            } else {
+                                for (int i = 0; i < arr.size(); i++) {
+                                    if (arr.get(i) != null && arr.get(i).isJsonObject()) {
+                                        cards.add(arr.get(i).getAsJsonObject());
+                                    }
+                                }
+                                adapter.notifyDataSetChanged();
+                                updateProgress(0);
+                            }
+                        } else {
+                            Toast.makeText(FlashcardActivity.this, "AI response format error.", Toast.LENGTH_SHORT).show();
+                        }
+                    } catch (Exception e) {
+                        Toast.makeText(FlashcardActivity.this, "Error parsing flashcards.", Toast.LENGTH_SHORT).show();
+                        e.printStackTrace();
+                    }
                 } else {
                     Toast.makeText(FlashcardActivity.this, "Failed to generate cards", Toast.LENGTH_SHORT).show();
                 }

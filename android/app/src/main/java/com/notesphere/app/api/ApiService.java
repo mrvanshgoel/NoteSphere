@@ -5,6 +5,7 @@ import com.notesphere.app.models.AiResponse;
 import com.notesphere.app.models.ChatRequest;
 import com.notesphere.app.models.LoginRequest;
 import com.notesphere.app.models.Material;
+import com.notesphere.app.models.Note;
 import com.notesphere.app.models.QuizResponse;
 import com.notesphere.app.models.RegisterRequest;
 import com.notesphere.app.models.Subject;
@@ -138,6 +139,19 @@ public interface ApiService {
     // ─── AI: Syllabus Extraction ─────────────────────────────────────────
     @POST("api/ai/syllabus")
     Call<Syllabus> extractSyllabus(@Body AiRequest body);
+
+    // ─── Notes System (Phase 4.5) ─────────────────────────────────────────
+    @GET("api/study/subjects/{subjectId}/notes")
+    Call<List<Note>> getNotes(@Path("subjectId") String subjectId);
+
+    @POST("api/study/subjects/{subjectId}/notes")
+    Call<Note> createNote(@Path("subjectId") String subjectId, @Body Note note);
+
+    @PUT("api/study/subjects/{subjectId}/notes/{noteId}")
+    Call<JsonObject> updateNote(@Path("subjectId") String subjectId, @Path("noteId") String noteId, @Body Note note);
+
+    @DELETE("api/study/subjects/{subjectId}/notes/{noteId}")
+    Call<JsonObject> deleteNote(@Path("subjectId") String subjectId, @Path("noteId") String noteId);
 
     // ─── Syllabus Tracker ────────────────────────────────────────────────
     @GET("api/syllabus/{userId}")

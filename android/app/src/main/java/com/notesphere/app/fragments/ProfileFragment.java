@@ -143,29 +143,12 @@ public class ProfileFragment extends Fragment {
             .diskCacheStrategy(DiskCacheStrategy.NONE)
             .skipMemoryCache(true);
 
-        if (url.startsWith("data:image")) {
-            // Base64 data URI — Glide doesn't support this natively, decode to Bitmap
-            try {
-                String base64Data = url.substring(url.indexOf(',') + 1);
-                byte[] decoded = Base64.decode(base64Data, Base64.DEFAULT);
-                Bitmap bitmap = BitmapFactory.decodeByteArray(decoded, 0, decoded.length);
-                if (bitmap != null) {
-                    Glide.with(this)
-                        .load(bitmap)
-                        .apply(options)
-                        .into(binding.ivProfile);
-                }
-            } catch (Exception e) {
-                android.util.Log.e("AVATAR", "Base64 decode failed: " + e.getMessage());
-            }
-        } else {
-            // Regular URL — add cache-bust param
-            String cacheBustUrl = url + (url.contains("?") ? "&" : "?") + "t=" + System.currentTimeMillis();
-            Glide.with(this)
-                .load(cacheBustUrl)
-                .apply(options)
-                .into(binding.ivProfile);
-        }
+        // Regular URL - add cache-bust param
+        String cacheBustUrl = url + (url.contains("?") ? "&" : "?") + "t=" + System.currentTimeMillis();
+        Glide.with(this)
+            .load(cacheBustUrl)
+            .apply(options)
+            .into(binding.ivProfile);
     }
 
     private void showChangeEmailDialog() {
@@ -255,9 +238,9 @@ public class ProfileFragment extends Fragment {
                         (int)(original.getHeight() * scale), true);
             }
 
-            // Compress to JPEG at 85% quality
+            // Compress to JPEG at 80% quality
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            scaled.compress(Bitmap.CompressFormat.JPEG, 85, baos);
+            scaled.compress(Bitmap.CompressFormat.JPEG, 80, baos);
             byte[] imageBytes = baos.toByteArray();
 
             // Write compressed bytes to temp file

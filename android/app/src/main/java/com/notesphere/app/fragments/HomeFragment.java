@@ -138,20 +138,7 @@ public class HomeFragment extends Fragment {
             .diskCacheStrategy(com.bumptech.glide.load.engine.DiskCacheStrategy.NONE)
             .skipMemoryCache(true);
 
-        if (avatarUrl.startsWith("data:image")) {
-            try {
-                String base64Data = avatarUrl.substring(avatarUrl.indexOf(',') + 1);
-                byte[] decoded = android.util.Base64.decode(base64Data, android.util.Base64.DEFAULT);
-                android.graphics.Bitmap bitmap = android.graphics.BitmapFactory.decodeByteArray(decoded, 0, decoded.length);
-                if (bitmap != null) {
-                    Glide.with(this).load(bitmap).apply(options).into(binding.ivHomeAvatar);
-                }
-            } catch (Exception e) {
-                android.util.Log.e("HOME_AVATAR", "Base64 decode failed: " + e.getMessage());
-            }
-        } else {
-            Glide.with(this).load(avatarUrl).apply(options).into(binding.ivHomeAvatar);
-        }
+        Glide.with(this).load(avatarUrl).apply(options).into(binding.ivHomeAvatar);
     }
 
     private void setupQuickActions() {

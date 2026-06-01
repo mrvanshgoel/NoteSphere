@@ -7,6 +7,7 @@ public class ChatRequest {
     private List<ApiMessage> history;
     private String chatId;
     private String materialId;
+    private String modelMode;
 
     public ChatRequest(String message, List<ApiMessage> history) {
         this.message = message;
@@ -21,4 +22,7 @@ public class ChatRequest {
 
     public String getMaterialId() { return materialId; }
     public void setMaterialId(String materialId) { this.materialId = materialId; }
+
+    public String getModelMode() { return modelMode; }
+    public void setModelMode(String modelMode) { this.modelMode = modelMode; }
 }

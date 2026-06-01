@@ -86,7 +86,9 @@ public class SubjectDetailActivity extends AppCompatActivity {
         binding.btnNewFolder.setOnClickListener(v -> showCreateFolderDialog());
         // Hub Actions
         binding.cardNotes.setOnClickListener(v -> {
-            Toast.makeText(this, "Notes system coming soon (Phase 4.5)", Toast.LENGTH_SHORT).show();
+            android.content.Intent intent = new android.content.Intent(this, NotesListActivity.class);
+            intent.putExtra("subjectId", subjectId);
+            startActivity(intent);
         });
 
         binding.cardFlashcards.setOnClickListener(v -> {

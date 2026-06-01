@@ -27,8 +27,8 @@ public class FlashcardAdapter extends RecyclerView.Adapter<FlashcardAdapter.View
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         JsonObject card = cards.get(position);
-        String question = card.get("question").getAsString();
-        String answer = card.get("answer").getAsString();
+        String question = card.has("question") && !card.get("question").isJsonNull() ? card.get("question").getAsString() : "No question provided";
+        String answer = card.has("answer") && !card.get("answer").isJsonNull() ? card.get("answer").getAsString() : "No answer provided";
 
         holder.tvContent.setText(question);
         holder.tvType.setText("QUESTION");

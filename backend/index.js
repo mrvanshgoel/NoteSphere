@@ -87,7 +87,7 @@ try {
   if (credential) {
     admin.initializeApp({
       credential,
-      storageBucket: process.env.FIREBASE_STORAGE_BUCKET || 'vansh-notesphere.appspot.com'
+      storageBucket: process.env.FIREBASE_STORAGE_BUCKET || 'vansh-notesphere.firebasestorage.app'
     });
     console.log('Firebase initialized successfully');
   }
@@ -224,21 +224,27 @@ app.post('/api/auth/upload-avatar', verifyToken, upload.single('avatar'), async 
       return res.status(400).json({ error: 'Only image files are allowed' });
     }
 
-    // Enforce 2MB limit for Firestore storage
-    if (file.size > 2 * 1024 * 1024) {
+    if (!bucket) {
       if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
-      return res.status(400).json({ error: 'Image too large. Max size is 2MB.' });
+      return res.status(500).json({ error: 'Firebase Storage is not available' });
     }
 
-    // Convert to base64 data URL — stored directly in Firestore (survives Render deploys)
-    const imageBuffer = fs.readFileSync(file.path);
-    const base64Image = imageBuffer.toString('base64');
-    const avatarUrl   = `data:${file.mimetype};base64,${base64Image}`;
+    const storagePathStr = `avatars/${req.user.id}_${Date.now()}.jpg`;
+    const bucketFile = bucket.file(storagePathStr);
+    const fileBuffer = fs.readFileSync(file.path);
+    
+    await bucketFile.save(fileBuffer, { contentType: file.mimetype });
+    
+    // Generate a long-lived download URL
+    const [avatarUrl] = await bucketFile.getSignedUrl({
+      action: 'read',
+      expires: '01-01-2099'
+    });
 
     // Clean up temp file
     if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
 
-    console.log(`[Avatar] Stored as base64 (${Math.round(base64Image.length / 1024)}KB) for UID: ${req.user.id}`);
+    console.log(`[Avatar] Uploaded successfully to Firebase Storage for UID: ${req.user.id}`);
 
     await db.collection('profiles').doc(req.user.id).set({
       avatar_url: avatarUrl,
@@ -1112,6 +1118,101 @@ app.get('/api/study/analytics', verifyToken, async (req, res) => {
       quizAccuracy: totalQuestions > 0 ? (totalScore / totalQuestions) * 100 : 0,
       subjectCount: subjectsSnap.size
     });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════
+// NOTES SYSTEM (Phase 4.5)
+// ═══════════════════════════════════════════════════════════
+
+// GET all notes for a specific subject
+app.get('/api/study/subjects/:subjectId/notes', verifyToken, async (req, res) => {
+  try {
+    const { subjectId } = req.params;
+    const notesRef = db.collection('notes');
+    const snapshot = await notesRef
+      .where('userId', '==', req.user.id)
+      .where('subjectId', '==', subjectId)
+      .orderBy('updatedAt', 'desc')
+      .get();
+      
+    const notes = [];
+    snapshot.forEach(doc => {
+      notes.push({ id: doc.id, ...doc.data() });
+    });
+    res.json(notes);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST create a new note
+app.post('/api/study/subjects/:subjectId/notes', verifyToken, async (req, res) => {
+  try {
+    const { subjectId } = req.params;
+    const { title, content, pinned = false, tags = [] } = req.body;
+    
+    if (!title || !content) return res.status(400).json({ error: 'Title and content required' });
+
+    const newNote = {
+      userId: req.user.id,
+      subjectId,
+      title,
+      content,
+      pinned,
+      tags,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    };
+    
+    const docRef = await db.collection('notes').add(newNote);
+    res.json({ id: docRef.id, ...newNote });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// PUT update an existing note
+app.put('/api/study/subjects/:subjectId/notes/:noteId', verifyToken, async (req, res) => {
+  try {
+    const { noteId } = req.params;
+    const { title, content, pinned, tags } = req.body;
+    
+    const docRef = db.collection('notes').doc(noteId);
+    const doc = await docRef.get();
+    
+    if (!doc.exists || doc.data().userId !== req.user.id) {
+      return res.status(403).json({ error: 'Unauthorized or not found' });
+    }
+
+    const updates = { updatedAt: admin.firestore.FieldValue.serverTimestamp() };
+    if (title !== undefined) updates.title = title;
+    if (content !== undefined) updates.content = content;
+    if (pinned !== undefined) updates.pinned = pinned;
+    if (tags !== undefined) updates.tags = tags;
+    
+    await docRef.update(updates);
+    res.json({ success: true, updatedFields: updates });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// DELETE a note
+app.delete('/api/study/subjects/:subjectId/notes/:noteId', verifyToken, async (req, res) => {
+  try {
+    const { noteId } = req.params;
+    const docRef = db.collection('notes').doc(noteId);
+    const doc = await docRef.get();
+    
+    if (!doc.exists || doc.data().userId !== req.user.id) {
+      return res.status(403).json({ error: 'Unauthorized or not found' });
+    }
+
+    await docRef.delete();
+    res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
