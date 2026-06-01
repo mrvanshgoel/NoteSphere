@@ -85,6 +85,7 @@ public class ProfileFragment extends Fragment {
         
         binding.btnLogout.setOnClickListener(v -> {
             pref.logout();
+            com.google.firebase.auth.FirebaseAuth.getInstance().signOut();
             Context context = getContext();
             if (context != null) {
                 Intent intent = new Intent(context, LoginActivity.class);

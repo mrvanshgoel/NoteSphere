@@ -59,6 +59,18 @@ public class SharedPrefManager {
             .apply();
     }
 
+    public static void forceSignOut(Context context) {
+        getInstance(context).logout();
+        try {
+            com.google.firebase.auth.FirebaseAuth.getInstance().signOut();
+        } catch (Exception e) {
+            // Ignore
+        }
+        android.content.Intent intent = new android.content.Intent(context, com.notesphere.app.activities.LoginActivity.class);
+        intent.setFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK | android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        context.startActivity(intent);
+    }
+
     // ─── User Info ───────────────────────────────────────────────────────────
 
     public void saveUserInfo(String name, String email, String avatarUrl) {

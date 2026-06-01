@@ -40,7 +40,11 @@ public class AuthInterceptor implements Interceptor {
                 Request newRequest = originalRequest.newBuilder()
                         .header("Authorization", "Bearer " + token)
                         .build();
-                return chain.proceed(newRequest);
+                Response response = chain.proceed(newRequest);
+                if (response.code() == 401 || response.code() == 403) {
+                    com.notesphere.app.utils.SharedPrefManager.forceSignOut(com.notesphere.app.NoteSphereApplication.getAppContext());
+                }
+                return response;
             }
         } catch (Exception e) {
             e.printStackTrace();

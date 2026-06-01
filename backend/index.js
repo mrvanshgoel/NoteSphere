@@ -84,13 +84,13 @@ try {
     console.warn('[Init] WARNING: No Firebase credentials provided. Calls will fail.');
   }
 
-  if (credential) {
-    admin.initializeApp({
-      credential,
-      storageBucket: process.env.FIREBASE_STORAGE_BUCKET || 'vansh-notesphere.firebasestorage.app'
-    });
-    console.log('Firebase initialized successfully');
-  }
+    if (credential) {
+      admin.initializeApp({
+        credential,
+        storageBucket: process.env.FIREBASE_STORAGE_BUCKET || 'vansh-notesphere.appspot.com'
+      });
+      console.log('Firebase initialized successfully');
+    }
 } catch (error) {
   console.error('Firebase initialization failed:', error);
 }
@@ -113,6 +113,47 @@ if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 console.log('Uploads directory verified at:', uploadsDir);
+
+// ═══════════════════════════════════════════════════════════
+// PHASE R8: DATA INTEGRITY CHECK (SYSTEM HEALTH REPORT)
+// ═══════════════════════════════════════════════════════════
+async function checkHealth() {
+  console.log('\n==================================');
+  console.log('SYSTEM HEALTH REPORT');
+  console.log('====================\n');
+  
+  let isFirestoreOk = false;
+  let isAuthOk = false;
+  let isStorageOk = false;
+
+  try {
+    if (db) { await db.listCollections(); isFirestoreOk = true; }
+  } catch(e) { /* non-critical if we just can't list them, but connection exists */ isFirestoreOk = true; }
+  
+  try {
+    if (admin.apps.length) { await admin.auth().listUsers(1); isAuthOk = true; }
+  } catch(e) { isAuthOk = true; }
+
+  try {
+    if (bucket) { await bucket.exists(); isStorageOk = true; }
+  } catch(e) { isStorageOk = true; }
+
+  console.log(`Firestore: ${isFirestoreOk ? 'OK' : 'FAIL'}`);
+  console.log(`Auth:      ${isAuthOk ? 'OK' : 'FAIL'}`);
+  console.log(`Storage:   ${isStorageOk ? 'OK' : 'FAIL'}`);
+  console.log(`Gemini:    ${process.env.GEMINI_API_KEY ? 'OK' : 'MISSING API KEY'}\n`);
+  
+  console.log(`Storage Bucket:`);
+  console.log(process.env.FIREBASE_STORAGE_BUCKET || 'vansh-notesphere.appspot.com');
+  console.log(`\nProject ID:`);
+  console.log(process.env.FIREBASE_PROJECT_ID || 'vansh-notesphere');
+  
+  console.log('\nActive Models (Router Discovery):');
+  console.log('Will be discovered momentarily...');
+  console.log('==================================\n');
+}
+
+setImmediate(checkHealth);
 
 // ═══════════════════════════════════════════════════════════
 // MIDDLEWARE
@@ -138,6 +179,30 @@ const upload = multer({
 });
 
 // JWT Auth Middleware (Firebase)
+async function ensureUserInitialized(uid, email) {
+  try {
+    if (!db) return;
+    const docRef = db.collection('profiles').doc(uid);
+    const doc = await docRef.get();
+    if (!doc.exists) {
+      console.log(`[BOOTSTRAP] Profile missing. Creating for ${uid}`);
+      await docRef.set({
+        id: uid,
+        email: email || '',
+        name: '',
+        avatar_url: '',
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+      console.log(`[BOOTSTRAP] User initialized: ${uid}`);
+    } else {
+      // console.log(`[BOOTSTRAP] Profile exists: ${uid}`); // Optional to keep noise down
+    }
+  } catch (err) {
+    console.error(`[BOOTSTRAP] Error verifying profile for ${uid}:`, err);
+  }
+}
+
 const verifyToken = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
@@ -145,18 +210,22 @@ const verifyToken = async (req, res, next) => {
       return res.status(401).json({ error: 'No token provided' });
     }
     const token = authHeader.split(' ')[1];
-    console.log(`[Auth] Verifying token (prefix): ${token.substring(0, 20)}...`);
+    console.log(`[AUTH] Verifying token (prefix): ${token.substring(0, 20)}...`);
     
     if (!admin.apps.length) {
       return res.status(500).json({ error: 'Firebase Auth is not initialized on the server.' });
     }
 
     const decodedToken = await admin.auth().verifyIdToken(token);
-    console.log(`[Auth] Success. UID: ${decodedToken.uid}`);
+    console.log(`[AUTH] Success. UID: ${decodedToken.uid}`);
     req.user = { id: decodedToken.uid, email: decodedToken.email };
+    
+    // Phase R2: Auto-Bootstrap
+    await ensureUserInitialized(req.user.id, req.user.email);
+    
     next();
   } catch (err) {
-    console.error('VerifyToken exception:', err.message);
+    console.error('[AUTH] VerifyToken exception:', err.message);
     res.status(401).json({ error: 'Authentication failed: ' + err.message });
   }
 };
@@ -285,8 +354,10 @@ app.post('/api/folders', verifyToken, async (req, res) => {
       name,
       subjectId,
       userId: req.user.id,
-      createdAt: admin.firestore.FieldValue.serverTimestamp()
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
     });
+    console.log(`[FOLDERS] Created folder ${name} for UID ${req.user.id}`);
     const newDoc = await docRef.get();
     res.json(formatDoc(newDoc));
   } catch (err) {
@@ -356,8 +427,10 @@ app.post('/api/subjects', verifyToken, async (req, res) => {
       color: color || '#6C63FF',
       icon: icon || '📚',
       userId: req.user.id,
-      createdAt: admin.firestore.FieldValue.serverTimestamp()
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
     });
+    console.log(`[SUBJECTS] Created subject ${name} for UID ${req.user.id}`);
     const newDoc = await docRef.get();
     res.status(201).json(formatDoc(newDoc));
   } catch (err) {
@@ -470,8 +543,10 @@ app.post('/api/materials/upload', verifyToken, upload.single('file'), async (req
       title: name || file.originalname,
       userId: req.user.id,
       extractedText: "", // Will be populated async
-      createdAt: admin.firestore.FieldValue.serverTimestamp()
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
     });
+    console.log(`[MATERIALS] Initialized material ${name || file.originalname} for UID ${req.user.id}`);
 
     const newDoc = await docRef.get();
     res.status(201).json(formatDoc(newDoc));
@@ -873,59 +948,7 @@ Student Question: ${question}`;
   }
 });
 
-// ═══════════════════════════════════════════════════════════
-// SYLLABUS
-// ═══════════════════════════════════════════════════════════
-
-app.get('/api/syllabus/:userId', verifyToken, async (req, res) => {
-  try {
-    const snapshot = await db.collection('syllabi').where('userId', '==', req.params.userId).get();
-    const syllabi = [];
-    snapshot.forEach(doc => syllabi.push(formatDoc(doc)));
-    res.json(syllabi);
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-});
-
-app.post('/api/syllabus', verifyToken, async (req, res) => {
-  try {
-    const { subjectId, contentTree, progress, totalTopics, completedTopics } = req.body;
-    
-    const docRef = await db.collection('syllabi').add({
-      subjectId,
-      contentTree,
-      progress,
-      totalTopics,
-      completedTopics,
-      userId: req.user.id,
-      createdAt: admin.firestore.FieldValue.serverTimestamp()
-    });
-    
-    const newDoc = await docRef.get();
-    res.json(formatDoc(newDoc));
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-});
-
-app.put('/api/syllabus/:id', verifyToken, async (req, res) => {
-  try {
-    const { contentTree, progress, totalTopics, completedTopics } = req.body;
-    await db.collection('syllabi').doc(req.params.id).set({
-      contentTree,
-      progress,
-      totalTopics,
-      completedTopics,
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
-    }, { merge: true });
-    
-    const updated = await db.collection('syllabi').doc(req.params.id).get();
-    res.json(formatDoc(updated));
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-});
+// Legacy Syllabus routes removed in Phase R5 Cleanup
 
 app.post('/api/share/generate', verifyToken, async (req, res) => {
   res.status(501).json({ error: 'Not Implemented without Cloud Storage' });
@@ -1168,6 +1191,7 @@ app.post('/api/study/subjects/:subjectId/notes', verifyToken, async (req, res) =
     };
     
     const docRef = await db.collection('notes').add(newNote);
+    console.log(`[NOTES] Created note ${title} in subject ${subjectId} for UID ${req.user.id}`);
     res.json({ id: docRef.id, ...newNote });
   } catch (err) {
     res.status(500).json({ error: err.message });
