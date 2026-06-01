@@ -69,6 +69,8 @@ const ROUTING_TABLES = {
    */
   OCR: [
     'gemini-3.1-flash-image-preview',
+    'gemini-3.1-flash-image',
+    'gemini-2.5-flash',       // Added: Native vision, shares the main 15 RPM free tier quota
     'gemini-2.5-flash-image',
   ],
 
