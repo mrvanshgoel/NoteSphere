@@ -657,7 +657,8 @@ async function getMaterialText(materialId, userId) {
 
   // 2. Fallback to file if exists
   if (data.filePath) {
-    const fullPath = path.join(__dirname, data.filePath);
+    const filename = data.filePath.split('/').pop();
+    const fullPath = path.join(__dirname, 'uploads', filename);
     if (fs.existsSync(fullPath)) {
       const buffer = fs.readFileSync(fullPath);
       const text = await extractTextFromBuffer(buffer, data.fileType);
