@@ -46,12 +46,10 @@ const ROUTING_TABLES = {
    * Goal: ultra-fast, low-latency, good comprehension
    */
   CHAT: [
-    'gemini-2.5-flash-preview-05-20',
+    'gemini-3.1-flash-lite',
+    'gemini-3-flash-preview',
     'gemini-2.5-flash',
-    'gemini-2.5-flash-lite-preview-06-17',
-    'gemini-2.0-flash-thinking-exp-01-21',
-    'gemini-pro-latest',
-    'gemini-1.5-flash-latest',
+    'gemini-flash-latest',
   ],
 
   /**
@@ -59,12 +57,9 @@ const ROUTING_TABLES = {
    * Goal: deep reasoning, long context, structured JSON output
    */
   DOCUMENT: [
-    'gemini-2.5-pro-preview-06-05',
-    'gemini-2.5-pro-preview-05-06',
-    'gemini-2.5-pro',
-    'gemini-2.5-flash-preview-05-20',
+    'gemini-3.1-pro-preview',
+    'gemini-3-pro-preview',
     'gemini-2.5-flash',
-    'gemini-1.5-pro-latest',
   ],
 
   /**
@@ -73,10 +68,8 @@ const ROUTING_TABLES = {
    * Resolved dynamically from discovered models with vision support
    */
   OCR: [
-    'gemini-2.5-flash-preview-05-20',
-    'gemini-2.5-flash',
-    'gemini-1.5-flash-latest',
-    'gemini-pro-vision',
+    'gemini-3.1-flash-image-preview',
+    'gemini-2.5-flash-image',
   ],
 
   /**
