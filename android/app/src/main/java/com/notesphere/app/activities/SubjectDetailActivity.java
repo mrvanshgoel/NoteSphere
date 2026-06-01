@@ -1,10 +1,22 @@
 package com.notesphere.app.activities;
 
+import android.content.Intent;
 import android.os.Bundle;
+import android.view.View;
+import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
-import com.google.android.material.tabs.TabLayoutMediator;
-import com.notesphere.app.adapters.SubjectPagerAdapter;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import com.notesphere.app.api.ApiClient;
 import com.notesphere.app.databinding.ActivitySubjectDetailBinding;
+import com.notesphere.app.models.Material;
+import com.notesphere.app.activities.NoteEditorActivity;
+import com.notesphere.app.activities.NotesListActivity;
+import com.notesphere.app.activities.FlashcardActivity;
+import com.notesphere.app.activities.QuizActivity;
+import java.util.List;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class SubjectDetailActivity extends AppCompatActivity {
     private ActivitySubjectDetailBinding binding;
@@ -19,7 +31,6 @@ public class SubjectDetailActivity extends AppCompatActivity {
 
         subjectId = getIntent().getStringExtra("subject_id");
         subjectName = getIntent().getStringExtra("subject_name");
-        String subjectColor = getIntent().getStringExtra("subject_color");
 
         if (subjectId == null) {
             finish();
@@ -29,19 +40,72 @@ public class SubjectDetailActivity extends AppCompatActivity {
         binding.tvSubjectName.setText(subjectName);
         binding.toolbar.setNavigationOnClickListener(v -> finish());
 
-        // Setup ViewPager and TabLayout
-        SubjectPagerAdapter pagerAdapter = new SubjectPagerAdapter(this, subjectId, subjectName);
-        binding.viewPager.setAdapter(pagerAdapter);
+        setupCards();
+        fetchData();
+    }
 
-        new TabLayoutMediator(binding.tabLayout, binding.viewPager,
-                (tab, position) -> {
-                    switch (position) {
-                        case 0: tab.setText("Overview"); break;
-                        case 1: tab.setText("Files"); break;
-                        case 2: tab.setText("Notes"); break;
-                        case 3: tab.setText("AI Hub"); break;
+    private void setupCards() {
+        // Expand/Collapse logic can be added here if needed, but for now they are static hubs
+        
+        binding.btnViewMaterials.setOnClickListener(v -> {
+            Toast.makeText(this, "Opening File Explorer...", Toast.LENGTH_SHORT).show();
+            // TODO: Launch redesigned Folder Architecture (Step 3)
+        });
+
+        binding.btnNewNote.setOnClickListener(v -> {
+            Intent intent = new Intent(this, NoteEditorActivity.class);
+            intent.putExtra("subject_id", subjectId);
+            startActivity(intent);
+        });
+        
+        binding.btnViewNotes.setOnClickListener(v -> {
+            Intent intent = new Intent(this, NotesListActivity.class);
+            intent.putExtra("subject_id", subjectId);
+            startActivity(intent);
+        });
+
+        binding.btnAiChat.setOnClickListener(v -> {
+            Toast.makeText(this, "Opening AI Workspace...", Toast.LENGTH_SHORT).show();
+            // TODO: Launch Chat System with Attachment flow (Step 4 & 5)
+        });
+
+        binding.btnFlashcards.setOnClickListener(v -> {
+            Intent intent = new Intent(this, FlashcardActivity.class);
+            intent.putExtra("subjectName", subjectName);
+            startActivity(intent);
+        });
+
+        binding.btnQuizzes.setOnClickListener(v -> {
+            Intent intent = new Intent(this, QuizActivity.class);
+            intent.putExtra("subject_id", subjectId);
+            startActivity(intent);
+        });
+        
+        binding.btnQuickContinue.setOnClickListener(v -> {
+            Toast.makeText(this, "Resuming last activity...", Toast.LENGTH_SHORT).show();
+        });
+    }
+
+    private void fetchData() {
+        // Fetch Materials count
+        ApiClient.getInstance().getMaterials(subjectId, null).enqueue(new Callback<List<Material>>() {
+            @Override
+            public void onResponse(Call<List<Material>> call, Response<List<Material>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    int count = response.body().size();
+                    binding.tvMaterialCount.setText(count + " items");
+                    if (count > 0) {
+                        binding.tvEmptyMaterials.setVisibility(View.GONE);
+                    } else {
+                        binding.tvEmptyMaterials.setVisibility(View.VISIBLE);
                     }
                 }
-        ).attach();
+            }
+            @Override
+            public void onFailure(Call<List<Material>> call, Throwable t) {}
+        });
+
+        // Add Notes fetch logic here later
+        binding.tvNotesCount.setText("0 notes");
     }
 }
