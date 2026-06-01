@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:background="@drawable/bg_bottom_sheet"
+    android:background="@android:color/white"
     android:padding="20dp">
 
     <!-- Handle / Drag indicator -->
@@ -12,14 +12,16 @@
         android:layout_width="40dp"
         android:layout_height="4dp"
         android:layout_gravity="center_horizontal"
-        android:background="@drawable/bg_drag_handle"
+        android:background="#D1D1D6"
         android:layout_marginBottom="16dp" />
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Attach Material"
-        style="@style/Notesphere.Text.Title"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:textColor="@color/ns_text_primary"
         android:layout_marginBottom="4dp" />
         
     <TextView
@@ -37,7 +39,7 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:background="@drawable/bg_pill_surface"
+        android:background="#F2F2F7"
         android:padding="12dp"
         android:layout_marginBottom="16dp"
         android:visibility="gone">
@@ -53,7 +55,7 @@
             android:layout_weight="1"
             android:layout_height="wrap_content"
             android:text="Document.pdf"
-            android:textColor="@color/primary"
+            android:textColor="#6C63FF"
             android:textStyle="bold"
             android:maxLines="1"
             android:ellipsize="end" />
@@ -63,7 +65,7 @@
             android:layout_height="24dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:src="@android:drawable/ic_menu_close_clear_cancel"
-            app:tint="@color/ns_red" />
+            app:tint="#FF3B30" />
     </LinearLayout>
 
     <androidx.recyclerview.widget.RecyclerView
