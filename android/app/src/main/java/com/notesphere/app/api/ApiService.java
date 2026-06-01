@@ -1,5 +1,6 @@
 package com.notesphere.app.api;
 
+import com.google.gson.JsonObject;
 import com.notesphere.app.models.AiRequest;
 import com.notesphere.app.models.AiResponse;
 import com.notesphere.app.models.ChatRequest;
