@@ -247,6 +247,42 @@ app.get('/api/debug/health', (req, res) => res.json(aiRouter.getHealthReport()))
 // AUTH/PROFILE ROUTES
 // ═══════════════════════════════════════════════════════════
 
+app.post('/api/auth/register', async (req, res) => {
+  try {
+    const { name, email, uid } = req.body;
+    console.log(`[REGISTER_SYNC] Registration request for UID: ${uid} | Email: ${email}`);
+
+    if (!uid || !email) {
+      console.log(`[REGISTER_SYNC] Profile Failed - Missing UID or Email`);
+      return res.status(400).json({ error: 'Missing UID or Email' });
+    }
+
+    const newProfile = { 
+      id: uid, 
+      email: email, 
+      name: name || '', 
+      avatar_url: '', 
+      createdAt: admin.firestore.FieldValue.serverTimestamp() 
+    };
+
+    await db.collection('profiles').doc(uid).set(newProfile);
+    console.log(`[REGISTER_SYNC] Profile Created for UID: ${uid}`);
+
+    return res.status(200).json({
+      token: "firebase-handles-this",
+      user: newProfile
+    });
+  } catch (err) {
+    console.error(`[REGISTER_SYNC] Profile Failed:`, err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/auth/login', async (req, res) => {
+  // Client handles login via Firebase SDK directly, but backend just echoes back success to satisfy the Retrofit call if needed
+  res.status(200).json({ status: "success" });
+});
+
 app.get('/api/auth/profile', verifyToken, async (req, res) => {
   try {
     const doc = await db.collection('profiles').doc(req.user.id).get();

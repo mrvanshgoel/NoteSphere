@@ -109,21 +109,10 @@ public class ProfileFragment extends Fragment {
         devBtn.setBackgroundColor(android.graphics.Color.RED);
         devBtn.setOnClickListener(v -> forceResetApp());
         
-        // Add to bottom of scroll view content (assuming there's a linear layout container)
-        // Since we are using ViewBinding, we can just grab the parent layout if it's a LinearLayout
-        if (binding.getRoot() instanceof android.widget.LinearLayout) {
-             ((android.widget.LinearLayout) binding.getRoot()).addView(devBtn);
-        } else if (binding.getRoot() instanceof android.widget.ScrollView) {
-             android.widget.ScrollView sv = (android.widget.ScrollView) binding.getRoot();
-             if (sv.getChildCount() > 0 && sv.getChildAt(0) instanceof android.widget.LinearLayout) {
-                 ((android.widget.LinearLayout) sv.getChildAt(0)).addView(devBtn);
-             }
-        } else if (binding.getRoot() instanceof androidx.constraintlayout.widget.ConstraintLayout) {
-             // For ConstraintLayout, just force it as a toast/dialog for simplicity without wrestling constraints
-             devBtn.setLayoutParams(new androidx.constraintlayout.widget.ConstraintLayout.LayoutParams(
-                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
-             ));
-             ((androidx.constraintlayout.widget.ConstraintLayout) binding.getRoot()).addView(devBtn);
+        // Since ViewBinding strictly returns ScrollView for this fragment layout:
+        android.widget.ScrollView sv = binding.getRoot();
+        if (sv.getChildCount() > 0 && sv.getChildAt(0) instanceof android.widget.LinearLayout) {
+            ((android.widget.LinearLayout) sv.getChildAt(0)).addView(devBtn);
         }
     }
     
