@@ -1,71 +1,96 @@
-# 🚀 NoteSphere AI — The Study Operating System
+# 🚀 NoteSphere — The Generative AI Study Operating System
 
-NoteSphere AI is an AI-native study ecosystem inspired by **NotebookLM**, designed to transform how students interact with their learning materials. It's not just a collection of tools; it's a "Second Brain" that proactively helps you retain, revise, and master your subjects.
+![NoteSphere Banner](https://img.shields.io/badge/Status-Stable_Release_v1.0-brightgreen) ![Platform](https://img.shields.io/badge/Platform-Android-3DDC84?logo=android) ![Backend](https://img.shields.io/badge/Backend-Node.js-339933?logo=nodedotjs) ![AI](https://img.shields.io/badge/AI_Engine-Google_Gemini-8E75B2?logo=google)
 
----
-
-## 🧠 Core Pillars of Intelligence
-
-### 1. ⚡ Study Intelligence Hub (Phase 1)
-NoteSphere doesn't just wait for you; it's proactive. It tracks your **weak topics** from quizzes, monitors your **study consistency**, and generates **intelligent reminders**. 
-*   "You struggled with DBMS Normalization last week. Time for a quick recap?"
-*   "You haven't revised OS Unit 3 in 5 days."
-
-### 2. 🗂️ AI-Native Flashcards (Phase 2 & 3)
-Transform any PDF or image into a high-quality study deck instantly.
-*   **Swipe UI**: Interactive cards with flip animations.
-*   **Active Recall**: Mark cards as mastered to focus on what you don't know.
-
-### 3. 💬 Context-Aware AI Chat
-Chat with your documents like never before. NoteSphere uses **RAG (Retrieval-Augmented Generation)** to answer questions based specifically on your uploaded materials.
-*   **Multi-Modal**: Supports PDFs and Images (Native OCR via Gemini Vision).
-*   **Persistent Sessions**: Chat history saved automatically to Firestore.
-
-### 4. 🛠️ Study Analytics
-Real-time tracking of your academic journey.
-*   **Study Streaks**: Stay consistent.
-*   **Accuracy Tracking**: Watch your understanding grow through quiz analytics.
-*   **Syllabus Progress**: Visualize how much of your course is complete.
+NoteSphere is a unified, intelligent "Study OS" that eliminates the friction of modern academic workflows. It bridges traditional file management with advanced Generative AI capabilities, allowing students to upload materials (PDFs, Images) and instantly generate structured summaries, interactive flashcards, quizzes, and contextual AI chats based directly on their syllabus.
 
 ---
 
-## 🛠️ Technical Architecture
+## 🧠 Core Architecture & Features
 
-### **Mobile (Android)**
+### 1. 🗂️ Infinite Hierarchical File Explorer
+Unlike rigid flat-file systems, NoteSphere provides a native file-system experience.
+- **Infinite Nesting**: Create folders within folders recursively using a self-referencing NoSQL schema in Firestore.
+- **Breadcrumb Navigation**: Seamlessly traverse deep folder structures.
+- **Context Actions**: Long-press any folder or material to rename, share, or delete.
+
+### 2. ⚡ Custom AI Orchestration Layer (`ai_router.js`)
+NoteSphere doesn't just hardcode a single LLM call; it features a custom-built AI Router that guarantees high availability and robust performance.
+- **Task-Based Routing**: Dynamically routes requests depending on the task type (e.g., `OCR` for vision extraction, `DOCUMENT` for structured JSON output, `CHAT` for conversational Q&A).
+- **Fallback Chaining**: If a primary model (like `gemini-3.1-pro-preview`) hits a rate limit or goes down, the router automatically catches the exception and falls back to a highly available alternative (like `gemini-2.5-flash`) within milliseconds.
+- **Dynamic Discovery**: On backend boot, the router queries the Gemini API to discover live, supported models, preventing requests to deprecated endpoints.
+
+### 3. 💬 Context-Aware AI Tutor
+Chat directly with your academic documents.
+- **Multi-Modal**: Upload scanned handwritten notes, diagrams, or dense PDFs. NoteSphere uses native OCR via Gemini Vision to extract the text.
+- **Auto-Titling**: Chat sessions automatically generate concise titles based on your initial prompt.
+- **Orphan Cleanup**: Empty chat sessions are intelligently cleaned up to maintain a pristine history.
+
+### 4. 📚 Automated Study Artifact Generation
+Turn passive reading into active mastery.
+- **Smart Notes**: Generates comprehensive, markdown-formatted study notes from uploaded materials.
+- **Flashcard Deck Generator**: Instantly creates interactive front/back flashcards for active recall.
+- **Quiz Generator**: Generates multiple-choice quizzes with adjustable difficulty levels (Easy/Medium/Hard) to test comprehension and application.
+
+---
+
+## 🛠️ Technology Stack
+
+### **Frontend (Native Android)**
 *   **Language**: Java / XML
-*   **Design**: Material Design 3 (Dark Mode Optimized)
-*   **Networking**: Retrofit 2 with GSON
-*   **Image Processing**: Glide
+*   **Design**: Material Design 3 (Dark Mode Optimized with custom `ns_purple` and `ns_surface` themes)
+*   **Networking**: Retrofit 2 with GSON serialization
+*   **Media & Rendering**: Glide for image loading, Markwon for native Markdown rendering
 
-### **Backend (Node.js)**
-*   **Runtime**: Express.js
-*   **AI Engine**: Google Gemini API (Dynamic Fallback System)
-*   **Auth & Database**: Firebase (Auth, Firestore, Admin SDK)
-*   **OCR & Parsing**: Gemini Vision + pdf-parse (Robust Implementation)
+### **Backend (Node.js REST API)**
+*   **Runtime & Framework**: Node.js (v18+) with Express.js
+*   **AI Engine**: Google Generative AI (Gemini SDK)
+*   **Database**: Google Firebase (Firestore NoSQL)
+*   **Authentication**: Firebase Auth (JWT verification via `firebase-admin`)
+*   **File Handling**: Multer for multipart uploads, `pdf-parse` for fallback extraction
+
+### **Deployment Pipeline**
+*   **Hosting**: Render.com Web Services
+*   **Storage Strategy**: Ephemeral local disk storage for physical files, backed by persistent text caching in Firestore.
 
 ---
 
 ## 👨‍💻 Developer
-Created with ❤️ by **Vansh Goel**.
+Designed and engineered by **Vansh Goel**.
 *   **Academic**: BCA (Hons. with Research) in Multimedia & Animation, **Galgotias University**.
-*   **Profile**: Tech & creative enthusiast, Freelance UI/UX & Graphic Designer.
+*   **Profile**: Technical architect, creative enthusiast, and freelance UI/UX & Graphic Designer.
 
 ---
 
 ## 🚀 Getting Started
 
 ### 1. Backend Setup
-1. `cd backend`
-2. `npm install`
-3. Create `.env` with `FIREBASE_SERVICE_ACCOUNT` (JSON) and `GEMINI_API_KEY`.
-4. `npm start`
+1. Clone the repository and navigate to the backend:
+   ```bash
+   git clone https://github.com/mrvanshgoel/NoteSphere.git
+   cd NoteSphere/backend
+   ```
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Environment Configuration: Create a `.env` file in the `backend/` directory:
+   ```env
+   PORT=5000
+   FIREBASE_SERVICE_ACCOUNT={"type": "service_account", "project_id": "..."}
+   GEMINI_API_KEY=your_gemini_api_key_here
+   ```
+4. Start the server:
+   ```bash
+   npm run dev
+   ```
 
 ### 2. Android Setup
-1. Open `android/` in Android Studio.
-2. Add your `google-services.json` from Firebase.
-3. Update `BASE_URL` in `ApiClient.java` to your server.
-4. Build & Run.
+1. Open the `android/` directory in **Android Studio** (Jellyfish or newer).
+2. Download your `google-services.json` from the Firebase Console and place it in `android/app/`.
+3. Open `android/app/src/main/java/com/notesphere/app/api/ApiClient.java` and update the `BASE_URL` to point to your backend (e.g., `http://10.0.2.2:5000/` for localhost emulator).
+4. Sync Gradle and click **Run**.
 
 ---
 
-*NoteSphere AI is a continuous evolution. We are doubling down on Source-Aware responses and Multi-Document context in the upcoming phases.*
+*NoteSphere represents the future of active learning—unifying fragmented academic tools into a single, cohesive, AI-native operating system.*
