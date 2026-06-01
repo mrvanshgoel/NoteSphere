@@ -12,28 +12,38 @@
         android:orientation="vertical"
         android:padding="20dp">
 
+        <!-- Section Header -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="AI Workspace"
+            android:text="✨ AI Workspace"
             android:fontFamily="sans-serif-medium"
-            android:textSize="18sp"
+            android:textSize="20sp"
             android:textColor="@color/text_primary"
-            android:layout_marginBottom="16dp" />
+            android:layout_marginBottom="4dp" />
 
-        <GridLayout
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Powered by Gemini AI — select a material to begin"
+            android:textSize="13sp"
+            android:textColor="@color/text_secondary"
+            android:layout_marginBottom="20dp" />
+
+        <!-- Row 1: Flashcards + Quizzes -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:columnCount="2"
-            android:rowCount="2"
-            android:useDefaultMargins="true">
+            android:orientation="horizontal"
+            android:layout_marginBottom="12dp">
 
             <!-- Flashcards -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardFlashcards"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_columnWeight="1"
+                android:layout_weight="1"
+                android:layout_marginEnd="6dp"
                 app:cardBackgroundColor="@color/surface"
                 app:cardCornerRadius="16dp"
                 app:strokeWidth="0dp"
@@ -52,10 +62,18 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
+                        android:layout_marginTop="10dp"
                         android:fontFamily="sans-serif-medium"
                         android:text="Flashcards"
+                        android:textSize="15sp"
                         android:textColor="@color/text_primary" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="Active recall with flip cards"
+                        android:textSize="12sp"
+                        android:textColor="@color/text_secondary" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
@@ -64,7 +82,8 @@
                 android:id="@+id/cardQuizzes"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_columnWeight="1"
+                android:layout_weight="1"
+                android:layout_marginStart="6dp"
                 app:cardBackgroundColor="@color/surface"
                 app:cardCornerRadius="16dp"
                 app:strokeWidth="0dp"
@@ -83,19 +102,37 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
+                        android:layout_marginTop="10dp"
                         android:fontFamily="sans-serif-medium"
                         android:text="Quizzes"
+                        android:textSize="15sp"
                         android:textColor="@color/text_primary" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="MCQ-style self-assessment"
+                        android:textSize="12sp"
+                        android:textColor="@color/text_secondary" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
+
+        </LinearLayout>
+
+        <!-- Row 2: Ask AI + Summary -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="20dp">
 
             <!-- Ask AI -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardAskAi"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_columnWeight="1"
+                android:layout_weight="1"
+                android:layout_marginEnd="6dp"
                 app:cardBackgroundColor="@color/surface"
                 app:cardCornerRadius="16dp"
                 app:strokeWidth="0dp"
@@ -109,24 +146,33 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="✨"
+                        android:text="💬"
                         android:textSize="32sp" />
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
+                        android:layout_marginTop="10dp"
                         android:fontFamily="sans-serif-medium"
                         android:text="Ask AI"
+                        android:textSize="15sp"
                         android:textColor="@color/text_primary" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="Get instant doubt resolution"
+                        android:textSize="12sp"
+                        android:textColor="@color/text_secondary" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
-            
-            <!-- Summary Generator -->
+
+            <!-- Summary -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardSummary"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_columnWeight="1"
+                android:layout_weight="1"
+                android:layout_marginStart="6dp"
                 app:cardBackgroundColor="@color/surface"
                 app:cardCornerRadius="16dp"
                 app:strokeWidth="0dp"
@@ -145,13 +191,65 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
+                        android:layout_marginTop="10dp"
                         android:fontFamily="sans-serif-medium"
-                        android:text="Summary"
+                        android:text="Summarize"
+                        android:textSize="15sp"
                         android:textColor="@color/text_primary" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="Notes, concepts &amp; viva prep"
+                        android:textSize="12sp"
+                        android:textColor="@color/text_secondary" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-        </GridLayout>
+        </LinearLayout>
+
+        <!-- Tip Banner -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardBackgroundColor="@color/surface"
+            app:cardCornerRadius="12dp"
+            app:strokeColor="@color/primary"
+            app:strokeWidth="1dp">
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="16dp"
+                android:gravity="center_vertical">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="💡"
+                    android:textSize="20sp"
+                    android:layout_marginEnd="12dp" />
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Pro Tip"
+                        android:fontFamily="sans-serif-medium"
+                        android:textSize="13sp"
+                        android:textColor="@color/primary" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="Upload study materials to your Files tab first. AI tools work best with your own notes and PDFs."
+                        android:textSize="12sp"
+                        android:textColor="@color/text_secondary" />
+                </LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
     </LinearLayout>
 </androidx.core.widget.NestedScrollView>

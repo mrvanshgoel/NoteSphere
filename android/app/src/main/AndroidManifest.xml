@@ -115,6 +115,12 @@
             android:exported="false"
             android:theme="@style/Theme.Notesphere.NoActionBar" />
 
+        <activity
+            android:name=".activities.SummaryActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Notesphere.NoActionBar"
+            android:screenOrientation="portrait" />
+
     </application>
 
 </manifest>
