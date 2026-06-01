@@ -23,6 +23,7 @@ import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.bumptech.glide.request.RequestOptions;
 import com.notesphere.app.R;
+import com.notesphere.app.BuildConfig;
 import com.notesphere.app.activities.LoginActivity;
 import com.notesphere.app.api.ApiClient;
 import com.notesphere.app.databinding.FragmentProfileBinding;
@@ -93,8 +94,52 @@ public class ProfileFragment extends Fragment {
                 startActivity(intent);
             }
         });
+        
+        if (BuildConfig.DEBUG) {
+            setupDeveloperOptions();
+        }
 
         return binding.getRoot();
+    }
+
+    private void setupDeveloperOptions() {
+        android.widget.Button devBtn = new android.widget.Button(requireContext());
+        devBtn.setText("DEV: FORCE RESET APP");
+        devBtn.setTextColor(android.graphics.Color.WHITE);
+        devBtn.setBackgroundColor(android.graphics.Color.RED);
+        devBtn.setOnClickListener(v -> forceResetApp());
+        
+        // Add to bottom of scroll view content (assuming there's a linear layout container)
+        // Since we are using ViewBinding, we can just grab the parent layout if it's a LinearLayout
+        if (binding.getRoot() instanceof android.widget.LinearLayout) {
+             ((android.widget.LinearLayout) binding.getRoot()).addView(devBtn);
+        } else if (binding.getRoot() instanceof android.widget.ScrollView) {
+             android.widget.ScrollView sv = (android.widget.ScrollView) binding.getRoot();
+             if (sv.getChildCount() > 0 && sv.getChildAt(0) instanceof android.widget.LinearLayout) {
+                 ((android.widget.LinearLayout) sv.getChildAt(0)).addView(devBtn);
+             }
+        } else if (binding.getRoot() instanceof androidx.constraintlayout.widget.ConstraintLayout) {
+             // For ConstraintLayout, just force it as a toast/dialog for simplicity without wrestling constraints
+             devBtn.setLayoutParams(new androidx.constraintlayout.widget.ConstraintLayout.LayoutParams(
+                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+             ));
+             ((androidx.constraintlayout.widget.ConstraintLayout) binding.getRoot()).addView(devBtn);
+        }
+    }
+    
+    private void forceResetApp() {
+        android.util.Log.e("NOTESPHERE_DIAGNOSTIC", "===== EXECUTING HARD SESSION RESET =====");
+        com.google.firebase.auth.FirebaseAuth.getInstance().signOut();
+        SharedPrefManager.getInstance(requireContext()).clearAll();
+        // Since Room DB instance wasn't explicitly provided in the snippets, we skip it or clear cache dir
+        try {
+            requireContext().getCacheDir().delete();
+        } catch (Exception ignored) {}
+        
+        Intent intent = new Intent(requireContext(), com.notesphere.app.activities.SplashActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(intent);
+        requireActivity().finish();
     }
 
     private void loadUserProfile() {

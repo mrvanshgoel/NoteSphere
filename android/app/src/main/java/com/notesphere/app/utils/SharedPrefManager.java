@@ -51,12 +51,11 @@ public class SharedPrefManager {
     }
 
     public void logout() {
-        prefs().edit()
-            .remove(KEY_TOKEN)
-            .remove(KEY_USER_NAME)
-            .remove(KEY_USER_EMAIL)
-            .remove(KEY_USER_AVATAR)
-            .apply();
+        prefs().edit().clear().apply();
+    }
+    
+    public void clearAll() {
+        prefs().edit().clear().apply();
     }
 
     public static void forceSignOut(Context context) {

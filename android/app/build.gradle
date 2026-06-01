@@ -13,6 +13,9 @@ android {
         targetSdk 34
         versionCode 1
         versionName "1.0"
+        
+        def gitCommit = 'git rev-parse --short HEAD'.execute([], project.rootDir).text.trim()
+        buildConfigField "String", "GIT_COMMIT", "\"${gitCommit}\""
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -29,6 +32,7 @@ android {
     }
     buildFeatures {
         viewBinding true
+        buildConfig true
     }
 }
 

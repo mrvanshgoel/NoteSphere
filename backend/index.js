@@ -216,7 +216,7 @@ const verifyToken = async (req, res, next) => {
       return res.status(500).json({ error: 'Firebase Auth is not initialized on the server.' });
     }
 
-    const decodedToken = await admin.auth().verifyIdToken(token);
+    const decodedToken = await admin.auth().verifyIdToken(token, true);
     console.log(`[AUTH] Success. UID: ${decodedToken.uid}`);
     req.user = { id: decodedToken.uid, email: decodedToken.email };
     

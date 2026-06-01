@@ -11,6 +11,8 @@ import com.notesphere.app.databinding.ActivitySplashBinding;
 import com.notesphere.app.utils.SharedPrefManager;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.notesphere.app.utils.Constants;
+import com.notesphere.app.BuildConfig;
 import android.util.Log;
 
 public class SplashActivity extends AppCompatActivity {
@@ -33,6 +35,8 @@ public class SplashActivity extends AppCompatActivity {
         SharedPrefManager pref = SharedPrefManager.getInstance(this);
         Log.e("NOTESPHERE_DIAGNOSTIC", "==================================================");
         Log.e("NOTESPHERE_DIAGNOSTIC", "STARTUP REPORT");
+        Log.e("NOTESPHERE_DIAGNOSTIC", "BUILD_VERSION=" + BuildConfig.VERSION_NAME);
+        Log.e("NOTESPHERE_DIAGNOSTIC", "GIT_COMMIT=" + BuildConfig.GIT_COMMIT);
         Log.e("NOTESPHERE_DIAGNOSTIC", "SharedPref isLoggedIn: " + pref.isLoggedIn());
         if (user != null) {
             Log.e("NOTESPHERE_DIAGNOSTIC", "FirebaseUser != null");
@@ -46,7 +50,7 @@ public class SplashActivity extends AppCompatActivity {
             String projectId = getString(getResources().getIdentifier("project_id", "string", getPackageName()));
             String storageBucket = getString(getResources().getIdentifier("google_storage_bucket", "string", getPackageName()));
             String appId = getString(getResources().getIdentifier("google_app_id", "string", getPackageName()));
-            String backendUrl = com.notesphere.app.api.ApiClient.BASE_URL;
+            String backendUrl = Constants.BASE_URL;
             
             Log.e("NOTESPHERE_DIAGNOSTIC", "Android project_id: " + projectId);
             Log.e("NOTESPHERE_DIAGNOSTIC", "Android storage_bucket: " + storageBucket);
@@ -138,14 +142,34 @@ public class SplashActivity extends AppCompatActivity {
         boolean loggedIn = SharedPrefManager.getInstance(this).isLoggedIn();
         Log.e("NOTESPHERE_DIAGNOSTIC", "[AUTH FLOW] navigateToNext() -> SharedPref isLoggedIn: " + loggedIn);
         
-        if (loggedIn) {
-            Log.e("NOTESPHERE_DIAGNOSTIC", "[AUTH FLOW] Routing to MainActivity");
-            startActivity(new Intent(SplashActivity.this, MainActivity.class));
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        
+        if (loggedIn && user != null) {
+            Log.e("NOTESPHERE_DIAGNOSTIC", "[AUTH FLOW] Validating token before Main...");
+            user.getIdToken(true).addOnCompleteListener(task -> {
+                if (task.isSuccessful()) {
+                    Log.e("NOTESPHERE_DIAGNOSTIC", "[AUTH FLOW] Token Refresh Success. Routing to MainActivity.");
+                    startActivity(new Intent(SplashActivity.this, MainActivity.class));
+                    overridePendingTransition(0, 0);
+                    finish();
+                } else {
+                    Log.e("NOTESPHERE_DIAGNOSTIC", "[AUTH FLOW] Token Refresh FAILED! Ghost Session Detected.", task.getException());
+                    FirebaseAuth.getInstance().signOut();
+                    SharedPrefManager.getInstance(SplashActivity.this).clearAll();
+                    Log.e("NOTESPHERE_DIAGNOSTIC", "[AUTH FLOW] Wiped local session. Routing to LoginActivity.");
+                    startActivity(new Intent(SplashActivity.this, LoginActivity.class));
+                    overridePendingTransition(0, 0);
+                    finish();
+                }
+            });
         } else {
-            Log.e("NOTESPHERE_DIAGNOSTIC", "[AUTH FLOW] Routing to LoginActivity");
+            Log.e("NOTESPHERE_DIAGNOSTIC", "[AUTH FLOW] Routing to LoginActivity (loggedIn=" + loggedIn + ", user=" + (user!=null) + ")");
+            if (user == null && loggedIn) {
+                 SharedPrefManager.getInstance(this).clearAll();
+            }
             startActivity(new Intent(SplashActivity.this, LoginActivity.class));
+            overridePendingTransition(0, 0);
+            finish();
         }
-        overridePendingTransition(0, 0); // Disable default animation to keep the wipe look
-        finish();
     }
 }
