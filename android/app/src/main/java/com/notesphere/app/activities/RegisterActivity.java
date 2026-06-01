@@ -27,6 +27,8 @@ public class RegisterActivity extends AppCompatActivity {
         mAuth = FirebaseAuth.getInstance();
         binding = ActivityRegisterBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
+        
+        android.util.Log.e("NOTESPHERE_DIAGNOSTIC", "[AUTH FLOW] Entering RegisterActivity");
 
         binding.btnRegister.setOnClickListener(v -> registerUser());
         binding.tvLogin.setOnClickListener(v -> finish());
@@ -49,16 +51,22 @@ public class RegisterActivity extends AppCompatActivity {
         }
 
         binding.btnRegister.setEnabled(false);
-        binding.btnRegister.setText("Creating Account...");
+        binding.btnRegister.setText("Registering...");
+
+        android.util.Log.e("NOTESPHERE_DIAGNOSTIC", "[AUTH FLOW] Attempting Registration for email: " + email);
 
         mAuth.createUserWithEmailAndPassword(email, password)
             .addOnCompleteListener(this, task -> {
                 if (task.isSuccessful()) {
                     FirebaseUser user = mAuth.getCurrentUser();
                     if (user != null) {
+                        android.util.Log.e("NOTESPHERE_DIAGNOSTIC", "[AUTH FLOW] Registration SUCCESS for UID: " + user.getUid());
                         syncProfileWithBackend(user, name);
+                    } else {
+                        android.util.Log.e("NOTESPHERE_DIAGNOSTIC", "[AUTH FLOW] Registration SUCCESS but getCurrentUser is null!");
                     }
                 } else {
+                    android.util.Log.e("NOTESPHERE_DIAGNOSTIC", "[AUTH FLOW] Registration FAILED: " + task.getException().getMessage());
                     binding.btnRegister.setEnabled(true);
                     binding.btnRegister.setText("Register");
                     showError("Registration failed: " + task.getException().getMessage());

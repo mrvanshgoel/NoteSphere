@@ -9,6 +9,9 @@ import android.view.animation.OvershootInterpolator;
 import androidx.appcompat.app.AppCompatActivity;
 import com.notesphere.app.databinding.ActivitySplashBinding;
 import com.notesphere.app.utils.SharedPrefManager;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import android.util.Log;
 
 public class SplashActivity extends AppCompatActivity {
     private ActivitySplashBinding binding;
@@ -19,7 +22,27 @@ public class SplashActivity extends AppCompatActivity {
         binding = ActivitySplashBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
+        Log.e("NOTESPHERE_DIAGNOSTIC", "[AUTH FLOW] Entering SplashActivity");
+        printStartupReport();
+
         startSplashSequence();
+    }
+
+    private void printStartupReport() {
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        SharedPrefManager pref = SharedPrefManager.getInstance(this);
+        Log.e("NOTESPHERE_DIAGNOSTIC", "==================================================");
+        Log.e("NOTESPHERE_DIAGNOSTIC", "STARTUP REPORT");
+        Log.e("NOTESPHERE_DIAGNOSTIC", "SharedPref isLoggedIn: " + pref.isLoggedIn());
+        if (user != null) {
+            Log.e("NOTESPHERE_DIAGNOSTIC", "FirebaseUser != null");
+            Log.e("NOTESPHERE_DIAGNOSTIC", "UID: " + user.getUid());
+            Log.e("NOTESPHERE_DIAGNOSTIC", "Email: " + user.getEmail());
+            Log.e("NOTESPHERE_DIAGNOSTIC", "Provider: " + user.getProviderId());
+        } else {
+            Log.e("NOTESPHERE_DIAGNOSTIC", "FirebaseUser == null");
+        }
+        Log.e("NOTESPHERE_DIAGNOSTIC", "==================================================");
     }
 
     private void startSplashSequence() {
@@ -95,9 +118,14 @@ public class SplashActivity extends AppCompatActivity {
     }
 
     private void navigateToNext() {
-        if (SharedPrefManager.getInstance(this).isLoggedIn()) {
+        boolean loggedIn = SharedPrefManager.getInstance(this).isLoggedIn();
+        Log.e("NOTESPHERE_DIAGNOSTIC", "[AUTH FLOW] navigateToNext() -> SharedPref isLoggedIn: " + loggedIn);
+        
+        if (loggedIn) {
+            Log.e("NOTESPHERE_DIAGNOSTIC", "[AUTH FLOW] Routing to MainActivity");
             startActivity(new Intent(SplashActivity.this, MainActivity.class));
         } else {
+            Log.e("NOTESPHERE_DIAGNOSTIC", "[AUTH FLOW] Routing to LoginActivity");
             startActivity(new Intent(SplashActivity.this, LoginActivity.class));
         }
         overridePendingTransition(0, 0); // Disable default animation to keep the wipe look

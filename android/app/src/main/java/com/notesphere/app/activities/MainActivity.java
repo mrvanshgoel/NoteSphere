@@ -24,6 +24,8 @@ public class MainActivity extends AppCompatActivity {
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
+        android.util.Log.e("NOTESPHERE_DIAGNOSTIC", "[AUTH FLOW] Entering MainActivity");
+
         refreshFirebaseToken();
 
         loadFragment(new HomeFragment(), false);
@@ -78,13 +80,19 @@ public class MainActivity extends AppCompatActivity {
     private void refreshFirebaseToken() {
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
         if (user != null) {
+            android.util.Log.e("NOTESPHERE_DIAGNOSTIC", "[AUTH FLOW] Token Refresh: Attempting to refresh token for " + user.getUid());
             user.getIdToken(true).addOnCompleteListener(task -> {
                 if (task.isSuccessful()) {
                     String token = task.getResult().getToken();
                     SharedPrefManager.getInstance(this).saveToken(token);
-                    android.util.Log.d("AUTH_DIAGNOSTIC", "Token Proactively Refreshed. Prefix: " + token.substring(0, Math.min(10, token.length())));
+                    android.util.Log.e("NOTESPHERE_DIAGNOSTIC", "[AUTH FLOW] Token Refresh SUCCESS. Prefix: " + token.substring(0, Math.min(10, token.length())));
+                } else {
+                    android.util.Log.e("NOTESPHERE_DIAGNOSTIC", "[AUTH FLOW] Token Refresh FAILED: " + task.getException().getMessage());
+                    // Note: AuthInterceptor will catch API 401s if this fails but SharedPref is still set.
                 }
             });
+        } else {
+            android.util.Log.e("NOTESPHERE_DIAGNOSTIC", "[AUTH FLOW] Token Refresh: No current Firebase user!");
         }
     }
 }

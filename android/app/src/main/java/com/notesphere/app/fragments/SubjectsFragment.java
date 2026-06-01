@@ -57,6 +57,7 @@ public class SubjectsFragment extends Fragment {
                 if (!isAdded() || binding == null) return;
                 showShimmer(false);
                 if (response.isSuccessful() && response.body() != null) {
+                    android.util.Log.e("NOTESPHERE_DIAGNOSTIC", "[SUBJECT] Fetch SUCCESS. Count: " + response.body().size());
                     binding.layoutOfflineBanner.setVisibility(View.GONE);
                     List<Subject> subjects = response.body();
                     if (subjects.isEmpty()) {
@@ -75,6 +76,7 @@ public class SubjectsFragment extends Fragment {
                         binding.rvSubjects.setAdapter(adapter);
                     }
                 } else {
+                    android.util.Log.e("NOTESPHERE_DIAGNOSTIC", "[SUBJECT] Fetch ERROR: " + response.code() + " " + response.message());
                     Context innerContext = getContext();
                     if (innerContext != null) Toast.makeText(innerContext, "Error fetching subjects", Toast.LENGTH_SHORT).show();
                 }
@@ -85,6 +87,7 @@ public class SubjectsFragment extends Fragment {
                 if (!isAdded() || getContext() == null) return;
                 if (call.isCanceled()) return;
                 showShimmer(false);
+                android.util.Log.e("NOTESPHERE_DIAGNOSTIC", "[SUBJECT] Fetch Network Failure: " + t.getMessage());
                 binding.layoutOfflineBanner.setVisibility(View.VISIBLE);
                 Toast.makeText(getContext(), "Network Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
@@ -142,6 +145,8 @@ public class SubjectsFragment extends Fragment {
         subject.setIcon(icon);
         
         if (activeCall != null) activeCall.cancel();
+        
+        android.util.Log.e("NOTESPHERE_DIAGNOSTIC", "[SUBJECT] Creating Subject: " + name);
         
         Call<Subject> call = ApiClient.getInstance().createSubject(subject);
         activeCall = call;

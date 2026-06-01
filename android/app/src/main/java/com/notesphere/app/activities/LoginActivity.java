@@ -28,6 +28,8 @@ public class LoginActivity extends AppCompatActivity {
         mAuth = FirebaseAuth.getInstance();
         binding = ActivityLoginBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
+        
+        android.util.Log.e("NOTESPHERE_DIAGNOSTIC", "[AUTH FLOW] Entering LoginActivity");
 
         binding.btnLogin.setOnClickListener(v -> loginUser());
         binding.tvRegister.setOnClickListener(v -> {
@@ -47,14 +49,20 @@ public class LoginActivity extends AppCompatActivity {
         binding.btnLogin.setEnabled(false);
         binding.btnLogin.setText("Logging in...");
 
+        android.util.Log.e("NOTESPHERE_DIAGNOSTIC", "[AUTH FLOW] Attempting Login for email: " + email);
+
         mAuth.signInWithEmailAndPassword(email, password)
             .addOnCompleteListener(this, task -> {
                 if (task.isSuccessful()) {
                     FirebaseUser user = mAuth.getCurrentUser();
                     if (user != null) {
+                        android.util.Log.e("NOTESPHERE_DIAGNOSTIC", "[AUTH FLOW] Login SUCCESS for UID: " + user.getUid());
                         fetchTokenAndProfile(user);
+                    } else {
+                        android.util.Log.e("NOTESPHERE_DIAGNOSTIC", "[AUTH FLOW] Login SUCCESS but getCurrentUser is null!");
                     }
                 } else {
+                    android.util.Log.e("NOTESPHERE_DIAGNOSTIC", "[AUTH FLOW] Login FAILED: " + task.getException().getMessage());
                     binding.btnLogin.setEnabled(true);
                     binding.btnLogin.setText("Login");
                     showError("Login failed: " + task.getException().getMessage());

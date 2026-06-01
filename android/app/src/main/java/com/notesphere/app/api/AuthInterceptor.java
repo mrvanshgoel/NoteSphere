@@ -26,6 +26,7 @@ public class AuthInterceptor implements Interceptor {
 
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
         if (user == null) {
+            android.util.Log.e("NOTESPHERE_DIAGNOSTIC", "[AUTH FLOW] Interceptor: No FirebaseUser found for request to " + path);
             return chain.proceed(originalRequest);
         }
 
@@ -37,14 +38,20 @@ public class AuthInterceptor implements Interceptor {
             String token = result.getToken();
 
             if (token != null) {
+                android.util.Log.e("NOTESPHERE_DIAGNOSTIC", "[AUTH FLOW] Interceptor: Injecting token for " + path);
                 Request newRequest = originalRequest.newBuilder()
                         .header("Authorization", "Bearer " + token)
                         .build();
                 Response response = chain.proceed(newRequest);
                 if (response.code() == 401 || response.code() == 403) {
+                    android.util.Log.e("NOTESPHERE_DIAGNOSTIC", "[AUTH FLOW] Interceptor: 401/403 Caught on " + path + ". Forcing Sign Out.");
                     com.notesphere.app.utils.SharedPrefManager.forceSignOut(com.notesphere.app.NoteSphereApplication.getAppContext());
+                } else {
+                    android.util.Log.e("NOTESPHERE_DIAGNOSTIC", "[AUTH FLOW] Interceptor: Request to " + path + " succeeded with code " + response.code());
                 }
                 return response;
+            } else {
+                android.util.Log.e("NOTESPHERE_DIAGNOSTIC", "[AUTH FLOW] Interceptor: Retrieved token is null for " + path);
             }
         } catch (Exception e) {
             e.printStackTrace();
