@@ -371,12 +371,23 @@ app.post('/api/auth/upload-avatar', verifyToken, upload.single('avatar'), async 
 
 app.get('/api/folders/:subjectId', verifyToken, async (req, res) => {
   try {
-    const snapshot = await db.collection('folders')
+    const { parentId } = req.query;
+    let query = db.collection('folders')
       .where('userId', '==', req.user.id)
-      .where('subjectId', '==', req.params.subjectId)
-      .get();
-    const folders = [];
+      .where('subjectId', '==', req.params.subjectId);
+      
+    if (parentId) {
+      query = query.where('parentId', '==', parentId);
+    }
+    
+    const snapshot = await query.get();
+    let folders = [];
     snapshot.forEach(doc => folders.push(formatDoc(doc)));
+    
+    if (!parentId) {
+      folders = folders.filter(f => !f.parentId);
+    }
+    
     res.json(folders);
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -385,10 +396,11 @@ app.get('/api/folders/:subjectId', verifyToken, async (req, res) => {
 
 app.post('/api/folders', verifyToken, async (req, res) => {
   try {
-    const { name, subjectId } = req.body;
+    const { name, subjectId, parentId } = req.body;
     const docRef = await db.collection('folders').add({
       name,
       subjectId,
+      parentId: parentId || null,
       userId: req.user.id,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       updatedAt: admin.firestore.FieldValue.serverTimestamp()
@@ -505,6 +517,36 @@ app.put('/api/subjects/:id', verifyToken, async (req, res) => {
 // ═══════════════════════════════════════════════════════════
 // MATERIALS
 // ═══════════════════════════════════════════════════════════
+
+app.get('/api/materials/recent', verifyToken, async (req, res) => {
+  try {
+    const snapshot = await db.collection('materials')
+      .where('userId', '==', req.user.id)
+      .orderBy('createdAt', 'desc')
+      .limit(20)
+      .get();
+    const materials = [];
+    snapshot.forEach(doc => materials.push(formatDoc(doc)));
+    res.json(materials);
+  } catch (err) {
+    console.warn(`[Materials GET] Ordered query failed (index missing?): ${err.message}. Retrying without orderBy.`);
+    try {
+      const snapshot = await db.collection('materials')
+        .where('userId', '==', req.user.id)
+        .get();
+      const materials = [];
+      snapshot.forEach(doc => materials.push(formatDoc(doc)));
+      materials.sort((a, b) => {
+        const tA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const tB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return tB - tA;
+      });
+      res.json(materials.slice(0, 20));
+    } catch (innerErr) {
+      res.status(400).json({ error: innerErr.message });
+    }
+  }
+});
 
 app.get('/api/materials/:subjectId', verifyToken, async (req, res) => {
   try {

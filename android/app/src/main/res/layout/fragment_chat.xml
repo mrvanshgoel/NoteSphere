@@ -67,6 +67,22 @@
             </LinearLayout>
 
             <ImageButton
+                android:id="@+id/btnSearchChat"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@android:drawable/ic_menu_search"
+                app:tint="@color/ns_text_primary" />
+
+            <ImageButton
+                android:id="@+id/btnPinChat"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@android:drawable/ic_menu_sort_by_size"
+                app:tint="@color/ns_text_primary" />
+
+            <ImageButton
                 android:id="@+id/btnNewChat"
                 android:layout_width="40dp"
                 android:layout_height="40dp"

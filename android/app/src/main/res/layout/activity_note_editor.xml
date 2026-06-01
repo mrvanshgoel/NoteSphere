@@ -1,115 +1,92 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
     android:background="@color/background">
 
-    <androidx.constraintlayout.widget.ConstraintLayout
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/toolbar"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="?attr/actionBarSize"
+        android:background="@color/surface"
+        app:title="Edit Note"
+        app:titleTextColor="@color/text_primary"
+        app:navigationIcon="@drawable/ic_back" />
 
-        <LinearLayout
-            android:id="@+id/editorToolbar"
-            android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:paddingHorizontal="8dp"
-            app:layout_constraintTop_toTopOf="parent">
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="8dp">
 
-            <ImageButton
-                android:id="@+id/btnBack"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:src="@drawable/ic_back"
-                app:tint="@color/ns_text_primary" />
-
-            <View
-                android:layout_width="0dp"
-                android:layout_height="1dp"
-                android:layout_weight="1" />
-
-            <ImageButton
-                android:id="@+id/btnPin"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:src="@android:drawable/btn_star_big_off"
-                app:tint="@color/ns_text_secondary" />
-
-            <ImageButton
-                android:id="@+id/btnDelete"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:src="@android:drawable/ic_menu_delete"
-                app:tint="#F44336"
-                android:visibility="gone" />
-
-            <Button
-                android:id="@+id/btnSave"
-                style="@style/Widget.MaterialComponents.Button.TextButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Save"
-                android:textColor="@color/primary"
-                android:textStyle="bold" />
-
-        </LinearLayout>
-
-        <EditText
-            android:id="@+id/etNoteTitle"
-            android:layout_width="match_parent"
+        <Button
+            android:id="@+id/btnEdit"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginHorizontal="16dp"
-            android:layout_marginTop="8dp"
-            android:background="@null"
-            android:hint="Note Title"
-            android:inputType="textCapSentences"
-            android:textColor="@color/ns_text_primary"
-            android:textColorHint="@color/ns_text_secondary"
-            android:textSize="24sp"
-            android:textStyle="bold"
-            app:layout_constraintTop_toBottomOf="@id/editorToolbar" />
+            android:layout_weight="1"
+            android:text="Edit"
+            style="@style/Widget.MaterialComponents.Button.TextButton" />
 
-        <ScrollView
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_marginTop="16dp"
-            android:fillViewport="true"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/etNoteTitle">
+        <Button
+            android:id="@+id/btnPreview"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Preview"
+            style="@style/Widget.MaterialComponents.Button.TextButton" />
 
-            <EditText
-                android:id="@+id/etNoteContent"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginHorizontal="16dp"
-                android:layout_marginBottom="24dp"
-                android:background="@null"
-                android:gravity="top|start"
-                android:hint="Start typing your notes here...\n\nYou can use Markdown formatting like:\n# Heading 1\n## Heading 2\n**Bold text**\n- Bullet points"
-                android:inputType="textMultiLine|textCapSentences"
-                android:minLines="15"
-                android:textColor="@color/ns_text_primary"
-                android:textColorHint="#40FFFFFF"
-                android:textSize="16sp" />
-        </ScrollView>
-
-        <com.google.android.material.progressindicator.CircularProgressIndicator
-            android:id="@+id/loadingAnimation"
+        <Button
+            android:id="@+id/btnSave"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:indeterminate="true"
-            android:visibility="gone"
-            app:indicatorColor="@color/primary"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            android:text="Save"
+            app:backgroundTint="@color/primary" />
+    </LinearLayout>
 
-    </androidx.constraintlayout.widget.ConstraintLayout>
+    <EditText
+        android:id="@+id/etTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Note Title"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:background="@null"
+        android:padding="16dp"
+        android:textColor="@color/text_primary"
+        android:textColorHint="@color/text_secondary" />
 
-</androidx.coordinatorlayout.widget.CoordinatorLayout>
+    <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/surface" />
+
+    <!-- Edit Mode -->
+    <EditText
+        android:id="@+id/etContent"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:hint="Write your markdown here..."
+        android:gravity="top"
+        android:background="@null"
+        android:padding="16dp"
+        android:textColor="@color/text_primary"
+        android:textColorHint="@color/text_secondary"
+        android:inputType="textMultiLine" />
+
+    <!-- Preview Mode -->
+    <ScrollView
+        android:id="@+id/scrollPreview"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:visibility="gone">
+        <TextView
+            android:id="@+id/tvPreview"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="16dp"
+            android:textColor="@color/text_primary"
+            android:textSize="16sp" />
+    </ScrollView>
+
+</LinearLayout>

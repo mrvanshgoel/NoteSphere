@@ -55,6 +55,9 @@ public class ChatFragment extends Fragment {
         binding.btnNewChat.setOnClickListener(v -> startNewChat());
         binding.btnChatHistory.setOnClickListener(v -> showChatHistory());
         binding.btnAttachFile.setOnClickListener(v -> showMaterialPicker());
+        
+        binding.btnSearchChat.setOnClickListener(v -> Toast.makeText(getContext(), "Search Chat feature coming soon", Toast.LENGTH_SHORT).show());
+        binding.btnPinChat.setOnClickListener(v -> Toast.makeText(getContext(), "Pin Chat feature coming soon", Toast.LENGTH_SHORT).show());
 
         setupModelSpinner();
 
@@ -175,8 +178,69 @@ public class ChatFragment extends Fragment {
     }
 
     private void showMaterialPicker() {
-        // For now, let's just show a simple toast. In a real app, this would show a list of materials.
-        Toast.makeText(getContext(), "Attachment feature enabled. Please select material from 'Study Material' section for now.", Toast.LENGTH_LONG).show();
+        View sheetView = getLayoutInflater().inflate(R.layout.bottom_sheet_material_picker, null);
+        BottomSheetDialog dialog = new BottomSheetDialog(requireContext(), com.google.android.material.R.style.Theme_Design_BottomSheetDialog);
+        dialog.setContentView(sheetView);
+
+        RecyclerView rv = sheetView.findViewById(R.id.rvRecentMaterials);
+        rv.setLayoutManager(new LinearLayoutManager(requireContext()));
+        android.widget.ProgressBar pb = sheetView.findViewById(R.id.pbLoadingMaterials);
+        android.widget.TextView tvEmpty = sheetView.findViewById(R.id.tvEmptyMaterials);
+        android.widget.LinearLayout layoutCurrent = sheetView.findViewById(R.id.layoutCurrentAttachment);
+        android.widget.TextView tvCurrent = sheetView.findViewById(R.id.tvCurrentAttachment);
+        android.widget.ImageButton btnRemove = sheetView.findViewById(R.id.btnRemoveAttachment);
+
+        if (attachedMaterialId != null) {
+            layoutCurrent.setVisibility(View.VISIBLE);
+            tvCurrent.setText("Attached Material ID: " + attachedMaterialId); // Ideally store title
+        }
+
+        btnRemove.setOnClickListener(v -> {
+            attachedMaterialId = null;
+            layoutCurrent.setVisibility(View.GONE);
+            binding.btnAttachFile.setColorFilter(null);
+            Toast.makeText(getContext(), "Attachment removed", Toast.LENGTH_SHORT).show();
+        });
+
+        ApiClient.getInstance().getRecentMaterials().enqueue(new Callback<List<Material>>() {
+            @Override
+            public void onResponse(Call<List<Material>> call, Response<List<Material>> response) {
+                pb.setVisibility(View.GONE);
+                if (response.isSuccessful() && response.body() != null) {
+                    List<Material> recentMaterials = response.body();
+                    if (recentMaterials.isEmpty()) {
+                        tvEmpty.setVisibility(View.VISIBLE);
+                    } else {
+                        tvEmpty.setVisibility(View.GONE);
+                        com.notesphere.app.adapters.MaterialAdapter materialAdapter = new com.notesphere.app.adapters.MaterialAdapter(recentMaterials, new com.notesphere.app.adapters.MaterialAdapter.OnMaterialClickListener() {
+                            @Override
+                            public void onMaterialClick(Material material) {
+                                attachedMaterialId = material.getId();
+                                layoutCurrent.setVisibility(View.VISIBLE);
+                                tvCurrent.setText(material.getTitle());
+                                binding.btnAttachFile.setColorFilter(android.graphics.Color.parseColor("#6C63FF"));
+                                Toast.makeText(getContext(), "Attached: " + material.getTitle(), Toast.LENGTH_SHORT).show();
+                                dialog.dismiss();
+                            }
+                            @Override
+                            public void onMaterialLongClick(Material material) {}
+                        });
+                        rv.setAdapter(materialAdapter);
+                    }
+                } else {
+                    tvEmpty.setVisibility(View.VISIBLE);
+                    tvEmpty.setText("Failed to load materials");
+                }
+            }
+            @Override
+            public void onFailure(Call<List<Material>> call, Throwable t) {
+                pb.setVisibility(View.GONE);
+                tvEmpty.setVisibility(View.VISIBLE);
+                tvEmpty.setText("Error loading materials");
+            }
+        });
+
+        dialog.show();
     }
 
     private void sendMessage() {

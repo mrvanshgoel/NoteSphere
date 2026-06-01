@@ -67,7 +67,10 @@ public interface ApiService {
 
     // ─── Folders ────────────────────────────────────────────────────────
     @GET("api/folders/{subjectId}")
-    Call<List<com.notesphere.app.models.Folder>> getFolders(@Path("subjectId") String subjectId);
+    Call<List<com.notesphere.app.models.Folder>> getFolders(
+            @Path("subjectId") String subjectId,
+            @retrofit2.http.Query("parentId") String parentId
+    );
 
     @POST("api/folders")
     Call<com.notesphere.app.models.Folder> createFolder(@Body com.notesphere.app.models.Folder folder);
@@ -98,6 +101,8 @@ public interface ApiService {
             @Path("subjectId") String subjectId,
             @retrofit2.http.Query("folderId") String folderId
     );
+    @GET("api/materials/recent")
+    Call<List<Material>> getRecentMaterials();
 
     @PUT("api/materials/{id}")
     Call<Void> updateMaterial(@Path("id") String id, @Body Material material);
