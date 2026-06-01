@@ -85,7 +85,10 @@ try {
   }
 
   if (credential) {
-    admin.initializeApp({ credential });
+    admin.initializeApp({
+      credential,
+      storageBucket: process.env.FIREBASE_STORAGE_BUCKET || 'vansh-notesphere.appspot.com'
+    });
     console.log('Firebase initialized successfully');
   }
 } catch (error) {
@@ -93,8 +96,13 @@ try {
 }
 
 const db = admin.apps.length ? admin.firestore() : null;
+const bucket = admin.apps.length ? admin.storage().bucket() : null;
+
 if (db) {
   console.log('Firestore connected');
+}
+if (bucket) {
+  console.log('Firebase Storage connected');
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -419,29 +427,66 @@ app.post('/api/materials/upload', verifyToken, upload.single('file'), async (req
     if (!file) return res.status(400).json({ error: 'No file uploaded' });
 
     const localFilePath = path.join('uploads', file.filename);
+    const fullLocalPath = path.join(__dirname, localFilePath);
     
-    // Proactive Text Extraction for AI stability
-    let extractedText = "";
-    try {
-      const buffer = fs.readFileSync(path.join(__dirname, localFilePath));
-      extractedText = await extractTextFromBuffer(buffer, file.mimetype);
-    } catch (e) {
-      console.warn('[AI] Initial extraction failed, but proceeding with upload:', e.message);
+    let finalUrl = localFilePath; // fallback to local if bucket fails
+    let storagePathStr = null;
+
+    // Upload to Firebase Storage if bucket exists
+    if (bucket) {
+      try {
+        storagePathStr = `materials/${req.user.id}/${Date.now()}_${file.originalname}`;
+        const bucketFile = bucket.file(storagePathStr);
+        const fileBuffer = fs.readFileSync(fullLocalPath);
+        
+        await bucketFile.save(fileBuffer, { contentType: file.mimetype });
+        
+        // Generate a long-lived download URL
+        const [url] = await bucketFile.getSignedUrl({
+          action: 'read',
+          expires: '01-01-2099' // effectively permanent
+        });
+        finalUrl = url;
+        console.log(`[Storage] Uploaded to Firebase: ${storagePathStr}`);
+      } catch (uploadErr) {
+        console.error('[Storage] Firebase upload failed, falling back to local:', uploadErr.message);
+      }
     }
 
+    // Proactive Text Extraction for AI stability - DO IT ASYNC so we don't timeout!
+    // We create the doc first with empty text, then update it later.
     const docRef = await db.collection('materials').add({
       subjectId,
       folderId: folderId || null,
-      filePath: localFilePath,
+      filePath: finalUrl,
+      storagePath: storagePathStr, // Keep track if we need to delete later
       fileType: file.mimetype,
       title: name || file.originalname,
       userId: req.user.id,
-      extractedText, // Cache text for persistent AI access
+      extractedText: "", // Will be populated async
       createdAt: admin.firestore.FieldValue.serverTimestamp()
     });
 
     const newDoc = await docRef.get();
     res.status(201).json(formatDoc(newDoc));
+
+    // ASYNC EXTRACTION & CLEANUP
+    setImmediate(async () => {
+      try {
+        const buffer = fs.readFileSync(fullLocalPath);
+        const extractedText = await extractTextFromBuffer(buffer, file.mimetype);
+        await docRef.update({ extractedText });
+        console.log(`[AI] Async extraction successful for material ${docRef.id}`);
+      } catch (e) {
+        console.warn(`[AI] Async extraction failed for ${docRef.id}:`, e.message);
+      } finally {
+        // Delete local temp file to save disk space
+        if (fs.existsSync(fullLocalPath)) {
+          fs.unlinkSync(fullLocalPath);
+        }
+      }
+    });
+
   } catch (err) {
     console.error('Upload error:', err);
     res.status(500).json({ error: err.message });

@@ -65,13 +65,7 @@
             android:theme="@style/Theme.Notesphere.NoActionBar"
             android:parentActivityName=".activities.MainActivity" />
 
-        <activity
-            android:name=".activities.SyllabusDashboardActivity"
-            android:exported="false"
-            android:theme="@style/Theme.Notesphere.NoActionBar"
-            android:parentActivityName=".activities.MainActivity" />
-
-        <activity
+        <!-- Removed SyllabusDashboardActivity as part of Phase 4 -->        <activity
             android:name=".activities.QuizActivity"
             android:exported="false"
             android:theme="@style/Theme.Notesphere.NoActionBar"

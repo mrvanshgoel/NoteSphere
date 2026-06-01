@@ -157,9 +157,6 @@ public class HomeFragment extends Fragment {
     private void setupQuickActions() {
         binding.cardQuickUpload.setOnClickListener(v -> navigateToTab(R.id.nav_subjects));
         binding.btnStartChat.setOnClickListener(v -> navigateToTab(R.id.nav_chat));
-        binding.cardSyllabusTracker.setOnClickListener(v -> {
-            startActivity(new Intent(getContext(), com.notesphere.app.activities.SyllabusDashboardActivity.class));
-        });
     }
 
     // ───────────────────────────────────────────────────────────────────────────
@@ -493,21 +490,7 @@ public class HomeFragment extends Fragment {
     }
 
     private void fetchSyllabusProgress() {
-        String userId = pref.getUserId();
-        ApiClient.getInstance().getSyllabuses(userId).enqueue(new Callback<List<Syllabus>>() {
-            @Override
-            public void onResponse(Call<List<Syllabus>> call, Response<List<Syllabus>> response) {
-                if (!isAdded() || binding == null) return;
-                if (response.isSuccessful() && response.body() != null && !response.body().isEmpty()) {
-                    Syllabus s = response.body().get(0);
-                    binding.tvOverallProgress.setText(s.getProgressPercentage() + "%");
-                    binding.overallProgressBar.setProgress(s.getProgressPercentage());
-                    binding.tvSyllabusStatus.setText("Tracking " + s.getTitle());
-                }
-            }
-            @Override
-            public void onFailure(Call<List<Syllabus>> call, Throwable t) {}
-        });
+        // Syllabus Tracker removed as part of Phase 4
     }
 
     private void showShimmer(boolean show) {

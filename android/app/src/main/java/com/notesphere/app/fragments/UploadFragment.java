@@ -139,6 +139,10 @@ public class UploadFragment extends Fragment {
     }
 
     private void uploadFile() {
+        performUpload(0);
+    }
+
+    private void performUpload(int retryCount) {
         Context context = getContext();
         if (context == null) return;
 
@@ -173,11 +177,10 @@ public class UploadFragment extends Fragment {
                 public void onResponse(Call<Material> call, Response<Material> response) {
                     Context innerContext = getContext();
                     if (!isAdded() || innerContext == null || binding == null) return;
-                    
-                    binding.progressBar.setVisibility(View.GONE);
-                    binding.btnUpload.setEnabled(true);
 
                     if (response.isSuccessful()) {
+                        binding.progressBar.setVisibility(View.GONE);
+                        binding.btnUpload.setEnabled(true);
                         Toast.makeText(innerContext, "Upload Successful!", Toast.LENGTH_SHORT).show();
                         
                         // Save copy to NoteSphereDocs for offline access
@@ -188,8 +191,16 @@ public class UploadFragment extends Fragment {
                         selectedFileName = null;
                         if (file.exists()) file.delete();
                     } else {
-                        String errorMsg = parseError(response);
-                        Toast.makeText(innerContext, "Upload Failed: " + errorMsg, Toast.LENGTH_LONG).show();
+                        // Server error, maybe retry if 500 series
+                        if (response.code() >= 500 && retryCount < 2) {
+                            android.util.Log.w("UPLOAD", "Server error, retrying... (" + (retryCount+1) + ")");
+                            performUpload(retryCount + 1);
+                        } else {
+                            binding.progressBar.setVisibility(View.GONE);
+                            binding.btnUpload.setEnabled(true);
+                            String errorMsg = parseError(response);
+                            Toast.makeText(innerContext, "Upload Failed: " + errorMsg, Toast.LENGTH_LONG).show();
+                        }
                     }
                 }
 
@@ -199,9 +210,14 @@ public class UploadFragment extends Fragment {
                     if (!isAdded() || innerContext == null || binding == null) return;
                     if (call.isCanceled()) return;
 
-                    binding.progressBar.setVisibility(View.GONE);
-                    binding.btnUpload.setEnabled(true);
-                    Toast.makeText(innerContext, "Network Error: " + t.getMessage(), Toast.LENGTH_LONG).show();
+                    if (retryCount < 2) {
+                        android.util.Log.w("UPLOAD", "Network error, retrying... (" + (retryCount+1) + ")");
+                        performUpload(retryCount + 1);
+                    } else {
+                        binding.progressBar.setVisibility(View.GONE);
+                        binding.btnUpload.setEnabled(true);
+                        Toast.makeText(innerContext, "Network Error: " + t.getMessage(), Toast.LENGTH_LONG).show();
+                    }
                 }
             });
         } catch (Exception e) {

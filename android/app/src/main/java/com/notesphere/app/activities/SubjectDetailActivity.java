@@ -72,8 +72,7 @@ public class SubjectDetailActivity extends AppCompatActivity {
         if (subjectColor != null) {
             try {
                 int color = android.graphics.Color.parseColor(subjectColor);
-                binding.tvProgressPercent.setTextColor(color);
-                binding.pbSyllabus.setProgressTintList(android.content.res.ColorStateList.valueOf(color));
+                binding.tvStudyTime.setTextColor(color);
                 binding.fabUpload.setBackgroundTintList(android.content.res.ColorStateList.valueOf(color));
                 binding.btnNewFolder.setColorFilter(color);
             } catch (Exception e) {}
@@ -85,9 +84,19 @@ public class SubjectDetailActivity extends AppCompatActivity {
 
         binding.fabUpload.setOnClickListener(v -> pickFile());
         binding.btnNewFolder.setOnClickListener(v -> showCreateFolderDialog());
-        
-        // Quick AI Actions
-        binding.chipQuiz.setOnClickListener(v -> {
+        // Hub Actions
+        binding.cardNotes.setOnClickListener(v -> {
+            Toast.makeText(this, "Notes system coming soon (Phase 4.5)", Toast.LENGTH_SHORT).show();
+        });
+
+        binding.cardFlashcards.setOnClickListener(v -> {
+            Intent intent = new Intent(this, FlashcardActivity.class);
+            intent.putExtra("materialId", materials.isEmpty() ? "" : materials.get(0).getId());
+            intent.putExtra("subjectName", subjectName);
+            startActivity(intent);
+        });
+
+        binding.cardQuizzes.setOnClickListener(v -> {
             if (materials.isEmpty()) {
                 Toast.makeText(this, "Upload a material first to generate a quiz!", Toast.LENGTH_SHORT).show();
                 return;
@@ -97,26 +106,19 @@ public class SubjectDetailActivity extends AppCompatActivity {
             startActivity(intent);
         });
 
-        binding.chipNotes.setOnClickListener(v -> {
-            if (materials.isEmpty()) {
-                Toast.makeText(this, "Upload a material first!", Toast.LENGTH_SHORT).show();
-                return;
-            }
-            Intent intent = new Intent(this, MaterialDetailActivity.class);
-            intent.putExtra("material_id", materials.get(0).getId());
-            intent.putExtra("material_title", materials.get(0).getTitle());
-            intent.putExtra("auto_action", "notes");
+        binding.cardVideos.setOnClickListener(v -> {
+            Toast.makeText(this, "YouTube Learning System coming soon (Phase 8)", Toast.LENGTH_SHORT).show();
+        });
+
+        binding.cardAiWorkspace.setOnClickListener(v -> {
+            Intent intent = new Intent(this, DoubtSolverActivity.class);
+            intent.putExtra("material_id", materials.isEmpty() ? "" : materials.get(0).getId());
+            intent.putExtra("material_title", subjectName + " Knowledge Base");
             startActivity(intent);
         });
 
-        binding.chipSyllabus.setOnClickListener(v -> {
-            Intent intent = new Intent(this, SyllabusDashboardActivity.class);
-            startActivity(intent);
-        });
-        
-        binding.cardSyllabus.setOnClickListener(v -> {
-            Intent intent = new Intent(this, SyllabusDashboardActivity.class);
-            startActivity(intent);
+        binding.cardActivity.setOnClickListener(v -> {
+            Toast.makeText(this, "Activity Tracker coming soon", Toast.LENGTH_SHORT).show();
         });
     }
 
@@ -329,6 +331,7 @@ public class SubjectDetailActivity extends AppCompatActivity {
 
     private void updateUIState() {
         binding.tvSubjectInfo.setText("Subject Workspace • " + materials.size() + " Items");
+        binding.tvMaterialCount.setText(String.valueOf(materials.size()));
     }
 
     private void pickFile() {

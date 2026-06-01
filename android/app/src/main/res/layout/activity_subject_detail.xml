@@ -73,11 +73,11 @@
                             android:padding="16dp">
 
                             <TextView
-                                android:id="@+id/tvProgressPercent"
+                                android:id="@+id/tvStudyTime"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:fontFamily="sans-serif-medium"
-                                android:text="68%"
+                                android:text="0.0h"
                                 android:textColor="@color/ns_purple"
                                 android:textSize="24sp" />
 
@@ -85,7 +85,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:fontFamily="sans-serif"
-                                android:text="Syllabus"
+                                android:text="Study Time"
                                 android:textColor="@color/ns_text_secondary"
                                 android:textSize="12sp" />
                         </LinearLayout>
@@ -108,11 +108,11 @@
                             android:padding="16dp">
 
                             <TextView
-                                android:id="@+id/tvStudyTime"
+                                android:id="@+id/tvMaterialCount"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:fontFamily="sans-serif-medium"
-                                android:text="4.2h"
+                                android:text="0"
                                 android:textColor="@color/ns_blue"
                                 android:textSize="24sp" />
 
@@ -120,7 +120,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:fontFamily="sans-serif"
-                                android:text="Study Time"
+                                android:text="Materials"
                                 android:textColor="@color/ns_text_secondary"
                                 android:textSize="12sp" />
                         </LinearLayout>
@@ -193,97 +193,211 @@
                 tools:itemCount="3"
                 tools:listitem="@layout/item_material" />
 
+            <!-- SUBJECT HUB SECTIONS -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="24dp"
                 android:fontFamily="sans-serif-medium"
-                android:text="Quick AI Actions"
+                android:text="Hub"
                 android:textColor="@color/ns_text_primary"
                 android:textSize="18sp" />
 
-            <HorizontalScrollView
+            <GridLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
-                android:scrollbars="none">
+                android:columnCount="2"
+                android:rowCount="3"
+                android:useDefaultMargins="true">
 
-                <LinearLayout
-                    android:layout_width="wrap_content"
+                <!-- Notes -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardNotes"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal">
-
-                    <com.google.android.material.chip.Chip
-                        android:id="@+id/chipQuiz"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginEnd="8dp"
-                        android:text="Generate Quiz"
-                        app:chipBackgroundColor="@color/ns_surface"
-                        app:chipIcon="@android:drawable/ic_menu_help" />
-
-                    <com.google.android.material.chip.Chip
-                        android:id="@+id/chipNotes"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginEnd="8dp"
-                        android:text="Revision Notes"
-                        app:chipBackgroundColor="@color/ns_surface"
-                        app:chipIcon="@android:drawable/ic_menu_edit" />
-
-                    <com.google.android.material.chip.Chip
-                        android:id="@+id/chipSyllabus"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Check Syllabus"
-                        app:chipBackgroundColor="@color/ns_surface"
-                        app:chipIcon="@android:drawable/ic_menu_agenda" />
-                </LinearLayout>
-            </HorizontalScrollView>
-
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/cardSyllabus"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="24dp"
-                app:cardBackgroundColor="@color/ns_surface"
-                app:cardCornerRadius="20dp"
-                app:strokeWidth="0dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="20dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:fontFamily="sans-serif-medium"
-                        android:text="Syllabus Tracker"
-                        android:textColor="@color/ns_text_primary"
-                        android:textSize="16sp" />
-
-                    <ProgressBar
-                        android:id="@+id/pbSyllabus"
-                        style="?android:attr/progressBarStyleHorizontal"
+                    android:layout_columnWeight="1"
+                    app:cardBackgroundColor="@color/ns_surface"
+                    app:cardCornerRadius="16dp"
+                    app:strokeWidth="0dp"
+                    android:clickable="true"
+                    android:focusable="true">
+                    <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:progress="68"
-                        android:progressTint="@color/ns_purple" />
+                        android:orientation="vertical"
+                        android:padding="16dp">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="📝"
+                            android:textSize="24sp" />
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:fontFamily="sans-serif-medium"
+                            android:text="Notes"
+                            android:textColor="@color/ns_text_primary" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
 
-                    <TextView
-                        android:id="@+id/tvSyllabusStatus"
-                        android:layout_width="wrap_content"
+                <!-- Flashcards -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardFlashcards"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_columnWeight="1"
+                    app:cardBackgroundColor="@color/ns_surface"
+                    app:cardCornerRadius="16dp"
+                    app:strokeWidth="0dp"
+                    android:clickable="true"
+                    android:focusable="true">
+                    <LinearLayout
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:fontFamily="sans-serif"
-                        android:text="12 of 18 topics completed"
-                        android:textColor="@color/ns_text_secondary"
-                        android:textSize="12sp" />
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
+                        android:orientation="vertical"
+                        android:padding="16dp">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="📇"
+                            android:textSize="24sp" />
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:fontFamily="sans-serif-medium"
+                            android:text="Flashcards"
+                            android:textColor="@color/ns_text_primary" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Quizzes -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardQuizzes"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_columnWeight="1"
+                    app:cardBackgroundColor="@color/ns_surface"
+                    app:cardCornerRadius="16dp"
+                    app:strokeWidth="0dp"
+                    android:clickable="true"
+                    android:focusable="true">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="✍️"
+                            android:textSize="24sp" />
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:fontFamily="sans-serif-medium"
+                            android:text="Quizzes"
+                            android:textColor="@color/ns_text_primary" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Videos -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardVideos"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_columnWeight="1"
+                    app:cardBackgroundColor="@color/ns_surface"
+                    app:cardCornerRadius="16dp"
+                    app:strokeWidth="0dp"
+                    android:clickable="true"
+                    android:focusable="true">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="▶️"
+                            android:textSize="24sp" />
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:fontFamily="sans-serif-medium"
+                            android:text="Videos"
+                            android:textColor="@color/ns_text_primary" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- AI Workspace -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardAiWorkspace"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_columnWeight="1"
+                    app:cardBackgroundColor="@color/ns_surface"
+                    app:cardCornerRadius="16dp"
+                    app:strokeWidth="0dp"
+                    android:clickable="true"
+                    android:focusable="true">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="✨"
+                            android:textSize="24sp" />
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:fontFamily="sans-serif-medium"
+                            android:text="Ask AI"
+                            android:textColor="@color/ns_text_primary" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+                
+                <!-- Activity Tracker -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardActivity"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_columnWeight="1"
+                    app:cardBackgroundColor="@color/ns_surface"
+                    app:cardCornerRadius="16dp"
+                    app:strokeWidth="0dp"
+                    android:clickable="true"
+                    android:focusable="true">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="📊"
+                            android:textSize="24sp" />
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:fontFamily="sans-serif-medium"
+                            android:text="Activity"
+                            android:textColor="@color/ns_text_primary" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+            </GridLayout>
 
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
