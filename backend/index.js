@@ -1155,17 +1155,27 @@ app.get('/api/study/subjects/:subjectId/notes', verifyToken, async (req, res) =>
   try {
     const { subjectId } = req.params;
     const notesRef = db.collection('notes');
-    const snapshot = await notesRef
-      .where('userId', '==', req.user.id)
-      .where('subjectId', '==', subjectId)
-      .orderBy('updatedAt', 'desc')
-      .get();
-      
-    const notes = [];
-    snapshot.forEach(doc => {
-      notes.push({ id: doc.id, ...doc.data() });
-    });
-    res.json(notes);
+    let rawNotes = [];
+    try {
+      const snapshot = await notesRef
+        .where('userId', '==', req.user.id)
+        .where('subjectId', '==', subjectId)
+        .orderBy('updatedAt', 'desc')
+        .get();
+      snapshot.forEach(doc => rawNotes.push({ id: doc.id, ...doc.data() }));
+    } catch (indexError) {
+      const snapshot = await notesRef
+        .where('userId', '==', req.user.id)
+        .where('subjectId', '==', subjectId)
+        .get();
+      snapshot.forEach(doc => rawNotes.push({ id: doc.id, ...doc.data() }));
+      rawNotes.sort((a, b) => {
+        const timeA = a.updatedAt ? new Date(a.updatedAt.toDate ? a.updatedAt.toDate() : a.updatedAt).getTime() : 0;
+        const timeB = b.updatedAt ? new Date(b.updatedAt.toDate ? b.updatedAt.toDate() : b.updatedAt).getTime() : 0;
+        return timeB - timeA;
+      });
+    }
+    res.json(rawNotes);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
