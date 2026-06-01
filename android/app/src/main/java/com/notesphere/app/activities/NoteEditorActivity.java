@@ -63,6 +63,11 @@ public class NoteEditorActivity extends AppCompatActivity {
 
         subjectId = getIntent().getStringExtra("subjectId");
         noteId    = getIntent().getStringExtra("noteId");
+        
+        // Also accept legacy key variant from older callers
+        if (subjectId == null) subjectId = getIntent().getStringExtra("subject_id");
+        
+        android.util.Log.d("NOTES", "[NoteEditor] onCreate: subjectId=" + subjectId + " noteId=" + noteId);
 
         initViews();
         setupMarkdown();

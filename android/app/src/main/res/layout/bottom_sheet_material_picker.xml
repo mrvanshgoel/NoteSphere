@@ -4,94 +4,240 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:background="@android:color/white"
-    android:padding="20dp">
+    android:background="@color/ns_surface_elevated"
+    android:paddingTop="8dp">
 
-    <!-- Handle / Drag indicator -->
+    <!-- Drag handle -->
     <View
         android:layout_width="40dp"
         android:layout_height="4dp"
         android:layout_gravity="center_horizontal"
-        android:background="#D1D1D6"
-        android:layout_marginBottom="16dp" />
+        android:layout_marginBottom="12dp"
+        android:background="#3D4451"
+        android:layerType="software" />
 
-    <TextView
-        android:layout_width="wrap_content"
+    <!-- Header Row -->
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Attach Material"
-        android:textSize="20sp"
-        android:textStyle="bold"
-        android:textColor="@color/ns_text_primary"
-        android:layout_marginBottom="4dp" />
-        
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Select a recent document to provide context to the AI."
-        android:textColor="@color/text_secondary"
-        android:textSize="14sp"
-        android:layout_marginBottom="16dp" />
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="20dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="12dp">
 
-    <!-- Current Attachment Badge (if any) -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Attach Material"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:textColor="@color/ns_text_primary"
+                android:fontFamily="sans-serif-medium" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Add context to your AI conversation"
+                android:textSize="13sp"
+                android:textColor="@color/ns_text_dim" />
+        </LinearLayout>
+
+        <!-- Clear button (only visible when something attached) -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnClearAttachment"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:text="Clear"
+            android:textSize="12sp"
+            android:visibility="gone"
+            app:strokeColor="@color/ns_error"
+            app:strokeWidth="1dp"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            app:cornerRadius="18dp"
+            android:textColor="@color/ns_error"
+            android:paddingStart="14dp"
+            android:paddingEnd="14dp" />
+    </LinearLayout>
+
+    <!-- Current Attachment Badge -->
     <LinearLayout
         android:id="@+id/layoutCurrentAttachment"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:background="#F2F2F7"
-        android:padding="12dp"
-        android:layout_marginBottom="16dp"
+        android:background="#1A8B5CF6"
+        android:paddingStart="20dp"
+        android:paddingEnd="16dp"
+        android:paddingTop="10dp"
+        android:paddingBottom="10dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="12dp"
         android:visibility="gone">
+
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="📎"
-            android:textSize="18sp"
-            android:layout_marginEnd="8dp" />
+            android:textSize="16sp"
+            android:layout_marginEnd="10dp" />
+
         <TextView
             android:id="@+id/tvCurrentAttachment"
             android:layout_width="0dp"
             android:layout_weight="1"
             android:layout_height="wrap_content"
             android:text="Document.pdf"
-            android:textColor="#6C63FF"
+            android:textColor="@color/ns_purple_light"
             android:textStyle="bold"
+            android:textSize="14sp"
             android:maxLines="1"
             android:ellipsize="end" />
+
         <ImageButton
             android:id="@+id/btnRemoveAttachment"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:src="@android:drawable/ic_menu_close_clear_cancel"
-            app:tint="#FF3B30" />
+            app:tint="@color/ns_error" />
     </LinearLayout>
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rvRecentMaterials"
+    <!-- Search Bar -->
+    <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
-        android:layout_height="300dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="12dp"
+        app:boxBackgroundColor="#1A1A1C"
+        app:boxStrokeColor="#2A2A2E"
+        app:boxStrokeWidth="1dp"
+        app:boxStrokeWidthFocused="2dp"
+        app:startIconDrawable="@android:drawable/ic_menu_search"
+        app:startIconTint="@color/ns_text_dim"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+        app:cornerRadius="12dp">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etSearchMaterial"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:hint="Search materials..."
+            android:textColor="@color/ns_text_primary"
+            android:textColorHint="@color/ns_text_dim"
+            android:textSize="14sp"
+            android:imeOptions="actionSearch"
+            android:inputType="text"
+            android:background="@android:color/transparent" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- Subject Filter Chips -->
+    <HorizontalScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:scrollbars="none"
+        android:layout_marginBottom="12dp"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp">
+
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/chipGroupSubjects"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:singleSelection="true"
+            app:selectionRequired="true">
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipRecent"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="⏱ Recent"
+                android:checked="true"
+                style="@style/Widget.MaterialComponents.Chip.Filter"
+                android:textColor="@color/ns_text_primary"
+                app:chipBackgroundColor="@color/ns_surface_variant"
+                app:checkedIconVisible="false"
+                app:chipStrokeColor="#3A3A40"
+                app:chipStrokeWidth="1dp" />
+
+        </com.google.android.material.chip.ChipGroup>
+    </HorizontalScrollView>
+
+    <!-- Breadcrumb row (for folder navigation) -->
+    <HorizontalScrollView
+        android:id="@+id/scrollBreadcrumb"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:scrollbars="none"
+        android:visibility="gone"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:layout_marginBottom="8dp">
+
+        <LinearLayout
+            android:id="@+id/layoutBreadcrumb"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical" />
+    </HorizontalScrollView>
+
+    <!-- Materials List -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvPickerMaterials"
+        android:layout_width="match_parent"
+        android:layout_height="320dp"
         android:clipToPadding="false"
         android:paddingBottom="16dp" />
-        
-    <ProgressBar
-        android:id="@+id/pbLoadingMaterials"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:layout_marginTop="32dp"
-        android:layout_marginBottom="32dp" />
-        
-    <TextView
-        android:id="@+id/tvEmptyMaterials"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="No materials found."
-        android:layout_gravity="center"
-        android:visibility="gone"
-        android:textColor="@color/text_secondary"
-        android:layout_marginTop="32dp"
-        android:layout_marginBottom="32dp" />
+
+    <!-- Progress + Empty State (inside the list area) -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="200dp"
+        android:layout_gravity="center">
+
+        <ProgressBar
+            android:id="@+id/pbPickerLoading"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:indeterminateTint="@color/ns_purple"
+            android:visibility="visible" />
+
+        <LinearLayout
+            android:id="@+id/layoutPickerEmpty"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="📂"
+                android:textSize="36sp"
+                android:layout_marginBottom="8dp" />
+
+            <TextView
+                android:id="@+id/tvPickerEmpty"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="No materials found"
+                android:textColor="@color/ns_text_secondary"
+                android:textSize="14sp"
+                android:gravity="center" />
+        </LinearLayout>
+    </FrameLayout>
 
 </LinearLayout>

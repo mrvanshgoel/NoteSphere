@@ -390,6 +390,23 @@ app.post('/api/folders', verifyToken, async (req, res) => {
   }
 });
 
+app.put('/api/folders/:id', verifyToken, async (req, res) => {
+  try {
+    const { name, parentId } = req.body;
+    const updateData = { updatedAt: admin.firestore.FieldValue.serverTimestamp() };
+    if (name) updateData.name = name;
+    if (parentId !== undefined) updateData.parentId = parentId;
+    
+    await db.collection('folders').doc(req.params.id).update(updateData);
+    console.log(`[FOLDERS] Updated folder ${req.params.id} for UID ${req.user.id}`);
+    
+    const updatedDoc = await db.collection('folders').doc(req.params.id).get();
+    res.json(formatDoc(updatedDoc));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.delete('/api/folders/:id', verifyToken, async (req, res) => {
   try {
     await db.collection('folders').doc(req.params.id).delete();
@@ -1308,9 +1325,9 @@ app.get('/api/study/subjects/:subjectId/notes', verifyToken, async (req, res) =>
 app.post('/api/study/subjects/:subjectId/notes', verifyToken, async (req, res) => {
   try {
     const { subjectId } = req.params;
-    const { title, content, pinned = false, tags = [] } = req.body;
+    const { title, content = "", pinned = false, tags = [] } = req.body;
     
-    if (!title || !content) return res.status(400).json({ error: 'Title and content required' });
+    if (!title) return res.status(400).json({ error: 'Title required' });
 
     const newNote = {
       userId: req.user.id,

@@ -11,6 +11,7 @@ import android.graphics.pdf.PdfDocument;
 import android.os.Bundle;
 import android.os.Environment;
 import android.view.View;
+import android.widget.Spinner;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import com.notesphere.app.api.ApiClient;
@@ -49,18 +50,12 @@ public class MaterialDetailActivity extends AppCompatActivity {
         binding.tvInfo.setText(type + " • " + date);
         binding.toolbar.setNavigationOnClickListener(v -> finish());
 
-        // Analysis Group
-        binding.btnSummary.setOnClickListener(v -> callAiApi("summary"));
-        binding.btnConcepts.setOnClickListener(v -> callAiApi("concepts"));
-        binding.btnNotes.setOnClickListener(v -> callAiApi("notes"));
-
         // Study Group
         binding.btnQuestions.setOnClickListener(v -> {
             Intent intent = new Intent(this, QuizActivity.class);
             intent.putExtra("material_id", materialId);
             startActivity(intent);
         });
-        binding.btnRevision.setOnClickListener(v -> callAiApi("viva")); // Reuse viva mode for revision points
         binding.btnFlashcards.setOnClickListener(v -> {
             Intent intent = new Intent(this, FlashcardActivity.class);
             intent.putExtra("materialId", materialId);
@@ -68,8 +63,21 @@ public class MaterialDetailActivity extends AppCompatActivity {
             startActivity(intent);
         });
 
-        // Interactive Group
-        binding.btnDoubt.setOnClickListener(v -> openInteractiveChat());
+        // AI Workspace Panel
+        String[] modes = {"Summarize", "Key Concepts", "Smart Notes", "Revision Points"};
+        String[] internalModes = {"summary", "concepts", "notes", "viva"};
+        android.widget.ArrayAdapter<String> spinnerAdapter = new android.widget.ArrayAdapter<>(this, android.R.layout.simple_spinner_item, modes);
+        spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        Spinner spinner = binding.spinnerAiMode;
+        spinner.setAdapter(spinnerAdapter);
+
+        binding.btnGenerate.setOnClickListener(v -> {
+            int pos = spinner.getSelectedItemPosition();
+            if (pos >= 0 && pos < internalModes.length) {
+                callAiApi(internalModes[pos]);
+            }
+        });
+
         binding.btnChat.setOnClickListener(v -> openInteractiveChat());
 
         binding.btnRetry.setOnClickListener(v -> {

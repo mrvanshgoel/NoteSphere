@@ -36,8 +36,8 @@ public class FlashcardActivity extends AppCompatActivity {
         binding.vpFlashcards.setAdapter(adapter);
 
         binding.btnBack.setOnClickListener(v -> finish());
-        binding.btnSkip.setOnClickListener(v -> binding.vpFlashcards.setCurrentItem(binding.vpFlashcards.getCurrentItem() + 1));
-        binding.btnMastered.setOnClickListener(v -> binding.vpFlashcards.setCurrentItem(binding.vpFlashcards.getCurrentItem() + 1));
+        binding.btnSkip.setOnClickListener(v -> nextCard());
+        binding.btnMastered.setOnClickListener(v -> nextCard());
 
         binding.vpFlashcards.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
             @Override
@@ -63,6 +63,7 @@ public class FlashcardActivity extends AppCompatActivity {
                             if (arr.size() == 0) {
                                 Toast.makeText(FlashcardActivity.this, "No flashcards generated. Try again.", Toast.LENGTH_SHORT).show();
                             } else {
+                                cards.clear();
                                 for (int i = 0; i < arr.size(); i++) {
                                     if (arr.get(i) != null && arr.get(i).isJsonObject()) {
                                         cards.add(arr.get(i).getAsJsonObject());
@@ -95,5 +96,15 @@ public class FlashcardActivity extends AppCompatActivity {
         if (total == 0) return;
         binding.tvProgress.setText("Card " + (position + 1) + " of " + total);
         binding.sessionProgress.setProgress((int) (((float) (position + 1) / total) * 100));
+    }
+
+    private void nextCard() {
+        int current = binding.vpFlashcards.getCurrentItem();
+        if (current < cards.size() - 1) {
+            binding.vpFlashcards.setCurrentItem(current + 1);
+        } else {
+            Toast.makeText(this, "Deck completed!", Toast.LENGTH_SHORT).show();
+            finish();
+        }
     }
 }

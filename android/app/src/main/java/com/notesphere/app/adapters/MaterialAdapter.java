@@ -54,6 +54,11 @@ public class MaterialAdapter extends RecyclerView.Adapter<MaterialAdapter.ViewHo
         return materials.size();
     }
 
+    public void updateList(List<Material> newList) {
+        this.materials = newList;
+        notifyDataSetChanged();
+    }
+
     public static class ViewHolder extends RecyclerView.ViewHolder {
         ItemMaterialBinding binding;
         public ViewHolder(ItemMaterialBinding binding) {

@@ -75,6 +75,9 @@ public interface ApiService {
     @POST("api/folders")
     Call<com.notesphere.app.models.Folder> createFolder(@Body com.notesphere.app.models.Folder folder);
 
+    @PUT("api/folders/{id}")
+    Call<com.notesphere.app.models.Folder> updateFolder(@Path("id") String id, @Body com.notesphere.app.models.Folder folder);
+
     @DELETE("api/folders/{id}")
     Call<Void> deleteFolder(@Path("id") String id);
 

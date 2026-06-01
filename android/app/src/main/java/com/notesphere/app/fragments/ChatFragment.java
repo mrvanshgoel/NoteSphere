@@ -75,6 +75,13 @@ public class ChatFragment extends Fragment {
     }
 
     private void startNewChat() {
+        if (currentChatId != null && messages.isEmpty()) {
+            // Delete empty orphaned chat session
+            ApiClient.getInstance().deleteChatSession(currentChatId).enqueue(new Callback<Void>() {
+                @Override public void onResponse(Call<Void> call, Response<Void> res) {}
+                @Override public void onFailure(Call<Void> call, Throwable t) {}
+            });
+        }
         currentChatId = null;
         attachedMaterialId = null;
         messages.clear();
@@ -113,6 +120,8 @@ public class ChatFragment extends Fragment {
                     ChatHistoryAdapter historyAdapter = new ChatHistoryAdapter(sessions, session -> {
                         loadChat(session);
                         dialog.dismiss();
+                    }, session -> {
+                        showRenameDialog(session, dialog);
                     });
                     rv.setAdapter(historyAdapter);
                     
@@ -144,6 +153,41 @@ public class ChatFragment extends Fragment {
         });
 
         dialog.show();
+    }
+
+    private void showRenameDialog(ChatSession session, BottomSheetDialog dialog) {
+        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(requireContext());
+        builder.setTitle("Rename Chat");
+
+        final android.widget.EditText input = new android.widget.EditText(requireContext());
+        input.setText(session.getTitle());
+        input.setSelection(input.getText().length());
+        builder.setView(input);
+
+        builder.setPositiveButton("Rename", (d, which) -> {
+            String newTitle = input.getText().toString().trim();
+            if (!newTitle.isEmpty() && !newTitle.equals(session.getTitle())) {
+                session.setTitle(newTitle);
+                ApiClient.getInstance().updateChatSession(session.getId(), session).enqueue(new Callback<Void>() {
+                    @Override
+                    public void onResponse(Call<Void> call, Response<Void> response) {
+                        if (response.isSuccessful()) {
+                            Toast.makeText(getContext(), "Chat renamed", Toast.LENGTH_SHORT).show();
+                            dialog.dismiss();
+                            // Refresh history sheet by dismissing and reopening, or update adapter. 
+                            // Since we have an active dialog, simpler to just close and toast for now, or fetch again.
+                            if (session.getId().equals(currentChatId)) {
+                                binding.tvChatTitle.setText(newTitle);
+                            }
+                        }
+                    }
+                    @Override
+                    public void onFailure(Call<Void> call, Throwable t) {}
+                });
+            }
+        });
+        builder.setNegativeButton("Cancel", (d, which) -> d.cancel());
+        builder.show();
     }
 
     private void loadChat(ChatSession session) {
@@ -182,64 +226,161 @@ public class ChatFragment extends Fragment {
         BottomSheetDialog dialog = new BottomSheetDialog(requireContext(), com.google.android.material.R.style.Theme_Design_BottomSheetDialog);
         dialog.setContentView(sheetView);
 
-        RecyclerView rv = sheetView.findViewById(R.id.rvRecentMaterials);
+        RecyclerView rv = sheetView.findViewById(R.id.rvPickerMaterials);
         rv.setLayoutManager(new LinearLayoutManager(requireContext()));
-        android.widget.ProgressBar pb = sheetView.findViewById(R.id.pbLoadingMaterials);
-        android.widget.TextView tvEmpty = sheetView.findViewById(R.id.tvEmptyMaterials);
+        android.widget.ProgressBar pb = sheetView.findViewById(R.id.pbPickerLoading);
+        android.widget.LinearLayout layoutEmpty = sheetView.findViewById(R.id.layoutPickerEmpty);
+        android.widget.TextView tvEmpty = sheetView.findViewById(R.id.tvPickerEmpty);
+        
         android.widget.LinearLayout layoutCurrent = sheetView.findViewById(R.id.layoutCurrentAttachment);
         android.widget.TextView tvCurrent = sheetView.findViewById(R.id.tvCurrentAttachment);
         android.widget.ImageButton btnRemove = sheetView.findViewById(R.id.btnRemoveAttachment);
+        com.google.android.material.button.MaterialButton btnClear = sheetView.findViewById(R.id.btnClearAttachment);
+        
+        com.google.android.material.textfield.TextInputEditText etSearch = sheetView.findViewById(R.id.etSearchMaterial);
+        com.google.android.material.chip.ChipGroup chipGroup = sheetView.findViewById(R.id.chipGroupSubjects);
+        com.google.android.material.chip.Chip chipRecent = sheetView.findViewById(R.id.chipRecent);
 
+        // State variables for the picker
+        final List<Material> currentMaterialsList = new ArrayList<>();
+        final com.notesphere.app.adapters.MaterialAdapter[] pickerAdapter = new com.notesphere.app.adapters.MaterialAdapter[1];
+        
         if (attachedMaterialId != null) {
             layoutCurrent.setVisibility(View.VISIBLE);
-            tvCurrent.setText("Attached Material ID: " + attachedMaterialId); // Ideally store title
+            btnClear.setVisibility(View.VISIBLE);
+            tvCurrent.setText("Attached: " + attachedMaterialId); // Optionally store actual title in a field
         }
 
-        btnRemove.setOnClickListener(v -> {
+        View.OnClickListener removeAttachmentListener = v -> {
             attachedMaterialId = null;
             layoutCurrent.setVisibility(View.GONE);
+            btnClear.setVisibility(View.GONE);
             binding.btnAttachFile.setColorFilter(null);
             Toast.makeText(getContext(), "Attachment removed", Toast.LENGTH_SHORT).show();
-        });
+        };
 
-        ApiClient.getInstance().getRecentMaterials().enqueue(new Callback<List<Material>>() {
+        btnRemove.setOnClickListener(removeAttachmentListener);
+        btnClear.setOnClickListener(removeAttachmentListener);
+
+        pickerAdapter[0] = new com.notesphere.app.adapters.MaterialAdapter(currentMaterialsList, new com.notesphere.app.adapters.MaterialAdapter.OnMaterialClickListener() {
             @Override
-            public void onResponse(Call<List<Material>> call, Response<List<Material>> response) {
-                pb.setVisibility(View.GONE);
-                if (response.isSuccessful() && response.body() != null) {
-                    List<Material> recentMaterials = response.body();
-                    if (recentMaterials.isEmpty()) {
-                        tvEmpty.setVisibility(View.VISIBLE);
+            public void onMaterialClick(Material material) {
+                attachedMaterialId = material.getId();
+                layoutCurrent.setVisibility(View.VISIBLE);
+                btnClear.setVisibility(View.VISIBLE);
+                tvCurrent.setText(material.getTitle());
+                binding.btnAttachFile.setColorFilter(android.graphics.Color.parseColor("#8B5CF6")); // ns_purple
+                Toast.makeText(getContext(), "Attached: " + material.getTitle(), Toast.LENGTH_SHORT).show();
+                dialog.dismiss();
+            }
+            @Override
+            public void onMaterialLongClick(Material material) {}
+        });
+        rv.setAdapter(pickerAdapter[0]);
+
+        // Function to load materials based on selected chip / subject
+        java.util.function.Consumer<String> loadMaterials = (subjectId) -> {
+            pb.setVisibility(View.VISIBLE);
+            layoutEmpty.setVisibility(View.GONE);
+            rv.setVisibility(View.GONE);
+            
+            Call<List<Material>> call;
+            if (subjectId == null) {
+                call = ApiClient.getInstance().getRecentMaterials();
+            } else {
+                call = ApiClient.getInstance().getMaterials(subjectId, null);
+            }
+            
+            call.enqueue(new Callback<List<Material>>() {
+                @Override
+                public void onResponse(Call<List<Material>> call, Response<List<Material>> response) {
+                    pb.setVisibility(View.GONE);
+                    if (response.isSuccessful() && response.body() != null) {
+                        currentMaterialsList.clear();
+                        currentMaterialsList.addAll(response.body());
+                        pickerAdapter[0].notifyDataSetChanged();
+                        
+                        if (currentMaterialsList.isEmpty()) {
+                            layoutEmpty.setVisibility(View.VISIBLE);
+                        } else {
+                            rv.setVisibility(View.VISIBLE);
+                        }
                     } else {
-                        tvEmpty.setVisibility(View.GONE);
-                        com.notesphere.app.adapters.MaterialAdapter materialAdapter = new com.notesphere.app.adapters.MaterialAdapter(recentMaterials, new com.notesphere.app.adapters.MaterialAdapter.OnMaterialClickListener() {
-                            @Override
-                            public void onMaterialClick(Material material) {
-                                attachedMaterialId = material.getId();
-                                layoutCurrent.setVisibility(View.VISIBLE);
-                                tvCurrent.setText(material.getTitle());
-                                binding.btnAttachFile.setColorFilter(android.graphics.Color.parseColor("#6C63FF"));
-                                Toast.makeText(getContext(), "Attached: " + material.getTitle(), Toast.LENGTH_SHORT).show();
-                                dialog.dismiss();
-                            }
-                            @Override
-                            public void onMaterialLongClick(Material material) {}
-                        });
-                        rv.setAdapter(materialAdapter);
+                        layoutEmpty.setVisibility(View.VISIBLE);
+                        tvEmpty.setText("Failed to load materials");
                     }
-                } else {
-                    tvEmpty.setVisibility(View.VISIBLE);
-                    tvEmpty.setText("Failed to load materials");
+                }
+                @Override
+                public void onFailure(Call<List<Material>> call, Throwable t) {
+                    pb.setVisibility(View.GONE);
+                    layoutEmpty.setVisibility(View.VISIBLE);
+                    tvEmpty.setText("Network error");
+                }
+            });
+        };
+
+        // Load subjects and build chips
+        ApiClient.getInstance().getSubjects().enqueue(new Callback<List<com.notesphere.app.models.Subject>>() {
+            @Override
+            public void onResponse(Call<List<com.notesphere.app.models.Subject>> call, Response<List<com.notesphere.app.models.Subject>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    for (com.notesphere.app.models.Subject s : response.body()) {
+                        com.google.android.material.chip.Chip chip = new com.google.android.material.chip.Chip(requireContext());
+                        chip.setText(s.getName());
+                        chip.setCheckable(true);
+                        chip.setChipBackgroundColorResource(R.color.ns_surface_variant);
+                        chip.setTextColor(getResources().getColor(R.color.ns_text_primary));
+                        chip.setChipStrokeColorResource(R.color.ns_surface_variant);
+                        chip.setChipStrokeWidth(getResources().getDisplayMetrics().density * 1);
+                        chip.setCheckedIconVisible(false);
+                        
+                        chipGroup.addView(chip);
+                        
+                        chip.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                            if (isChecked) loadMaterials.accept(s.getId());
+                        });
+                    }
                 }
             }
             @Override
-            public void onFailure(Call<List<Material>> call, Throwable t) {
-                pb.setVisibility(View.GONE);
-                tvEmpty.setVisibility(View.VISIBLE);
-                tvEmpty.setText("Error loading materials");
+            public void onFailure(Call<List<com.notesphere.app.models.Subject>> call, Throwable t) {}
+        });
+
+        chipRecent.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (isChecked) loadMaterials.accept(null);
+        });
+
+        // Search logic
+        etSearch.addTextChangedListener(new android.text.TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {}
+            @Override
+            public void afterTextChanged(android.text.Editable s) {
+                String query = s.toString().toLowerCase().trim();
+                List<Material> filtered = new ArrayList<>();
+                for (Material m : currentMaterialsList) {
+                    if (m.getTitle().toLowerCase().contains(query)) {
+                        filtered.add(m);
+                    }
+                }
+                pickerAdapter[0].updateList(filtered);
+                
+                if (filtered.isEmpty() && !query.isEmpty()) {
+                    rv.setVisibility(View.GONE);
+                    layoutEmpty.setVisibility(View.VISIBLE);
+                    tvEmpty.setText("No results found");
+                } else if (!currentMaterialsList.isEmpty()) {
+                    rv.setVisibility(View.VISIBLE);
+                    layoutEmpty.setVisibility(View.GONE);
+                }
             }
         });
 
+        // Initial load
+        chipRecent.setChecked(true); // This will trigger loadMaterials.accept(null)
+        
         dialog.show();
     }
 
@@ -282,6 +423,17 @@ public class ChatFragment extends Fragment {
                     // First message of a new chat? Backend returns new chatId
                     if (currentChatId == null && aiResponse.getChatId() != null) {
                         currentChatId = aiResponse.getChatId();
+                        
+                        // Auto-generate title from first prompt
+                        String title = text.length() > 40 ? text.substring(0, 37) + "..." : text;
+                        ChatSession session = new ChatSession();
+                        session.setTitle(title);
+                        ApiClient.getInstance().updateChatSession(currentChatId, session).enqueue(new Callback<Void>() {
+                            @Override public void onResponse(Call<Void> call, Response<Void> res) {
+                                if (res.isSuccessful()) binding.tvChatTitle.setText(title);
+                            }
+                            @Override public void onFailure(Call<Void> call, Throwable t) {}
+                        });
                     }
 
                     messages.add(new ChatMessage(content, false));

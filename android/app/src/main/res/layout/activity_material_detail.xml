@@ -62,143 +62,108 @@
             android:orientation="vertical"
             android:paddingHorizontal="20dp">
 
-            <!-- Tool Section: Analysis -->
+            <!-- Study Tools -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
                 android:fontFamily="sans-serif-medium"
-                android:text="Analysis"
+                android:text="Study Tools"
                 android:textColor="@color/ns_text_primary"
                 android:textSize="14sp" />
 
-            <HorizontalScrollView
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:scrollbars="none">
+                android:orientation="horizontal">
 
-                <LinearLayout
-                    android:layout_width="wrap_content"
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnQuestions"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal">
+                    android:layout_marginEnd="8dp"
+                    android:text="Practice Quiz"
+                    app:icon="@android:drawable/ic_menu_help"
+                    app:cornerRadius="12dp"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:textColor="@color/ns_text_primary"
+                    app:strokeColor="#3A3A40" />
 
-                    <com.google.android.material.chip.Chip
-                        android:id="@+id/btnSummary"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginEnd="8dp"
-                        android:text="Summarize"
-                        app:chipBackgroundColor="@color/ns_surface"
-                        app:chipIcon="@android:drawable/ic_menu_edit" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnFlashcards"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
+                    android:text="AI Flashcards"
+                    app:icon="@android:drawable/ic_menu_sort_by_size"
+                    app:cornerRadius="12dp"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:textColor="@color/ns_text_primary"
+                    app:strokeColor="#3A3A40" />
+            </LinearLayout>
 
-                    <com.google.android.material.chip.Chip
-                        android:id="@+id/btnConcepts"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginEnd="8dp"
-                        android:text="Key Concepts"
-                        app:chipBackgroundColor="@color/ns_surface"
-                        app:chipIcon="@android:drawable/ic_menu_info_details" />
-
-                    <com.google.android.material.chip.Chip
-                        android:id="@+id/btnNotes"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Smart Notes"
-                        app:chipBackgroundColor="@color/ns_surface"
-                        app:chipIcon="@android:drawable/ic_menu_set_as" />
-                </LinearLayout>
-            </HorizontalScrollView>
-
-            <!-- Tool Section: Study -->
+            <!-- AI Panel -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
+                android:layout_marginTop="24dp"
                 android:fontFamily="sans-serif-medium"
-                android:text="Study"
+                android:text="AI Workspace"
                 android:textColor="@color/ns_text_primary"
                 android:textSize="14sp" />
 
-            <HorizontalScrollView
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:scrollbars="none">
-
-                <LinearLayout
+                android:layout_marginTop="12dp"
+                android:background="@color/ns_surface"
+                android:orientation="vertical"
+                android:padding="16dp">
+                
+                <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal">
-
-                    <com.google.android.material.chip.Chip
-                        android:id="@+id/btnQuestions"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginEnd="8dp"
-                        android:text="Practice Quiz"
-                        app:chipBackgroundColor="@color/ns_surface"
-                        app:chipIcon="@android:drawable/ic_menu_help" />
-
-                    <com.google.android.material.chip.Chip
-                        android:id="@+id/btnFlashcards"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginEnd="8dp"
-                        android:text="AI Flashcards"
-                        app:chipBackgroundColor="@color/ns_surface"
-                        app:chipIcon="@android:drawable/ic_menu_sort_by_size" />
-
-                    <com.google.android.material.chip.Chip
-                        android:id="@+id/btnRevision"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Revision Points"
-                        app:chipBackgroundColor="@color/ns_surface"
-                        app:chipIcon="@android:drawable/ic_menu_view" />
-                </LinearLayout>
-            </HorizontalScrollView>
-
-            <!-- Tool Section: Interactive -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
-                android:fontFamily="sans-serif-medium"
-                android:text="Interactive"
-                android:textColor="@color/ns_text_primary"
-                android:textSize="14sp" />
-
-            <HorizontalScrollView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:scrollbars="none">
+                    android:text="Generate Insights"
+                    android:textColor="@color/ns_text_primary"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="12dp" />
 
                 <LinearLayout
-                    android:layout_width="wrap_content"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal">
-
-                    <com.google.android.material.chip.Chip
-                        android:id="@+id/btnDoubt"
+                    
+                    <Spinner
+                        android:id="@+id/spinnerAiMode"
+                        android:layout_width="0dp"
+                        android:layout_height="48dp"
+                        android:layout_weight="1"
+                        android:layout_marginEnd="12dp"
+                        android:backgroundTint="@color/ns_text_primary" />
+                        
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnGenerate"
                         android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginEnd="8dp"
-                        android:text="Ask a Doubt"
-                        app:chipBackgroundColor="@color/ns_surface"
-                        app:chipIcon="@android:drawable/ic_menu_send" />
-
-                    <com.google.android.material.chip.Chip
-                        android:id="@+id/btnChat"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Chat with Document"
-                        app:chipBackgroundColor="@color/ns_surface"
-                        app:chipIcon="@android:drawable/ic_menu_send" />
+                        android:layout_height="48dp"
+                        android:text="Generate"
+                        app:cornerRadius="12dp"
+                        android:backgroundTint="@color/ns_purple" />
                 </LinearLayout>
-            </HorizontalScrollView>
+                
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnChat"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:layout_marginTop="12dp"
+                    android:text="Chat with Document"
+                    app:icon="@android:drawable/ic_menu_send"
+                    app:cornerRadius="12dp"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:textColor="@color/ns_purple"
+                    app:strokeColor="@color/ns_purple" />
+            </LinearLayout>
 
             <!-- Loading Indicator -->
             <com.google.android.material.progressindicator.LinearProgressIndicator

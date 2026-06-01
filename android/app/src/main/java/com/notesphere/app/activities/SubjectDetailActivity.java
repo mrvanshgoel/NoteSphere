@@ -48,8 +48,10 @@ public class SubjectDetailActivity extends AppCompatActivity {
         // Expand/Collapse logic can be added here if needed, but for now they are static hubs
         
         binding.btnViewMaterials.setOnClickListener(v -> {
-            Toast.makeText(this, "Opening File Explorer...", Toast.LENGTH_SHORT).show();
-            // TODO: Launch redesigned Folder Architecture (Step 3)
+            Intent intent = new Intent(this, FolderExplorerActivity.class);
+            intent.putExtra("subjectId", subjectId);
+            intent.putExtra("subjectName", subjectName);
+            startActivity(intent);
         });
 
         binding.btnNewNote.setOnClickListener(v -> {
@@ -60,17 +62,23 @@ public class SubjectDetailActivity extends AppCompatActivity {
         
         binding.btnViewNotes.setOnClickListener(v -> {
             Intent intent = new Intent(this, NotesListActivity.class);
-            intent.putExtra("subject_id", subjectId);
+            intent.putExtra("subjectId", subjectId); // FIXED key mismatch
             startActivity(intent);
         });
 
         binding.btnAiChat.setOnClickListener(v -> {
-            Toast.makeText(this, "Opening AI Workspace...", Toast.LENGTH_SHORT).show();
-            // TODO: Launch Chat System with Attachment flow (Step 4 & 5)
+            Intent intent = new Intent(this, MainActivity.class);
+            intent.putExtra("navigate_to", "chat");
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+            startActivity(intent);
         });
+
+        // Removed btnQuickContinue entirely (dead button)
+        binding.btnQuickContinue.setVisibility(android.view.View.GONE);
 
         binding.btnFlashcards.setOnClickListener(v -> {
             Intent intent = new Intent(this, FlashcardActivity.class);
+            intent.putExtra("subjectId", subjectId); // Now passes subjectId
             intent.putExtra("subjectName", subjectName);
             startActivity(intent);
         });

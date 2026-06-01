@@ -11,6 +11,20 @@
         android:layout_height="match_parent"
         android:orientation="vertical">
 
+        <com.google.android.material.appbar.AppBarLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/surface"
+            app:elevation="4dp">
+
+            <androidx.appcompat.widget.Toolbar
+                android:id="@+id/toolbar"
+                android:layout_width="match_parent"
+                android:layout_height="?attr/actionBarSize"
+                app:title="File Explorer"
+                app:navigationIcon="@drawable/ic_back" />
+        </com.google.android.material.appbar.AppBarLayout>
+
         <!-- Breadcrumb Area -->
         <HorizontalScrollView
             android:layout_width="match_parent"
@@ -58,7 +72,7 @@
                         android:layout_weight="1"
                         android:fontFamily="sans-serif-medium"
                         android:text="Folders"
-                        android:textColor="@color/text_primary"
+                        android:textColor="@color/ns_text_primary"
                         android:textSize="18sp" />
 
                     <ImageButton
@@ -84,7 +98,7 @@
                     android:layout_height="wrap_content"
                     android:fontFamily="sans-serif-medium"
                     android:text="Materials"
-                    android:textColor="@color/text_primary"
+                    android:textColor="@color/ns_text_primary"
                     android:textSize="18sp"
                     android:layout_marginBottom="12dp" />
 

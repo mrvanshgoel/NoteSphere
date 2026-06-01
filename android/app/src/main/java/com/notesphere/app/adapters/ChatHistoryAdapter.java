@@ -19,13 +19,19 @@ public class ChatHistoryAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
 
     private List<Object> items = new ArrayList<>();
     private OnSessionClickListener listener;
+    private OnSessionLongClickListener longClickListener;
 
     public interface OnSessionClickListener {
         void onSessionClick(ChatSession session);
     }
 
-    public ChatHistoryAdapter(List<ChatSession> sessions, OnSessionClickListener listener) {
+    public interface OnSessionLongClickListener {
+        void onSessionLongClick(ChatSession session);
+    }
+
+    public ChatHistoryAdapter(List<ChatSession> sessions, OnSessionClickListener listener, OnSessionLongClickListener longClickListener) {
         this.listener = listener;
+        this.longClickListener = longClickListener;
         groupSessions(sessions);
     }
 
@@ -119,6 +125,13 @@ public class ChatHistoryAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
             }
             
             holder.itemView.setOnClickListener(v -> listener.onSessionClick(session));
+            holder.itemView.setOnLongClickListener(v -> {
+                if (longClickListener != null) {
+                    longClickListener.onSessionLongClick(session);
+                    return true;
+                }
+                return false;
+            });
         }
     }
 

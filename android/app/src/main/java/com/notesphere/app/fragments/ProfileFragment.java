@@ -248,32 +248,59 @@ public class ProfileFragment extends Fragment {
                 });
     }
 
-    private void uploadAvatar(Uri uri) {
+    private void uploadAvatarWithRetry(Uri uri, int retryCount) {
         Context context = getContext();
         if (context == null) return;
 
-        // Show uploading feedback
-        if (binding != null) {
+        if (binding != null && retryCount == 0) {
             binding.fabEditAvatar.setEnabled(false);
         }
-        Toast.makeText(context, "Uploading avatar...", Toast.LENGTH_SHORT).show();
+        if (retryCount == 0) {
+            Toast.makeText(context, "Uploading avatar...", Toast.LENGTH_SHORT).show();
+        } else {
+            Toast.makeText(context, "Retrying upload (" + retryCount + "/3)...", Toast.LENGTH_SHORT).show();
+        }
 
         try {
-            // ─── Decode & compress to JPEG under 1.5MB ───────────────────────────
-            InputStream inputStream = context.getContentResolver().openInputStream(uri);
-            Bitmap original = BitmapFactory.decodeStream(inputStream);
-            if (original == null) throw new Exception("Could not decode image");
+            // ─── Decode bounds first to prevent OOM ───────────────────────────
+            InputStream boundsStream = context.getContentResolver().openInputStream(uri);
+            BitmapFactory.Options options = new BitmapFactory.Options();
+            options.inJustDecodeBounds = true;
+            BitmapFactory.decodeStream(boundsStream, null, options);
+            if (boundsStream != null) boundsStream.close();
 
-            // Scale down if too large (max 512x512)
-            Bitmap scaled = original;
-            if (original.getWidth() > 512 || original.getHeight() > 512) {
-                float scale = 512f / Math.max(original.getWidth(), original.getHeight());
-                scaled = Bitmap.createScaledBitmap(original,
-                        (int)(original.getWidth() * scale),
-                        (int)(original.getHeight() * scale), true);
+            int outWidth = options.outWidth;
+            int outHeight = options.outHeight;
+            int inSampleSize = 1;
+            int targetSize = 512;
+            
+            if (outHeight > targetSize || outWidth > targetSize) {
+                final int halfHeight = outHeight / 2;
+                final int halfWidth = outWidth / 2;
+                while ((halfHeight / inSampleSize) >= targetSize && (halfWidth / inSampleSize) >= targetSize) {
+                    inSampleSize *= 2;
+                }
             }
 
-            // Compress to JPEG at 80% quality
+            // Decode with sample size
+            InputStream inputStream = context.getContentResolver().openInputStream(uri);
+            options.inJustDecodeBounds = false;
+            options.inSampleSize = inSampleSize;
+            Bitmap original = BitmapFactory.decodeStream(inputStream, null, options);
+            if (inputStream != null) inputStream.close();
+            
+            if (original == null) throw new Exception("Could not decode image");
+
+            // Crop to square
+            int minDim = Math.min(original.getWidth(), original.getHeight());
+            int startX = (original.getWidth() - minDim) / 2;
+            int startY = (original.getHeight() - minDim) / 2;
+            Bitmap cropped = Bitmap.createBitmap(original, startX, startY, minDim, minDim);
+
+            // Scale to exactly 512x512
+            Bitmap scaled = Bitmap.createScaledBitmap(cropped, targetSize, targetSize, true);
+
+            // Compress to JPEG
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             scaled.compress(Bitmap.CompressFormat.JPEG, 80, baos);
             byte[] imageBytes = baos.toByteArray();
@@ -285,6 +312,10 @@ public class ProfileFragment extends Fragment {
             fos.flush();
             fos.close();
 
+            // Cleanup bitmaps
+            if (original != cropped) original.recycle();
+            if (cropped != scaled) cropped.recycle();
+            
             RequestBody requestFile = RequestBody.create(MediaType.parse("image/jpeg"), file);
             MultipartBody.Part body = MultipartBody.Part.createFormData("avatar", file.getName(), requestFile);
             if (activeCall != null) activeCall.cancel();
@@ -313,9 +344,17 @@ public class ProfileFragment extends Fragment {
                 @Override
                 public void onFailure(Call<User.AvatarResponse> call, Throwable t) {
                     Context innerContext = getContext();
-                    if (!isAdded() || innerContext == null || binding == null) return;
+                    if (!isAdded() || innerContext == null) return;
                     if (call.isCanceled()) return;
-                    binding.fabEditAvatar.setEnabled(true);
+                    
+                    if (retryCount < 3) {
+                        new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+                            uploadAvatarWithRetry(uri, retryCount + 1);
+                        }, 2000);
+                        return;
+                    }
+                    
+                    if (binding != null) binding.fabEditAvatar.setEnabled(true);
                     String msg = "Network error: " + t.getMessage();
                     Toast.makeText(innerContext, msg, Toast.LENGTH_LONG).show();
                     android.util.Log.e("AVATAR", "Failure: " + msg, t);
@@ -326,6 +365,10 @@ public class ProfileFragment extends Fragment {
             if (binding != null) binding.fabEditAvatar.setEnabled(true);
             Toast.makeText(context, "Error processing image: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
+    }
+
+    private void uploadAvatar(Uri uri) {
+        uploadAvatarWithRetry(uri, 0);
     }
 
     private void loadStats() {
