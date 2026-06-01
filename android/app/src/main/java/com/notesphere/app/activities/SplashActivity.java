@@ -39,8 +39,25 @@ public class SplashActivity extends AppCompatActivity {
             Log.e("NOTESPHERE_DIAGNOSTIC", "UID: " + user.getUid());
             Log.e("NOTESPHERE_DIAGNOSTIC", "Email: " + user.getEmail());
             Log.e("NOTESPHERE_DIAGNOSTIC", "Provider: " + user.getProviderId());
-        } else {
             Log.e("NOTESPHERE_DIAGNOSTIC", "FirebaseUser == null");
+        }
+        
+        try {
+            String projectId = getString(getResources().getIdentifier("project_id", "string", getPackageName()));
+            String storageBucket = getString(getResources().getIdentifier("google_storage_bucket", "string", getPackageName()));
+            String appId = getString(getResources().getIdentifier("google_app_id", "string", getPackageName()));
+            String backendUrl = com.notesphere.app.api.ApiClient.BASE_URL;
+            
+            Log.e("NOTESPHERE_DIAGNOSTIC", "Android project_id: " + projectId);
+            Log.e("NOTESPHERE_DIAGNOSTIC", "Android storage_bucket: " + storageBucket);
+            Log.e("NOTESPHERE_DIAGNOSTIC", "Android mobilesdk_app_id: " + appId);
+            Log.e("NOTESPHERE_DIAGNOSTIC", "Backend URL: " + backendUrl);
+            
+            // Expected Backend Matches:
+            Log.e("NOTESPHERE_DIAGNOSTIC", "Expected Backend FIREBASE_PROJECT_ID: vansh-notesphere");
+            Log.e("NOTESPHERE_DIAGNOSTIC", "Expected Backend FIREBASE_STORAGE_BUCKET: " + storageBucket); // Usually .appspot.com
+        } catch (Exception e) {
+            Log.e("NOTESPHERE_DIAGNOSTIC", "Failed to load google-services config strings", e);
         }
         Log.e("NOTESPHERE_DIAGNOSTIC", "==================================================");
     }

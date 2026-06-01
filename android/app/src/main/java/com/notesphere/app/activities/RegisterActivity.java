@@ -66,10 +66,11 @@ public class RegisterActivity extends AppCompatActivity {
                         android.util.Log.e("NOTESPHERE_DIAGNOSTIC", "[AUTH FLOW] Registration SUCCESS but getCurrentUser is null!");
                     }
                 } else {
-                    android.util.Log.e("NOTESPHERE_DIAGNOSTIC", "[AUTH FLOW] Registration FAILED: " + task.getException().getMessage());
+                    Exception e = task.getException();
+                    android.util.Log.e("NOTESPHERE_DIAGNOSTIC", "[AUTH FLOW] Registration FAILED", e);
                     binding.btnRegister.setEnabled(true);
                     binding.btnRegister.setText("Register");
-                    showError("Registration failed: " + task.getException().getMessage());
+                    showError("Firebase Reg failed: " + (e != null ? e.getMessage() : "Unknown"));
                 }
             });
     }
@@ -98,13 +99,21 @@ public class RegisterActivity extends AppCompatActivity {
                             startActivity(intent);
                             finish();
                         } else {
-                            showError("Sync failed");
+                            try {
+                                String errorBody = response.errorBody() != null ? response.errorBody().string() : "No error body";
+                                android.util.Log.e("NOTESPHERE_DIAGNOSTIC", "[AUTH FLOW] Backend Sync Failed: " + response.code() + " " + errorBody);
+                                showError("Sync failed: " + errorBody);
+                            } catch (Exception e) {
+                                android.util.Log.e("NOTESPHERE_DIAGNOSTIC", "[AUTH FLOW] Backend Sync Failed, exception reading body", e);
+                                showError("Sync failed: Code " + response.code());
+                            }
                         }
                     }
 
                     @Override
                     public void onFailure(Call<User> call, Throwable t) {
-                        showError("Network Error");
+                        android.util.Log.e("NOTESPHERE_DIAGNOSTIC", "[AUTH FLOW] Backend Sync Network Failure", t);
+                        showError("Network Error: " + t.getMessage());
                     }
                 });
             }

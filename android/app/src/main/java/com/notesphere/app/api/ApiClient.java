@@ -12,7 +12,12 @@ public class ApiClient {
 
     public static ApiService getInstance() {
         if (retrofit == null) {
-            HttpLoggingInterceptor logging = new HttpLoggingInterceptor();
+            HttpLoggingInterceptor logging = new HttpLoggingInterceptor(new HttpLoggingInterceptor.Logger() {
+                @Override
+                public void log(String message) {
+                    android.util.Log.e("NOTESPHERE_DIAGNOSTIC", "[API TRACE] " + message);
+                }
+            });
             logging.setLevel(HttpLoggingInterceptor.Level.BODY);
 
             OkHttpClient client = new OkHttpClient.Builder()
