@@ -1,51 +1,168 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.drawerlayout.widget.DrawerLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/drawer_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/background">
 
-    <FrameLayout
-        android:id="@+id/fragment_container"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <!-- Gradient Shadow above the navigation -->
-    <View
+    <!-- Main Content -->
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
-        android:layout_height="120dp"
-        android:background="@drawable/bg_nav_gradient"
-        app:layout_constraintBottom_toBottomOf="parent" />
+        android:layout_height="match_parent">
 
-    <!-- Floating Pill Navigation -->
-    <com.google.android.material.card.MaterialCardView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="32dp"
-        app:cardBackgroundColor="#1A1A24"
-        app:cardCornerRadius="40dp"
-        app:cardElevation="16dp"
-        app:strokeColor="#333344"
-        app:strokeWidth="1dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent">
+        <FrameLayout
+            android:id="@+id/fragment_container"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
 
-        <com.google.android.material.bottomnavigation.BottomNavigationView
-            android:id="@+id/bottom_navigation"
+        <!-- Gradient Shadow above the navigation -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="120dp"
+            android:background="@drawable/bg_nav_gradient"
+            app:layout_constraintBottom_toBottomOf="parent" />
+
+        <!-- Floating Pill Navigation -->
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="wrap_content"
-            android:layout_height="72dp"
-            android:paddingHorizontal="16dp"
-            android:background="@android:color/transparent"
-            app:itemIconTint="@color/nav_item_color_state"
-            app:itemTextColor="@color/nav_item_color_state"
-            app:itemRippleColor="@color/ns_surface"
-            app:labelVisibilityMode="unlabeled"
-            app:menu="@menu/bottom_nav_menu" />
-    </com.google.android.material.card.MaterialCardView>
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="32dp"
+            app:cardBackgroundColor="#1A1A24"
+            app:cardCornerRadius="40dp"
+            app:cardElevation="16dp"
+            app:strokeColor="#333344"
+            app:strokeWidth="1dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent">
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+            <com.google.android.material.bottomnavigation.BottomNavigationView
+                android:id="@+id/bottom_navigation"
+                android:layout_width="wrap_content"
+                android:layout_height="72dp"
+                android:paddingHorizontal="16dp"
+                android:background="@android:color/transparent"
+                app:itemIconTint="@color/nav_item_color_state"
+                app:itemTextColor="@color/nav_item_color_state"
+                app:itemRippleColor="@color/ns_surface"
+                app:labelVisibilityMode="unlabeled"
+                app:menu="@menu/bottom_nav_menu" />
+        </com.google.android.material.card.MaterialCardView>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <!-- Sidebar (Drawer) -->
+    <LinearLayout
+        android:id="@+id/nav_view"
+        android:layout_width="300dp"
+        android:layout_height="match_parent"
+        android:layout_gravity="start"
+        android:background="@color/surface"
+        android:fitsSystemWindows="true"
+        android:orientation="vertical"
+        android:padding="24dp">
+        
+        <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="NoteSphere"
+                android:textSize="24sp"
+                android:textStyle="bold"
+                android:textColor="@color/primary"
+                android:layout_marginBottom="8dp"/>
+                
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Your AI-Powered Second Brain"
+                android:textSize="14sp"
+                android:textColor="@color/text_secondary"
+                android:layout_marginBottom="32dp"/>
+                
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="#333344"
+                android:layout_marginBottom="24dp"/>
+                
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Developer Details"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="@color/text_primary"
+                android:layout_marginBottom="8dp"/>
+                
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Developed by Vansh Goel\nBCA Hons., Galgotias University"
+                android:textSize="14sp"
+                android:textColor="@color/text_secondary"
+                android:layout_marginBottom="24dp"/>
+                
+            <LinearLayout
+                android:id="@+id/btnGitHub"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingVertical="12dp"
+                android:background="?attr/selectableItemBackground"
+                android:clickable="true">
+                
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="🔗"
+                    android:textSize="20sp"
+                    android:layout_marginEnd="12dp"/>
+                    
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="View on GitHub"
+                    android:textSize="16sp"
+                    android:textColor="@color/text_primary"/>
+            </LinearLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
+
+            <!-- Backend Status -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:background="@drawable/bg_pill_surface"
+                android:padding="12dp">
+                
+                <ImageView
+                    android:id="@+id/ivBackendStatus"
+                    android:layout_width="12dp"
+                    android:layout_height="12dp"
+                    android:src="@drawable/ic_launcher_temp"
+                    app:tint="@color/ns_text_secondary"
+                    android:layout_marginEnd="8dp"/>
+                    
+                <TextView
+                    android:id="@+id/tvBackendStatus"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Checking backend..."
+                    android:textSize="12sp"
+                    android:textColor="@color/text_secondary"/>
+            </LinearLayout>
+            
+    </LinearLayout>
+
+</androidx.drawerlayout.widget.DrawerLayout>

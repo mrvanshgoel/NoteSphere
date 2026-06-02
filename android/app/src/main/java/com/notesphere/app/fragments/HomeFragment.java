@@ -105,6 +105,12 @@ public class HomeFragment extends Fragment {
             .skipMemoryCache(true);
 
         Glide.with(this).load(avatarUrl).apply(options).into(binding.ivHomeAvatar);
+        
+        binding.ivHomeAvatar.setOnClickListener(v -> {
+            if (getActivity() instanceof MainActivity) {
+                ((MainActivity) getActivity()).openDrawer();
+            }
+        });
     }
 
 
