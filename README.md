@@ -4,6 +4,7 @@
 
 NoteSphere is a unified, intelligent "Study OS" that eliminates the friction of modern academic workflows. It bridges traditional file management with advanced Generative AI capabilities, allowing students to upload materials (PDFs, Images) and instantly generate structured summaries, interactive flashcards, quizzes, and contextual AI chats based directly on their syllabus.
 
+[NoteSphere Website](https://notespherebyvansh.netlify.app/)
 ---
 
 ## 🧠 Core Architecture & Features
